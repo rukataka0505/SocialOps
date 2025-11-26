@@ -139,10 +139,90 @@ export async function createTask(prevState: any, formData: FormData) {
     }
 }
 
-export async function updateTask() {
-    // Implementation pending
+export async function getTasks(start: string, end: string) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        // Fetch tasks with assignee details
+        // We assume assigned_to references public.users.id
+        const { data: tasks, error } = await (supabase as any)
+            .from("tasks")
+            .select(`
+                *,
+                assignee:users!assigned_to (
+                    id,
+                    name,
+                    avatar_url
+                )
+            `)
+            .eq("team_id", teamId)
+            .gte("due_date", start)
+            .lte("due_date", end)
+            .is("deleted_at", null);
+
+        if (error) throw error;
+
+        return tasks || [];
+    } catch (error) {
+        console.error("Error fetching tasks:", error);
+        return [];
+    }
 }
 
-export async function deleteTask() {
-    // Implementation pending
+export async function updateTask(taskId: string, data: any) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        // Remove undefined fields
+        const updateData = Object.fromEntries(
+            Object.entries(data).filter(([_, v]) => v !== undefined)
+        );
+
+        const { error } = await (supabase as any)
+            .from("tasks")
+            .update({
+                ...updateData,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", taskId)
+            .eq("team_id", teamId);
+
+        if (error) throw error;
+
+        revalidatePath("/");
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating task:", error);
+        return { success: false, error };
+    }
+}
+
+export async function deleteTask(taskId: string) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        // Soft delete
+        const { error } = await (supabase as any)
+            .from("tasks")
+            .update({
+                deleted_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", taskId)
+            .eq("team_id", teamId);
+
+        if (error) throw error;
+
+        revalidatePath("/");
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting task:", error);
+        return { success: false, error };
+    }
 }
