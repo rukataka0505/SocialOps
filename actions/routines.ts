@@ -88,13 +88,34 @@ export async function createRoutine(clientId: string, prevState: RoutineState | 
         const tasks = generateTasksForRoutine(routine, rangeStart, rangeEnd, userId);
 
         if (tasks.length > 0) {
-            const { error: tasksError } = await (supabase as any)
+            const { data: insertedTasks, error: tasksError } = await (supabase as any)
                 .from("tasks")
-                .insert(tasks, { ignoreDuplicates: true });
+                .insert(tasks) // Removed ignoreDuplicates to ensure we get IDs for assignments? 
+                // Actually ignoreDuplicates might return null data if duplicate.
+                // But we have a unique constraint on routine_id + due_date?
+                // If we use ignoreDuplicates, we might not get all IDs if some were skipped.
+                // But here we are creating a NEW routine, so there shouldn't be duplicates yet.
+                // So we can probably skip ignoreDuplicates or keep it but assume all are new.
+                // Let's keep it simple: insert and select.
+                .select();
 
             if (tasksError) {
                 console.error("Error generating tasks:", tasksError);
-                // We don't throw here to avoid failing the routine creation if task generation fails
+            } else if (insertedTasks && routine.default_assignee_id) {
+                // Insert assignments
+                const assignments = insertedTasks.map((t: any) => ({
+                    task_id: t.id,
+                    user_id: routine.default_assignee_id,
+                    role: null // Default role? Or maybe "Assignee"
+                }));
+
+                const { error: assignError } = await (supabase as any)
+                    .from("task_assignments")
+                    .insert(assignments);
+
+                if (assignError) {
+                    console.error("Error inserting generated assignments:", assignError);
+                }
             }
         }
 

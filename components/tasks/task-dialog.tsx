@@ -53,6 +53,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
     const [clients, setClients] = useState<any[]>([]);
     const [customFields, setCustomFields] = useState<TaskField[]>([]);
+    const [assignees, setAssignees] = useState<{ userId: string; role: string }[]>([]);
 
     const isEditMode = !!task;
 
@@ -67,9 +68,35 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                 ]);
                 setClients(fetchedClients);
                 setCustomFields(settings.task_fields || []);
+
+                if (task && task.assignments) {
+                    setAssignees(task.assignments.map((a: any) => ({
+                        userId: a.user_id,
+                        role: a.role || ""
+                    })));
+                } else if (task && task.assigned_to) {
+                    // Backward compatibility
+                    setAssignees([{ userId: task.assigned_to, role: "" }]);
+                } else {
+                    setAssignees([]);
+                }
             });
         }
-    }, [open]);
+    }, [open, task]);
+
+    const addAssignee = () => {
+        setAssignees([...assignees, { userId: "", role: "" }]);
+    };
+
+    const removeAssignee = (index: number) => {
+        setAssignees(assignees.filter((_, i) => i !== index));
+    };
+
+    const updateAssignee = (index: number, field: 'userId' | 'role', value: string) => {
+        const newAssignees = [...assignees];
+        newAssignees[index][field] = value;
+        setAssignees(newAssignees);
+    };
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -242,23 +269,52 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         </select>
                     </div>
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="assigned_to" className="text-right">
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">
                             担当者
                         </Label>
-                        <select
-                            id="assigned_to"
-                            name="assigned_to"
-                            defaultValue={task?.assigned_to || ""}
-                            className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <option value="">(未割り当て)</option>
-                            {members.map((member) => (
-                                <option key={member.user.id} value={member.user.id}>
-                                    {member.user.name || member.user.email}
-                                </option>
+                        <div className="col-span-3 space-y-2">
+                            {assignees.map((assignee, index) => (
+                                <div key={index} className="flex gap-2 items-center">
+                                    <select
+                                        value={assignee.userId}
+                                        onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
+                                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <option value="">(担当者を選択)</option>
+                                        {members.map((member) => (
+                                            <option key={member.user.id} value={member.user.id}>
+                                                {member.user.name || member.user.email}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <Input
+                                        value={assignee.role}
+                                        onChange={(e) => updateAssignee(index, 'role', e.target.value)}
+                                        placeholder="役割 (例: レビュアー)"
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => removeAssignee(index)}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             ))}
-                        </select>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={addAssignee}
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                担当者を追加
+                            </Button>
+                            <input type="hidden" name="assignees" value={JSON.stringify(assignees.filter(a => a.userId))} />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-4 items-center gap-4">

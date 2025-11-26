@@ -34,12 +34,20 @@ export async function getTodayTasks() {
         const todayStr = format(zonedDate, 'yyyy-MM-dd', { timeZone });
 
         // Fetch tasks
-        // Status != 'completed' (and 'cancelled'?)
-        // Requirement says: status != 'done' (mapped to 'completed').
-        // Also due_date <= todayStr.
         const { data: tasks, error } = await (supabase as any)
             .from("tasks")
-            .select("*")
+            .select(`
+                *,
+                assignments:task_assignments(
+                    user_id,
+                    role,
+                    user:users(
+                        id,
+                        name,
+                        avatar_url
+                    )
+                )
+            `)
             .eq("team_id", teamId)
             .neq("status", "completed")
             .lte("due_date", todayStr)
@@ -51,7 +59,7 @@ export async function getTodayTasks() {
         const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
 
         const sortedTasks = tasks?.sort((a: any, b: any) => {
-            // Primary sort: due_date (already sorted by DB, but let's preserve/ensure)
+            // Primary sort: due_date
             if (a.due_date !== b.due_date) {
                 if (a.due_date && b.due_date) {
                     return a.due_date.localeCompare(b.due_date);
@@ -109,8 +117,18 @@ export async function createTask(prevState: any, formData: FormData) {
         const title = formData.get("title") as string;
         const due_date = formData.get("due_date") as string;
         const priority = (formData.get("priority") as string) || "medium";
-        const assigned_to = formData.get("assigned_to") as string;
         const client_id = formData.get("client_id") as string;
+
+        // Handle assignees
+        const assigneesJson = formData.get("assignees") as string;
+        let assignees: { userId: string, role: string }[] = [];
+        if (assigneesJson) {
+            try {
+                assignees = JSON.parse(assigneesJson);
+            } catch (e) {
+                console.error("Failed to parse assignees JSON", e);
+            }
+        }
 
         // Handle attributes
         const attributes: Record<string, any> = {};
@@ -119,11 +137,6 @@ export async function createTask(prevState: any, formData: FormData) {
             attributes.management_url = management_url;
         }
 
-        // Parse custom fields from formData
-        // We expect custom fields to be prefixed or we just grab everything else?
-        // Better to rely on a specific convention or just parse known fields + extra.
-        // For now, let's assume the UI sends everything and we might need to filter.
-        // But to be safe and simple, let's look for keys starting with 'custom_'.
         for (const [key, value] of Array.from(formData.entries())) {
             if (key.startsWith('custom_')) {
                 attributes[key.replace('custom_', '')] = value;
@@ -134,24 +147,43 @@ export async function createTask(prevState: any, formData: FormData) {
             return { success: false, error: "タイトルと期限は必須です" };
         }
 
-        // Insert task with routine_id as NULL
-        const { error } = await (supabase as any)
+        // Insert task
+        const { data: task, error } = await (supabase as any)
             .from("tasks")
             .insert({
                 team_id: teamId,
                 title,
                 due_date,
                 priority,
-                assigned_to: assigned_to || null,
                 client_id: client_id || null,
                 attributes,
                 routine_id: null,
                 status: "pending",
                 created_by: user.id,
                 source_type: 'manual',
-            });
+            })
+            .select()
+            .single();
 
         if (error) throw error;
+
+        // Insert assignments
+        if (assignees.length > 0) {
+            const assignments = assignees.map(a => ({
+                task_id: task.id,
+                user_id: a.userId,
+                role: a.role
+            }));
+
+            const { error: assignError } = await (supabase as any)
+                .from("task_assignments")
+                .insert(assignments);
+
+            if (assignError) {
+                console.error("Error inserting assignments:", assignError);
+                // Non-fatal, but good to know
+            }
+        }
 
         revalidatePath("/");
         return { success: true };
@@ -167,16 +199,18 @@ export async function getTasks(start: string, end: string) {
     try {
         const teamId = await getTeamId(supabase);
 
-        // Fetch tasks with assignee details
-        // We assume assigned_to references public.users.id
         const { data: tasks, error } = await (supabase as any)
             .from("tasks")
             .select(`
                 *,
-                assignee:users!assigned_to (
-                    id,
-                    name,
-                    avatar_url
+                assignments:task_assignments(
+                    user_id,
+                    role,
+                    user:users(
+                        id,
+                        name,
+                        avatar_url
+                    )
                 )
             `)
             .eq("team_id", teamId)
@@ -199,16 +233,23 @@ export async function updateTask(taskId: string, data: any) {
     try {
         const teamId = await getTeamId(supabase);
 
+        // Separate assignees from task data
+        let { assignees, ...taskData } = data;
+
+        // Parse assignees if it's a string (from FormData)
+        if (typeof assignees === 'string') {
+            try {
+                assignees = JSON.parse(assignees);
+            } catch (e) {
+                console.error("Failed to parse assignees JSON in updateTask", e);
+                assignees = [];
+            }
+        }
+
         // Remove undefined fields
         const updateData: any = Object.fromEntries(
-            Object.entries(data).filter(([_, v]) => v !== undefined)
+            Object.entries(taskData).filter(([_, v]) => v !== undefined)
         );
-
-        // If attributes are being updated, we might want to merge them or replace?
-        // Supabase JSONB updates are usually merges if we use jsonb_set, but simple update replaces the column.
-        // So we should probably fetch existing if we want to merge, OR assume the UI sends the full set.
-        // For simplicity, let's assume 'data' contains the full attributes object if it's being updated.
-
 
         const { error } = await (supabase as any)
             .from("tasks")
@@ -220,6 +261,30 @@ export async function updateTask(taskId: string, data: any) {
             .eq("team_id", teamId);
 
         if (error) throw error;
+
+        // Update assignments if provided
+        if (assignees) {
+            // Delete existing assignments
+            await (supabase as any)
+                .from("task_assignments")
+                .delete()
+                .eq("task_id", taskId);
+
+            // Insert new assignments
+            if (assignees.length > 0) {
+                const assignments = assignees.map((a: any) => ({
+                    task_id: taskId,
+                    user_id: a.userId,
+                    role: a.role
+                }));
+
+                const { error: assignError } = await (supabase as any)
+                    .from("task_assignments")
+                    .insert(assignments);
+
+                if (assignError) throw assignError;
+            }
+        }
 
         revalidatePath("/");
         return { success: true };
@@ -261,11 +326,17 @@ export async function getMemberTasks(userId: string) {
     try {
         const teamId = await getTeamId(supabase);
 
+        // Find tasks assigned to user via task_assignments
+        // We can use a join or a subquery.
+        // Supabase join syntax:
         const { data: tasks, error } = await (supabase as any)
             .from("tasks")
-            .select("*")
+            .select(`
+                *,
+                assignments:task_assignments!inner(user_id)
+            `)
             .eq("team_id", teamId)
-            .eq("assigned_to", userId)
+            .eq("assignments.user_id", userId)
             .neq("status", "completed")
             .is("deleted_at", null)
             .order("due_date", { ascending: true });

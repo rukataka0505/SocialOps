@@ -122,17 +122,27 @@ export function CalendarBoard({ tasks, members }: CalendarBoardProps) {
     const components = {
         event: ({ event }: any) => {
             const task = event.resource;
+            const assignments = task.assignments || [];
             const assignee = task.assignee;
 
             return (
                 <div className="flex items-center gap-1 overflow-hidden px-1 h-full">
-                    {assignee && (
-                        <Avatar className="h-4 w-4 border border-white shrink-0">
-                            <AvatarImage src={assignee.avatar_url || ""} />
-                            <AvatarFallback className="text-[8px]">{assignee.name?.[0] || "?"}</AvatarFallback>
-                        </Avatar>
-                    )}
-                    <span className="truncate font-medium">{event.title}</span>
+                    <div className="flex -space-x-1 overflow-hidden shrink-0">
+                        {assignments.length > 0 ? (
+                            assignments.map((assignment: any) => (
+                                <Avatar key={assignment.user_id} className="h-4 w-4 border border-white ring-1 ring-background">
+                                    <AvatarImage src={assignment.user?.avatar_url || ""} />
+                                    <AvatarFallback className="text-[6px]">{assignment.user?.name?.[0] || "?"}</AvatarFallback>
+                                </Avatar>
+                            ))
+                        ) : assignee ? (
+                            <Avatar className="h-4 w-4 border border-white">
+                                <AvatarImage src={assignee.avatar_url || ""} />
+                                <AvatarFallback className="text-[8px]">{assignee.name?.[0] || "?"}</AvatarFallback>
+                            </Avatar>
+                        ) : null}
+                    </div>
+                    <span className="truncate font-medium text-xs">{event.title}</span>
                 </div>
             );
         },

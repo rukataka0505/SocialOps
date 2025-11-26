@@ -50,7 +50,7 @@ export function generateTasksForRoutine(
                 title: routine.title,
                 status: "pending",
                 due_date: dueDate,
-                assigned_to: routine.default_assignee_id || null,
+                assigned_to: routine.default_assignee_id || null, // Keep for now, but we also handle assignments in action
                 created_by: userId,
                 source_type: 'routine',
             });
