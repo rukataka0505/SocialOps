@@ -8,6 +8,14 @@ export async function middleware(request: NextRequest) {
     console.log("--- ENV DEBUG ---");
     console.log("URL:", supabaseUrl);
     console.log("Key:", supabaseAnonKey);
+
+    // Check for Dev Bypass Mode
+    const isDevBypass = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true' &&
+        !!process.env.NEXT_PUBLIC_MOCK_USER_ID;
+
+    if (isDevBypass) {
+        console.log('🚀 Development Bypass Mode Active');
+    }
     if (!supabaseUrl || !supabaseAnonKey ||
         supabaseUrl === 'your-project-url' ||
         supabaseAnonKey === 'your-anon-key') {
@@ -131,14 +139,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
         request.nextUrl.pathname.startsWith('/settings');
 
     // Redirect authenticated users away from login page
-    if (isAuthRoute && user) {
+    // OR if bypass is active (treat as authenticated)
+    if (isAuthRoute && (user || isDevBypass)) {
         const url = request.nextUrl.clone();
         url.pathname = '/';
         return NextResponse.redirect(url);
     }
 
     // Redirect unauthenticated users to login page
-    if (isProtectedRoute && !user) {
+    // UNLESS bypass is active
+    if (isProtectedRoute && !user && !isDevBypass) {
         const url = request.nextUrl.clone();
         url.pathname = '/login';
         return NextResponse.redirect(url);
