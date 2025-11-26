@@ -22,6 +22,9 @@ export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
             <CardContent>
                 <div className="space-y-2">
                     {members.map((member, index) => {
+                        console.log(`[TeamPanel] Processing member ${index}:`, member);
+                        console.log(`[TeamPanel] Member ${index} has user?`, !!member?.user);
+
                         // Guard: Skip if member or user data is missing
                         if (!member || !member.user) {
                             console.warn('Missing user data for member at index:', index, member);
@@ -37,6 +40,8 @@ export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
                                 </div>
                             );
                         }
+
+                        console.log(`[TeamPanel] Rendering member ${index}:`, member.user.name || member.user.email);
 
                         return (
                             <MemberDetail key={member.user.id} member={member} currentUserRole={currentUserRole}>

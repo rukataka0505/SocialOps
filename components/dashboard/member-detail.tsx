@@ -25,6 +25,9 @@ interface MemberDetailProps {
 }
 
 export function MemberDetail({ member, children, currentUserRole }: MemberDetailProps) {
+    console.log('[MemberDetail] Rendering for:', member?.user?.name || member?.user?.email);
+    console.log('[MemberDetail] Children:', children);
+    
     const [tasks, setTasks] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
