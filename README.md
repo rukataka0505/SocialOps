@@ -1,48 +1,56 @@
 # SocialOps
 
-## 1. Product Concept: "SocialOps"
-**Tagline:** スプシ地獄からSNS運用者を救う、超シンプルな「チーム用タスクOS」。
+## 1. Product Vision: "SocialOps"
+**Concept:** "Calendar-First" Team OS for Social Media Agencies.
+**Tagline:** 「スプシ地獄」と「チャット連絡」からチームを解放する、自動化されたワークスペース。
 
-**Mission:**
-- 「入力するツール」ではなく「仕事が降ってくるツール」を作る。
-- 複雑なカスタマイズを排除し、迷わせないUIを提供する。
+**The Problem (Before):**
+- **タスク管理地獄:** スプレッドシートの行が増えすぎ、どれが最新かわからない。
+- **担当者不明:** チャットで依頼が流れ、ボールが落ちる。
+- **入力コスト:** 管理ツールの入力を維持するために残業している。
 
-**Target Audience:**
-- スプレッドシートとチャットツール（Slack/Discord）で消耗している小規模SNS運用チーム。
+**The Solution (After):**
+- **Zero Input:** タスクは「入力」するものではなく、ルーチンから「自動で降ってくる」もの。
+- **Calendar First:** リストではなく「カレンダー」が主役。いつ・誰が・何を投稿するかを1枚の絵で支配する。
+- **Spreadsheet Centric:** 複雑な分析や台割はスプシに任せ、本ツールは「最強のハブ」に徹する。
 
-## 2. Core Features (v1 Roadmap)
-### 🛡 脱・タスク管理シート
-- **ルーチン設定に基づくタスク自動生成:** 毎週勝手に仕事が降ってくる仕組み。
-- **Today画面:** 今日やることだけに集中できるシンプルなUI。
-
-### 👥 脱・担当者管理シート
-- **案件ごとのRole明確化:** 「誰が・何を」やるかを明確にする。
-- **チームメンバー管理:** Slackのような直感的なメンバー管理。
-
-### 🔗 脱・リンク集
-- **ハブ機能:** クライアントごとに既存のスプレッドシート（実績管理用など）へのURLを統合。「ここを見れば全部ある」状態を作る。
+## 2. Core Philosophy (Iron Rules)
+開発における意思決定の指針：
+1. **Calendar is King:** 迷ったらリストよりカレンダーの見やすさを優先する。
+2. **Don't Make Me Think:** ユーザーに複雑な設定をさせない。招待リンクを踏めば即参加、ルーチンを組めば即タスク生成。
+3. **Flexible Data:** 項目（ジャンル・単価など）の増減に耐えうるよう、JSONBを活用してスキーマを硬直させない。
 
 ## 3. Tech Stack
 - **Framework:** Next.js 15 (App Router)
-- **DB/Auth:** Supabase
-- **UI:** Tailwind CSS, Shadcn UI
-- **Logic:** date-fns-tz (JST Standard)
+- **Database:** Supabase (PostgreSQL)
+- **Styling:** Tailwind CSS, Shadcn UI
+- **Timezone:** All logic based on **JST (Asia/Tokyo)** using `date-fns-tz`.
 
-## 4. Architecture Philosophy (v8.0 Changes)
-### Flexible Schema
-- `tasks` テーブルはコア項目以外を `JSONB` で持ち、将来の拡張（ジャンル・単価・工数など）に柔軟に対応する。
+## 4. Architecture & Roadmap (v8.1)
 
-### Database Centric
-- 外部API連携（Instagram API等）はv1では行わず、まずはDB内での完結を目指す。
+### 📌 Phase 1: Foundation & Flexibility (Current)
+- **Schema Update:** `tasks.attributes` (JSONB) と `clients.spreadsheet_url` の実装。
+- **Soft Delete:** 全テーブルで `deleted_at` による論理削除を徹底。
 
-## 5. Development Status
-- **Current Version**: v8.0 (Phase 1: DB Migration & Spreadsheet Integration)
-- **Status**: Active Development
-- **Recent Updates**:
-  - Added `spreadsheet_url` to Clients and `attributes` to Tasks.
-  - Implemented Spreadsheet Integration in Client Management.
-  - Refined Dashboard UI (v7.0).
-  - Implemented Routine Task Generation Logic.
-  - Added Dev Bypass Authentication.
-- [ ] Spreadsheet URL Integration (New)
-- [ ] Member Role Assignment (New)
+### 📌 Phase 2: Team & Identity
+- **Workspace:** データは `team_id` で完全に分離。
+- **Invitation:** Slackライクな「招待リンク」によるメンバー追加機能。
+
+### 📌 Phase 3: Automation & Assignment
+- **Client Staffing:** クライアントごとに「Aさん＝編集」のような役割定義。
+- **Auto-Assign:** タスク自動生成時、上記設定に基づいて担当者(`assigned_to`)を自動解決。
+
+### 📌 Phase 4: The "Calendar"
+- **Dashboard Renewal:** トップページを「月次/週次カレンダー」に刷新。
+- **My Tasks Drawer:** カレンダーの脇に「今日やる自分のタスク」だけを表示。
+
+## 5. Current Development Status
+- [x] Authentication (Login/Signup)
+- [x] Dev Bypass Mode (Local Debug)
+- [x] Client Management (Basic CRUD)
+- [x] Routine Management (JSON Frequency)
+- [x] Task Generation Engine v1
+- [x] **Schema Flexibility (JSONB/Spreadsheet URL)**
+- [ ] Team Invitation System
+- [ ] Role Assignment Logic
+- [ ] Calendar UI Implementation
