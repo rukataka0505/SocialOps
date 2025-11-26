@@ -41,6 +41,10 @@ export function MemberDetail({ member, children, currentUserRole }: MemberDetail
     }, [isOpen, member.user.id]);
 
     const handleRoleChange = (newRole: string) => {
+        const confirmed = window.confirm(`${member.user.name} の権限を「${newRole}」に変更しますか?`);
+
+        if (!confirmed) return;
+
         startTransition(async () => {
             const result = await updateMemberRole(member.user.id, newRole);
             if (result.success) {

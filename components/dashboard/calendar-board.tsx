@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Calendar, dateFnsLocalizer, View, Views } from "react-big-calendar";
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import { format, parse, startOfWeek, getDay, endOfDay } from "date-fns";
 import { ja } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
@@ -48,7 +48,7 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
             id: task.id,
             title: task.title,
             start: new Date(task.due_date),
-            end: new Date(task.due_date),
+            end: endOfDay(new Date(task.due_date)),
             allDay: true,
             resource: task,
         }));
@@ -67,7 +67,12 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
 
     const onEventDrop = useCallback(
         async ({ event, start, end, isAllDay }: any) => {
-            const updatedEvent = { ...event, start, end, allDay: isAllDay };
+            const formattedDate = format(start, "yyyy年M月d日", { locale: ja });
+            const confirmed = window.confirm(`「${event.title}」を ${formattedDate} に移動しますか?`);
+
+            if (!confirmed) return;
+
+            const updatedEvent = { ...event, start, end, allDay: true };
 
             // Optimistic update
             setLocalEvents((prev) => {
@@ -76,10 +81,7 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
             });
 
             try {
-                // Format date as YYYY-MM-DD for backend
-                // Note: start is a Date object.
                 const newDueDate = format(start, "yyyy-MM-dd");
-
                 const result = await updateTask(event.id, { due_date: newDueDate });
 
                 if (!result.success) {

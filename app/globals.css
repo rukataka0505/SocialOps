@@ -116,6 +116,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -129,8 +130,10 @@
 .modern-calendar .rbc-header {
   padding: 12px 4px;
   font-weight: 600;
-  color: #64748b; /* slate-500 */
-  border-bottom: 1px solid #e2e8f0; /* slate-200 */
+  color: #64748b;
+  /* slate-500 */
+  border-bottom: 1px solid #e2e8f0;
+  /* slate-200 */
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -141,19 +144,23 @@
 }
 
 .modern-calendar .rbc-day-bg {
-  border-left: 1px solid #f1f5f9; /* slate-100 */
+  border-left: 1px solid #f1f5f9;
+  /* slate-100 */
 }
 
 .modern-calendar .rbc-month-row {
-  border-bottom: 1px solid #f1f5f9; /* slate-100 */
+  border-bottom: 1px solid #f1f5f9;
+  /* slate-100 */
 }
 
 .modern-calendar .rbc-off-range-bg {
-  background-color: #f8fafc; /* slate-50 */
+  background-color: #f8fafc;
+  /* slate-50 */
 }
 
 .modern-calendar .rbc-today {
-  background-color: #eff6ff; /* blue-50 */
+  background-color: #eff6ff;
+  /* blue-50 */
 }
 
 .modern-calendar .rbc-event {
@@ -166,8 +173,10 @@
 }
 
 .modern-calendar .rbc-toolbar button {
-  border: 1px solid #e2e8f0; /* slate-200 */
-  color: #475569; /* slate-600 */
+  border: 1px solid #e2e8f0;
+  /* slate-200 */
+  color: #475569;
+  /* slate-600 */
   font-size: 0.875rem;
   padding: 6px 12px;
   border-radius: 6px;
@@ -175,12 +184,15 @@
 }
 
 .modern-calendar .rbc-toolbar button:hover {
-  background-color: #f1f5f9; /* slate-100 */
-  color: #1e293b; /* slate-800 */
+  background-color: #f1f5f9;
+  /* slate-100 */
+  color: #1e293b;
+  /* slate-800 */
 }
 
 .modern-calendar .rbc-toolbar button.rbc-active {
-  background-color: #3b82f6; /* blue-500 */
+  background-color: #3b82f6;
+  /* blue-500 */
   color: white;
   border-color: #3b82f6;
   box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3);
@@ -189,18 +201,26 @@
 .modern-calendar .rbc-toolbar-label {
   font-weight: 700;
   font-size: 1.25rem;
-  color: #1e293b; /* slate-800 */
+  color: #1e293b;
+  /* slate-800 */
 }
 
 .modern-calendar .rbc-show-more {
   background-color: transparent;
-  color: #64748b; /* slate-500 */
+  color: #64748b;
+  /* slate-500 */
   font-weight: 500;
   font-size: 0.75rem;
   margin-top: 4px;
 }
 
 .modern-calendar .rbc-show-more:hover {
-  color: #3b82f6; /* blue-500 */
+  color: #3b82f6;
+  /* blue-500 */
   text-decoration: underline;
+}
+
+/* Hide original event during drag */
+.rbc-addons-dnd-dragged-event {
+  opacity: 0 !important;
 }
