@@ -169,7 +169,7 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                 events={localEvents}
                 startAccessor={(event: any) => event.start}
                 endAccessor={(event: any) => event.end}
-                style={{ height: "calc(100vh - 180px)" }}
+                style={{ height: "100%" }}
                 views={['month', 'week', 'day']}
                 view={view}
                 date={date}

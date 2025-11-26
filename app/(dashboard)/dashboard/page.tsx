@@ -1,7 +1,8 @@
-import { getTasks } from "@/actions/tasks";
+import { getTasks, getMemberTasks } from "@/actions/tasks";
 import { getTeamMembers } from "@/actions/teams";
 import { CalendarBoard } from "@/components/dashboard/calendar-board";
 import { TeamPanel } from "@/components/dashboard/team-panel";
+import { MyTasks } from "@/components/dashboard/my-tasks";
 import { createClient } from "@/lib/supabase/server";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import { redirect } from "next/navigation";
@@ -33,11 +34,14 @@ export default async function DashboardPage() {
     const currentUserRole = teamMember?.role;
     const members = teamId ? await getTeamMembers(teamId) : [];
 
-    // Fetch tasks for the current month
+    // Fetch tasks for the current month (for Calendar)
     const now = new Date();
     const start = startOfMonth(now);
     const end = endOfMonth(now);
     const tasks = await getTasks(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd'));
+
+    // Fetch tasks for the current user (for My Tasks)
+    const myTasks = await getMemberTasks(user.id);
 
     // Prioritize user_metadata.name (or full_name) over email
     // This fixes the issue where guests see their dummy email
@@ -81,12 +85,20 @@ export default async function DashboardPage() {
 
             {/* Main Content */}
             <div className="flex flex-1 overflow-hidden">
-                {/* Calendar Area */}
-                <main className="flex-1 p-6 overflow-hidden">
-                    <CalendarBoard tasks={tasks} members={members} currentUserId={user.id} />
+                {/* Left Column: My Tasks + Calendar */}
+                <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50">
+                    {/* Top: My Tasks */}
+                    <section className="h-64 px-6 py-4 border-b border-slate-100 bg-white/50 shrink-0">
+                        <MyTasks tasks={myTasks} members={members} currentUserId={user.id} />
+                    </section>
+
+                    {/* Center: Calendar */}
+                    <section className="flex-1 p-6 overflow-hidden">
+                        <CalendarBoard tasks={tasks} members={members} currentUserId={user.id} />
+                    </section>
                 </main>
 
-                {/* Side Panel */}
+                {/* Right: Team Panel */}
                 <aside className="w-80 border-l border-slate-100 bg-white overflow-y-auto shadow-sm z-10">
                     <TeamPanel members={members} currentUserRole={currentUserRole} />
                 </aside>
