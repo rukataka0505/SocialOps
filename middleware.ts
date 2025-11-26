@@ -5,17 +5,10 @@ export async function middleware(request: NextRequest) {
     // Validate environment variables
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    console.log("--- ENV DEBUG ---");
-    console.log("URL:", supabaseUrl);
-    console.log("Key:", supabaseAnonKey);
 
     // Check for Dev Bypass Mode
     const isDevBypass = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true' &&
         !!process.env.NEXT_PUBLIC_MOCK_USER_ID;
-
-    if (isDevBypass) {
-        console.log('🚀 Development Bypass Mode Active');
-    }
     if (!supabaseUrl || !supabaseAnonKey ||
         supabaseUrl === 'your-project-url' ||
         supabaseAnonKey === 'your-anon-key') {

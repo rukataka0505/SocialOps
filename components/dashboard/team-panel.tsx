@@ -10,10 +10,6 @@ interface TeamPanelProps {
 }
 
 export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
-    console.log('[TeamPanel] Received members:', members);
-    console.log('[TeamPanel] Members length:', members?.length);
-    console.log('[TeamPanel] Members is array?', Array.isArray(members));
-
     return (
         <Card className="h-full border-l rounded-none border-y-0 border-r-0 shadow-none bg-slate-50/50">
             <CardHeader className="pb-2">
@@ -22,9 +18,6 @@ export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
             <CardContent>
                 <div className="space-y-2">
                     {members.map((member, index) => {
-                        console.log(`[TeamPanel] Processing member ${index}:`, member);
-                        console.log(`[TeamPanel] Member ${index} has user?`, !!member?.user);
-
                         // Guard: Skip if member or user data is missing
                         if (!member || !member.user) {
                             console.warn('Missing user data for member at index:', index, member);
@@ -40,8 +33,6 @@ export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
                                 </div>
                             );
                         }
-
-                        console.log(`[TeamPanel] Rendering member ${index}:`, member.user.name || member.user.email);
 
                         return (
                             <MemberDetail key={member.user.id} member={member} currentUserRole={currentUserRole}>

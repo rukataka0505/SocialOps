@@ -157,11 +157,6 @@ export async function getTeamMembers(teamId: string) {
         return [];
     }
 
-    console.log('Members found:', members?.length || 0);
-    if (members && members.length > 0) {
-        console.log('Sample member data:', JSON.stringify(members[0], null, 2));
-    }
-
     return members as any[];
 }
 import { revalidatePath } from 'next/cache';
