@@ -53,4 +53,5 @@
 - [x] **Schema Flexibility (JSONB/Spreadsheet URL)**
 - [x] Team Invitation System
 - [x] Client Staffing & Role Assignment
+- [x] Auto-Assign Logic
 - [ ] Calendar UI Implementation

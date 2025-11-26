@@ -56,6 +56,7 @@ export async function createRoutine(clientId: string, prevState: RoutineState | 
         const title = formData.get("title") as string;
         const time = formData.get("time") as string;
         const days = formData.getAll("days") as string[];
+        const defaultAssigneeId = formData.get("default_assignee_id") as string;
 
         if (!title) return { error: "Routine name is required" };
         if (!time) return { error: "Time is required" };
@@ -74,6 +75,7 @@ export async function createRoutine(clientId: string, prevState: RoutineState | 
                 title,
                 frequency,
                 start_date: new Date().toISOString(), // Default to now
+                default_assignee_id: defaultAssigneeId || null,
             })
             .select()
             .single();

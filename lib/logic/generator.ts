@@ -50,6 +50,7 @@ export function generateTasksForRoutine(
                 title: routine.title,
                 status: "pending",
                 due_date: dueDate,
+                assigned_to: routine.default_assignee_id || null,
                 created_by: userId,
             });
         }

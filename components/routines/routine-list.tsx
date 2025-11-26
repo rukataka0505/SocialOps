@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Trash, Loader2, Clock, Calendar } from "lucide-react";
 import { deleteRoutine } from "@/actions/routines";
 import { RoutineDialog } from "./routine-dialog";
+import { StaffMember } from "@/actions/staffing";
 
 type Routine = {
     id: string;
@@ -17,9 +18,10 @@ type Routine = {
 interface RoutineListProps {
     clientId: string;
     routines: Routine[];
+    staffMembers: StaffMember[];
 }
 
-export function RoutineList({ clientId, routines }: RoutineListProps) {
+export function RoutineList({ clientId, routines, staffMembers }: RoutineListProps) {
     const [isPending, startTransition] = useTransition();
 
     const handleDelete = (routineId: string) => {
@@ -34,7 +36,7 @@ export function RoutineList({ clientId, routines }: RoutineListProps) {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">ルーチン設定</h3>
-                <RoutineDialog clientId={clientId} />
+                <RoutineDialog clientId={clientId} staffMembers={staffMembers} />
             </div>
 
             {routines.length === 0 ? (

@@ -90,7 +90,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
             </div>
 
             <div className="border-t pt-6">
-                <RoutineList clientId={client.id} routines={routines} />
+                <RoutineList clientId={client.id} routines={routines} staffMembers={staff} />
             </div>
         </div>
     );

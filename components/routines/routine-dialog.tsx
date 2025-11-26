@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { createRoutine, RoutineState } from "@/actions/routines";
 import { Loader2, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { StaffMember } from "@/actions/staffing";
 
 const DAYS = [
     { id: "Mon", label: "月" },
@@ -31,11 +32,12 @@ const DAYS = [
 
 interface RoutineDialogProps {
     clientId: string;
+    staffMembers: StaffMember[];
 }
 
 const initialState: RoutineState = {};
 
-export function RoutineDialog({ clientId }: RoutineDialogProps) {
+export function RoutineDialog({ clientId, staffMembers }: RoutineDialogProps) {
     const [open, setOpen] = useState(false);
 
     const createRoutineWithId = createRoutine.bind(null, clientId);
@@ -111,6 +113,24 @@ export function RoutineDialog({ clientId }: RoutineDialogProps) {
                                 </div>
                             ))}
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="default_assignee_id" className="text-right">
+                            担当者
+                        </Label>
+                        <select
+                            id="default_assignee_id"
+                            name="default_assignee_id"
+                            className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <option value="">(未割り当て)</option>
+                            {staffMembers.map((staff) => (
+                                <option key={staff.user.id} value={staff.user.id}>
+                                    {staff.user.name || staff.user.email} ({staff.role_name})
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <DialogFooter>

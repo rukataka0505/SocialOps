@@ -136,6 +136,7 @@ export interface Database {
                     description: string | null;
                     frequency: Json;
                     start_date: string;
+                    default_assignee_id: string | null;
                     created_at: string;
                     updated_at: string;
                     deleted_at: string | null;
@@ -148,6 +149,7 @@ export interface Database {
                     description?: string | null;
                     frequency: Json;
                     start_date: string;
+                    default_assignee_id?: string | null;
                     created_at?: string;
                     updated_at?: string;
                     deleted_at?: string | null;
@@ -160,6 +162,7 @@ export interface Database {
                     description?: string | null;
                     frequency?: Json;
                     start_date?: string;
+                    default_assignee_id?: string | null;
                     created_at?: string;
                     updated_at?: string;
                     deleted_at?: string | null;
