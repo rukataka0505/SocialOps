@@ -213,19 +213,40 @@ export async function deleteTask(taskId: string) {
             .update({
                 deleted_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-                    .from("tasks")
-                    .select("*")
-                    .eq("team_id", teamId)
-                    .eq("assigned_to", userId)
-                    .neq("status", "completed")
-                    .is("deleted_at", null)
-                    .order("due_date", { ascending: true });
+            })
+            .eq("id", taskId)
+            .eq("team_id", teamId);
 
-                if(error) throw error;
+        if (error) throw error;
 
-                return tasks || [];
-            } catch (error) {
-                console.error("Error fetching member tasks:", error);
-                return [];
-            }
+        revalidatePath("/");
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting task:", error);
+        return { success: false, error };
     }
+}
+
+export async function getMemberTasks(userId: string) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        const { data: tasks, error } = await (supabase as any)
+            .from("tasks")
+            .select("*")
+            .eq("team_id", teamId)
+            .eq("assigned_to", userId)
+            .neq("status", "completed")
+            .is("deleted_at", null)
+            .order("due_date", { ascending: true });
+
+        if (error) throw error;
+
+        return tasks || [];
+    } catch (error) {
+        console.error("Error fetching member tasks:", error);
+        return [];
+    }
+}

@@ -18,14 +18,15 @@ export default async function DashboardPage() {
         redirect('/login');
     }
 
-    // Get team_id
+    // Get team_id and role
     const { data: teamMember } = await (supabase as any)
         .from("team_members")
-        .select("team_id")
+        .select("team_id, role")
         .eq("user_id", user.id)
         .single();
 
     const teamId = teamMember?.team_id;
+    const currentUserRole = teamMember?.role;
     const members = teamId ? await getTeamMembers(teamId) : [];
 
     // Fetch tasks for a broad range (Current Month +/- 1-2 months)
@@ -72,7 +73,7 @@ export default async function DashboardPage() {
 
                 {/* Side Panel */}
                 <aside className="w-72 border-l bg-white overflow-y-auto hidden md:block">
-                    <TeamPanel members={members} />
+                    <TeamPanel members={members} currentUserRole={currentUserRole} />
                 </aside>
             </div>
         </div>
