@@ -85,15 +85,10 @@ export interface Database {
                 Update: {
                     id?: string;
                     team_id?: string;
-                    client_id?: string | null;
-                    title?: string;
-                    description?: string | null;
-                    frequency?: Json;
-                    start_date?: string;
-                    default_assignee_id?: string | null;
+                    user_id?: string;
+                    role?: 'owner' | 'admin' | 'member';
+                    access_token?: string | null;
                     created_at?: string;
-                    updated_at?: string;
-                    deleted_at?: string | null;
                 };
             };
             tasks: {
@@ -298,27 +293,83 @@ export interface Database {
                     created_at?: string | null;
                 };
             };
-            client_staff: {
+            clients: {
                 Row: {
                     id: string;
-                    client_id: string;
-                    user_id: string;
-                    role_name: string;
+                    team_id: string;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                    spreadsheet_url: string | null;
+                    notes: string | null;
                     created_at: string;
+                    updated_at: string;
+                    deleted_at: string | null;
                 };
                 Insert: {
                     id?: string;
-                    client_id: string;
-                    user_id: string;
-                    role_name: string;
+                    team_id: string;
+                    name: string;
+                    email?: string | null;
+                    phone?: string | null;
+                    spreadsheet_url?: string | null;
+                    notes?: string | null;
                     created_at?: string;
+                    updated_at?: string;
+                    deleted_at?: string | null;
                 };
                 Update: {
                     id?: string;
-                    client_id?: string;
-                    user_id?: string;
-                    role_name?: string;
+                    team_id?: string;
+                    name?: string;
+                    email?: string | null;
+                    phone?: string | null;
+                    spreadsheet_url?: string | null;
+                    notes?: string | null;
                     created_at?: string;
+                    updated_at?: string;
+                    deleted_at?: string | null;
+                };
+            };
+            routines: {
+                Row: {
+                    id: string;
+                    team_id: string;
+                    client_id: string | null;
+                    title: string;
+                    description: string | null;
+                    frequency: Json;
+                    start_date: string;
+                    default_assignee_id: string | null;
+                    created_at: string;
+                    updated_at: string;
+                    deleted_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    team_id: string;
+                    client_id?: string | null;
+                    title: string;
+                    description?: string | null;
+                    frequency: Json;
+                    start_date: string;
+                    default_assignee_id?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                    deleted_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    team_id?: string;
+                    client_id?: string | null;
+                    title?: string;
+                    description?: string | null;
+                    frequency?: Json;
+                    start_date?: string;
+                    default_assignee_id?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                    deleted_at?: string | null;
                 };
             };
         };

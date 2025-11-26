@@ -1,9 +1,7 @@
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { getRoutines } from "@/actions/routines";
-import { getStaff } from "@/actions/staffing";
 import { getTeamMembers } from "@/actions/teams";
 import { RoutineList } from "@/components/routines/routine-list";
-import { StaffSection } from "@/components/clients/staff-section";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ExternalLink, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
@@ -34,7 +32,6 @@ export default async function ClientDetailPage({ params }: PageProps) {
     }
 
     const routines = await getRoutines(id);
-    const staff = await getStaff(id);
     const teamMembers = await getTeamMembers(client.team_id);
 
     return (
@@ -63,34 +60,26 @@ export default async function ClientDetailPage({ params }: PageProps) {
                 )}
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-4">
-                    <div className="rounded-md border p-4">
-                        <h3 className="font-medium mb-2">基本情報</h3>
-                        <dl className="space-y-2 text-sm">
-                            <div className="grid grid-cols-3">
-                                <dt className="text-muted-foreground">メールアドレス:</dt>
-                                <dd className="col-span-2">{client.email || "-"}</dd>
-                            </div>
-                            <div className="grid grid-cols-3">
-                                <dt className="text-muted-foreground">電話番号:</dt>
-                                <dd className="col-span-2">{client.phone || "-"}</dd>
-                            </div>
-                            <div className="grid grid-cols-3">
-                                <dt className="text-muted-foreground">メモ:</dt>
-                                <dd className="col-span-2 whitespace-pre-wrap">{client.notes || "-"}</dd>
-                            </div>
-                        </dl>
+            <div className="rounded-md border p-4">
+                <h3 className="font-medium mb-2">基本情報</h3>
+                <dl className="space-y-2 text-sm">
+                    <div className="grid grid-cols-3">
+                        <dt className="text-muted-foreground">メールアドレス:</dt>
+                        <dd className="col-span-2">{client.email || "-"}</dd>
                     </div>
-                </div>
-
-                <div>
-                    <StaffSection clientId={client.id} staff={staff} teamMembers={teamMembers} />
-                </div>
+                    <div className="grid grid-cols-3">
+                        <dt className="text-muted-foreground">電話番号:</dt>
+                        <dd className="col-span-2">{client.phone || "-"}</dd>
+                    </div>
+                    <div className="grid grid-cols-3">
+                        <dt className="text-muted-foreground">メモ:</dt>
+                        <dd className="col-span-2 whitespace-pre-wrap">{client.notes || "-"}</dd>
+                    </div>
+                </dl>
             </div>
 
             <div className="border-t pt-6">
-                <RoutineList clientId={client.id} routines={routines} staffMembers={staff} />
+                <RoutineList clientId={client.id} routines={routines} staffMembers={teamMembers} />
             </div>
         </div>
     );
