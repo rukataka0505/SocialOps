@@ -190,6 +190,7 @@ export interface Database {
                     updated_at: string;
                     completed_at: string | null;
                     deleted_at: string | null;
+                    source_type: string;
                 };
                 Insert: {
                     id?: string;
@@ -209,6 +210,7 @@ export interface Database {
                     updated_at?: string;
                     completed_at?: string | null;
                     deleted_at?: string | null;
+                    source_type: string;
                 };
                 Update: {
                     id?: string;
@@ -228,6 +230,7 @@ export interface Database {
                     updated_at?: string;
                     completed_at?: string | null;
                     deleted_at?: string | null;
+                    source_type?: string;
                 };
             };
             projects: {

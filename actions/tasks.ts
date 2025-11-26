@@ -127,6 +127,7 @@ export async function createTask(prevState: any, formData: FormData) {
                 routine_id: null,
                 status: "pending",
                 created_by: user.id,
+                source_type: 'manual',
             });
 
         if (error) throw error;

@@ -52,6 +52,7 @@ export function generateTasksForRoutine(
                 due_date: dueDate,
                 assigned_to: routine.default_assignee_id || null,
                 created_by: userId,
+                source_type: 'routine',
             });
         }
 
