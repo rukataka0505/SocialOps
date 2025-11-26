@@ -28,21 +28,64 @@
 
 ## 4. Architecture & Roadmap (v8.1)
 
-### 📌 Phase 1: Foundation & Flexibility (Current)
+### 📌 Phase 1: Foundation & Flexibility ✅
 - **Schema Update:** `tasks.attributes` (JSONB) と `clients.spreadsheet_url` の実装。
 - **Soft Delete:** 全テーブルで `deleted_at` による論理削除を徹底。
 
-### 📌 Phase 2: Team & Identity
+### 📌 Phase 2: Team & Identity ✅
 - **Workspace:** データは `team_id` で完全に分離。
 - **Invitation:** Slackライクな「招待リンク」によるメンバー追加機能。
 
-### 📌 Phase 3: Automation & Assignment
+### 📌 Phase 3: Automation & Assignment ✅
 - **Client Staffing:** クライアントごとに「Aさん＝編集」のような役割定義。
 - **Auto-Assign:** タスク自動生成時、上記設定に基づいて担当者(`assigned_to`)を自動解決。
+- **Manual Task Creation:** ルーチン外の突発タスクを手動で追加可能。
 
-### 📌 Phase 4: The "Calendar"
-- **Dashboard Renewal:** トップページを「月次/週次カレンダー」に刷新。
-- **My Tasks Drawer:** カレンダーの脇に「今日やる自分のタスク」だけを表示。
+### 📌 Phase 4: "The Matrix" Dashboard 🚧
+**Core Concept:** 「いつ・誰が・何を」を1画面で支配する。
+
+#### UI Structure (3-Pane Layout)
+```
+┌─────────────────────────────────────────────────────────┐
+│ Header: Team Name | Period Filter | Menu               │
+├──────────────────────────────────┬──────────────────────┤
+│                                  │                      │
+│  📅 Calendar View (Main)         │  👥 Team Workload    │
+│                                  │     (Side Panel)     │
+│  - Monthly/Weekly Grid           │                      │
+│  - Task Cards on Dates           │  - Member List       │
+│  - Drag to Change Due Date       │  - Task Count        │
+│                                  │  - Drag to Assign    │
+│                                  │                      │
+└──────────────────────────────────┴──────────────────────┘
+```
+
+#### 1. Main Area: Calendar Board
+- **Primary View:** 常に表示される主役。
+- **Purpose:** 「いつ・何があるか」を俯瞰。
+- **Interaction:** ドラッグ&ドロップで **締切日(Due Date)** を変更。
+- **Library:** `react-big-calendar` または `FullCalendar`。
+
+#### 2. Side Panel: Team Workload
+- **Display:** 画面右側からスライドイン（PCではピン留め可）。
+- **Purpose:** 「誰が・どれだけ抱えているか」を表示。
+- **Structure:** メンバーごとの縦積みリスト（アコーディオン）。
+- **Interaction:** ドラッグ&ドロップで **担当者(Assignee)** を変更。
+- **Special Section:** 「未割り当て」タスクプール。
+
+#### 3. User Flow: Check → Assign → Adjust
+1. **Check:** カレンダーで全体の詰まり具合を確認。
+2. **Assign:** サイドパネルを開き、「未割り当て」タスクを空いているメンバーにドラッグしてパス。
+3. **Adjust:** 無理そうなスケジュールはカレンダー上でずらす。
+
+#### Implementation Plan
+- **Drag & Drop:** `dnd-kit` (cross-container dragging support)
+- **Components:**
+  - `CalendarBoard`: メインカレンダー表示
+  - `TeamPanel`: 右側のメンバー別タスクリスト
+  - `TaskCard`: 両方のビューで使われる共通部品
+- **State Management:** Server Actions + Optimistic Updates
+- **Real-time Sync:** Supabase Realtime (optional)
 
 ## 5. Current Development Status
 - [x] Authentication (Login/Signup)
@@ -54,4 +97,9 @@
 - [x] Team Invitation System
 - [x] Client Staffing & Role Assignment
 - [x] Auto-Assign Logic
-- [ ] Calendar UI Implementation
+- [x] Manual Task Creation
+- [ ] **"The Matrix" Dashboard UI**
+  - [ ] Calendar Board Component
+  - [ ] Team Workload Panel
+  - [ ] Drag & Drop Integration
+  - [ ] Period Filter (Week/Month)
