@@ -10,6 +10,8 @@ import Link from "next/link";
 import { logout } from "@/actions/auth";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 
+import { UserProfileDialog } from "@/components/dashboard/user-profile-dialog";
+
 export default async function DashboardPage() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -37,7 +39,9 @@ export default async function DashboardPage() {
     const end = endOfMonth(addMonths(now, 2));
     const tasks = await getTasks(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd'));
 
-    const userName = user?.user_metadata.full_name || user?.email || 'ゲスト';
+    // Prioritize user_metadata.name (or full_name) over email
+    // This fixes the issue where guests see their dummy email
+    const userName = user?.user_metadata.name || user?.user_metadata.full_name || user?.email || 'ゲスト';
 
     return (
         <div className="flex flex-col h-screen bg-white">
@@ -47,12 +51,20 @@ export default async function DashboardPage() {
                     <h1 className="text-xl font-bold text-gray-900">
                         SocialOps
                     </h1>
-                    <span className="text-sm text-gray-500">
-                        {userName}さん
-                    </span>
+                    <UserProfileDialog initialName={userName}>
+                        <span className="text-sm text-gray-500 hover:text-gray-800 cursor-pointer flex items-center gap-2" title="プロフィールを編集">
+                            {userName}さん
+                            <span className="text-xs text-gray-400">✎</span>
+                        </span>
+                    </UserProfileDialog>
                 </div>
                 <div className="flex items-center gap-3">
                     <TaskDialog members={members} />
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href="/settings/team">
+                            ⚙️ チーム設定
+                        </Link>
+                    </Button>
                     <Button variant="outline" size="sm" asChild>
                         <Link href="/clients">
                             クライアント管理
