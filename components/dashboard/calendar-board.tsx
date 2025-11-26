@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Calendar, dateFnsLocalizer, View, Views } from "react-big-calendar";
+import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { ja } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TaskDialog } from "@/components/tasks/task-dialog";
+import { updateTask } from "@/actions/tasks";
+import { useRouter } from "next/navigation";
 
 const locales = {
     "ja": ja,
@@ -20,6 +24,8 @@ const localizer = dateFnsLocalizer({
     locales,
 });
 
+const DnDCalendar = withDragAndDrop(Calendar);
+
 interface CalendarBoardProps {
     tasks: any[];
     members: any[];
@@ -30,20 +36,61 @@ export function CalendarBoard({ tasks, members }: CalendarBoardProps) {
     const [date, setDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [localEvents, setLocalEvents] = useState<any[]>([]);
+    const router = useRouter();
 
-    const events = tasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        start: new Date(task.due_date),
-        end: new Date(task.due_date),
-        allDay: true,
-        resource: task,
-    }));
+    // Initialize local events from props
+    useEffect(() => {
+        const events = tasks.map(task => ({
+            id: task.id,
+            title: task.title,
+            start: new Date(task.due_date),
+            end: new Date(task.due_date),
+            allDay: true,
+            resource: task,
+        }));
+        setLocalEvents(events);
+    }, [tasks]);
 
     const handleSelectEvent = useCallback((event: any) => {
         setSelectedTask(event.resource);
         setIsDialogOpen(true);
     }, []);
+
+    const onEventDrop = useCallback(
+        async ({ event, start, end, isAllDay }: any) => {
+            const updatedEvent = { ...event, start, end, allDay: isAllDay };
+
+            // Optimistic update
+            setLocalEvents((prev) => {
+                const filtered = prev.filter((e) => e.id !== event.id);
+                return [...filtered, updatedEvent];
+            });
+
+            try {
+                // Format date as YYYY-MM-DD for backend
+                // Note: start is a Date object.
+                const newDueDate = format(start, "yyyy-MM-dd");
+
+                const result = await updateTask(event.id, { due_date: newDueDate });
+
+                if (!result.success) {
+                    throw new Error("Failed to update task");
+                }
+
+                router.refresh();
+            } catch (error) {
+                console.error("DnD Update Error:", error);
+                // Revert on error
+                setLocalEvents((prev) => {
+                    const filtered = prev.filter((e) => e.id !== event.id);
+                    return [...filtered, event];
+                });
+                alert("タスクの移動に失敗しました。");
+            }
+        },
+        [router]
+    );
 
     const eventPropGetter = useCallback(
         (event: any, start: Date, end: Date, isSelected: boolean) => {
@@ -93,11 +140,11 @@ export function CalendarBoard({ tasks, members }: CalendarBoardProps) {
 
     return (
         <div className="h-full w-full bg-white p-4 rounded-lg shadow-sm border flex flex-col">
-            <Calendar
+            <DnDCalendar
                 localizer={localizer}
-                events={events}
-                startAccessor="start"
-                endAccessor="end"
+                events={localEvents}
+                startAccessor={(event: any) => event.start}
+                endAccessor={(event: any) => event.end}
                 style={{ height: "calc(100vh - 140px)" }}
                 views={['month', 'week', 'day']}
                 view={view}
@@ -106,6 +153,9 @@ export function CalendarBoard({ tasks, members }: CalendarBoardProps) {
                 onNavigate={setDate}
                 culture="ja"
                 onSelectEvent={handleSelectEvent}
+                onEventDrop={onEventDrop}
+                draggableAccessor={() => true}
+                resizable={false}
                 eventPropGetter={eventPropGetter}
                 components={components}
                 messages={{
