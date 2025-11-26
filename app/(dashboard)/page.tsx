@@ -86,7 +86,7 @@ export default async function DashboardPage() {
                 </main>
 
                 {/* Side Panel */}
-                <aside className="w-72 border-l bg-white overflow-y-auto hidden md:block">
+                <aside className="w-72 border-l bg-white overflow-y-auto">
                     <TeamPanel members={members} currentUserRole={currentUserRole} />
                 </aside>
             </div>

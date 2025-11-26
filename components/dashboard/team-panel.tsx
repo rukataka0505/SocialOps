@@ -1,3 +1,5 @@
+'use client';
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MemberDetail } from "@/components/dashboard/member-detail";
@@ -8,6 +10,10 @@ interface TeamPanelProps {
 }
 
 export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
+    console.log('[TeamPanel] Received members:', members);
+    console.log('[TeamPanel] Members length:', members?.length);
+    console.log('[TeamPanel] Members is array?', Array.isArray(members));
+
     return (
         <Card className="h-full border-l rounded-none border-y-0 border-r-0 shadow-none bg-slate-50/50">
             <CardHeader className="pb-2">
