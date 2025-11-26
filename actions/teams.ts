@@ -1,9 +1,26 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 import { addDays, isPast } from 'date-fns';
 import { redirect } from 'next/navigation';
+
+export async function updateTeamName(teamId: string, name: string) {
+    const supabase = await createClient();
+
+    const { error } = await (supabase
+        .from('teams') as any)
+        .update({ name })
+        .eq('id', teamId);
+
+    if (error) {
+        throw new Error('チーム名の更新に失敗しました');
+    }
+
+    revalidatePath('/settings/team');
+    return { success: true };
+}
 
 export async function createInvitation(teamId: string) {
     const supabase = await createClient();
@@ -159,7 +176,6 @@ export async function getTeamMembers(teamId: string) {
 
     return members as any[];
 }
-import { revalidatePath } from 'next/cache';
 
 export async function updateMemberRole(userId: string, role: string) {
     const supabase = await createClient();

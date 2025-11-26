@@ -18,7 +18,7 @@ interface Guest {
     };
 }
 
-export function GuestSection({ teamId }: { teamId: string }) {
+export function GuestSection({ teamId, className }: { teamId: string; className?: string }) {
     const [guests, setGuests] = useState<Guest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,7 +125,7 @@ export function GuestSection({ teamId }: { teamId: string }) {
     };
 
     return (
-        <div className="space-y-6">
+        <div className={`space-y-6 ${className || ''}`}>
             {/* Add Guest Form */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">

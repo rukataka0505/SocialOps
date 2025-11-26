@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
-import { getTeamMembers } from '@/actions/teams';
+import { getTeamMembers, getTeamSettings } from '@/actions/teams';
 import { GuestSection } from './guest-section';
+import { TeamProfileSection } from './team-profile-section';
 import { redirect } from 'next/navigation';
 
 export default async function TeamSettingsPage() {
@@ -17,11 +18,11 @@ export default async function TeamSettingsPage() {
     // For now, assuming single team per user or picking the first one
     const { data: membershipData } = await supabase
         .from('team_members')
-        .select('team_id, role')
+        .select('team_id, role, team:teams(name)')
         .eq('user_id', user.id)
         .single();
 
-    const membership = membershipData as { team_id: string; role: string } | null;
+    const membership = membershipData as { team_id: string; role: string; team: { name: string } } | null;
 
     if (!membership) {
         return <div>チームに所属していません。</div>;
@@ -34,6 +35,14 @@ export default async function TeamSettingsPage() {
             <h1 className="text-2xl font-bold mb-6">チーム設定</h1>
 
             <div className="grid gap-8">
+                {/* Team Profile */}
+                {(membership.role === 'owner' || membership.role === 'admin') && (
+                    <TeamProfileSection
+                        teamId={membership.team_id}
+                        initialName={membership.team?.name || ''}
+                    />
+                )}
+
                 {/* Member List */}
                 <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-xl font-semibold mb-4">メンバー一覧</h2>
