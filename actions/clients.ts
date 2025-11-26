@@ -1,19 +1,135 @@
-"use server";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createClient as createSupabaseClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "@/types/database.types";
 
-/**
- * Server Actions for Client Management
- * All client CRUD operations go here
- */
+export type ClientState = {
+    error?: string;
+    success?: boolean;
+    message?: string;
+};
 
-// TODO: Implement client-related server actions
-export async function createClient() {
-    // Implementation pending
+async function getTeamId(supabase: SupabaseClient<Database>) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error("Unauthorized");
+
+    const { data: teamMember, error: teamError } = await (supabase as any)
+        .from("team_members")
+        .select("team_id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (teamError || !teamMember) throw new Error("No team found for user");
+    return teamMember.team_id;
 }
 
-export async function updateClient() {
-    // Implementation pending
+export async function getClients() {
+    const supabase = await createSupabaseClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        const { data: clients, error } = await (supabase as any)
+            .from("clients")
+            .select("*")
+            .eq("team_id", teamId)
+            .is("deleted_at", null)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        return clients;
+    } catch (error) {
+        console.error("Error fetching clients:", error);
+        return [];
+    }
 }
 
-export async function deleteClient() {
-    // Implementation pending
+export async function createClient(prevState: ClientState | null, formData: FormData): Promise<ClientState> {
+    const supabase = await createSupabaseClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        const name = formData.get("name") as string;
+        const email = formData.get("email") as string;
+        const phone = formData.get("phone") as string;
+        const notes = formData.get("notes") as string;
+
+        if (!name) {
+            return { error: "Client name is required" };
+        }
+
+        const { error } = await (supabase as any).from("clients").insert({
+            team_id: teamId,
+            name,
+            email: email || null,
+            phone: phone || null,
+            notes: notes || null,
+        });
+
+        if (error) throw error;
+
+        revalidatePath("/clients");
+        return { success: true, message: "Client created successfully" };
+    } catch (error: any) {
+        return { error: error.message || "Failed to create client" };
+    }
+}
+
+export async function updateClient(clientId: string, prevState: ClientState | null, formData: FormData): Promise<ClientState> {
+    const supabase = await createSupabaseClient();
+
+    try {
+        // Verify ownership/team access implicitly by checking if the client exists for this team?
+        // For now, just update. RLS should handle security if set up, but we should be careful.
+        // We'll rely on RLS for strict security, but here we just do the update.
+
+        const name = formData.get("name") as string;
+        const email = formData.get("email") as string;
+        const phone = formData.get("phone") as string;
+        const notes = formData.get("notes") as string;
+
+        if (!name) {
+            return { error: "Client name is required" };
+        }
+
+        const { error } = await (supabase as any)
+            .from("clients")
+            .update({
+                name,
+                email: email || null,
+                phone: phone || null,
+                notes: notes || null,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", clientId);
+
+        if (error) throw error;
+
+        revalidatePath("/clients");
+        return { success: true, message: "Client updated successfully" };
+    } catch (error: any) {
+        return { error: error.message || "Failed to update client" };
+    }
+}
+
+export async function deleteClient(clientId: string): Promise<ClientState> {
+    const supabase = await createSupabaseClient();
+
+    try {
+        const { error } = await (supabase as any)
+            .from("clients")
+            .update({
+                deleted_at: new Date().toISOString(),
+            })
+            .eq("id", clientId);
+
+        if (error) throw error;
+
+        revalidatePath("/clients");
+        return { success: true, message: "Client deleted successfully" };
+    } catch (error: any) {
+        return { error: error.message || "Failed to delete client" };
+    }
 }

@@ -5,7 +5,9 @@ export async function middleware(request: NextRequest) {
     // Validate environment variables
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
+    console.log("--- ENV DEBUG ---");
+    console.log("URL:", supabaseUrl);
+    console.log("Key:", supabaseAnonKey);
     if (!supabaseUrl || !supabaseAnonKey ||
         supabaseUrl === 'your-project-url' ||
         supabaseAnonKey === 'your-anon-key') {
