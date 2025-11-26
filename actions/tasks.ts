@@ -273,17 +273,22 @@ export async function updateTask(taskId: string, data: any) {
 
             // Insert new assignments
             if (assignees.length > 0) {
-                const assignments = assignees.map((a: any) => ({
-                    task_id: taskId,
-                    user_id: a.userId,
-                    role: a.role
-                }));
+                // Filter out empty userIds
+                const validAssignees = assignees.filter((a: any) => a.userId && a.userId.trim() !== '');
 
-                const { error: assignError } = await (supabase as any)
-                    .from("task_assignments")
-                    .insert(assignments);
+                if (validAssignees.length > 0) {
+                    const assignments = validAssignees.map((a: any) => ({
+                        task_id: taskId,
+                        user_id: a.userId,
+                        role: a.role
+                    }));
 
-                if (assignError) throw assignError;
+                    const { error: assignError } = await (supabase as any)
+                        .from("task_assignments")
+                        .insert(assignments);
+
+                    if (assignError) throw assignError;
+                }
             }
         }
 
