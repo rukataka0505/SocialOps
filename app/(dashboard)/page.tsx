@@ -19,11 +19,13 @@ export default async function DashboardPage() {
     }
 
     // Get team_id and role
-    const { data: teamMember } = await (supabase as any)
+    const { data } = await supabase
         .from("team_members")
         .select("team_id, role")
         .eq("user_id", user.id)
         .single();
+
+    const teamMember = data as { team_id: string; role: 'owner' | 'admin' | 'member' } | null;
 
     const teamId = teamMember?.team_id;
     const currentUserRole = teamMember?.role;
