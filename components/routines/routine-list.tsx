@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Trash, Loader2, Clock, Calendar } from "lucide-react";
 import { deleteRoutine } from "@/actions/routines";
 import { RoutineDialog } from "./routine-dialog";
-import { StaffMember } from "@/actions/staffing";
+
+interface StaffMember {
+    user: {
+        id: string;
+        name: string | null;
+        email: string;
+    };
+    role_name: string;
+}
 
 type Routine = {
     id: string;

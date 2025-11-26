@@ -18,7 +18,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { createRoutine, RoutineState } from "@/actions/routines";
 import { Loader2, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { StaffMember } from "@/actions/staffing";
+
+interface StaffMember {
+    user: {
+        id: string;
+        name: string | null;
+        email: string;
+    };
+    role_name: string;
+}
 
 const DAYS = [
     { id: "Mon", label: "月" },
