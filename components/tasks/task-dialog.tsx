@@ -53,34 +53,40 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     const [clients, setClients] = useState<any[]>([]);
     const [customFields, setCustomFields] = useState<TaskField[]>([]);
     const [assignees, setAssignees] = useState<{ userId: string; role: string }[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const isEditMode = !!task;
 
     useEffect(() => {
         if (open) {
             setError(null);
+            setIsLoading(true);
             // Fetch clients when dialog opens
             startTransition(async () => {
-                const fetchedClients = await getClients();
-                setClients(fetchedClients);
+                try {
+                    const fetchedClients = await getClients();
+                    setClients(fetchedClients);
 
-                // Load custom fields from task attributes if editing
-                if (task && task.attributes && task.attributes._fields) {
-                    setCustomFields(task.attributes._fields);
-                } else {
-                    setCustomFields([]);
-                }
+                    // Load custom fields from task attributes if editing
+                    if (task && task.attributes && task.attributes._fields) {
+                        setCustomFields(task.attributes._fields);
+                    } else {
+                        setCustomFields([]);
+                    }
 
-                if (task && task.assignments) {
-                    setAssignees(task.assignments.map((a: any) => ({
-                        userId: a.user_id,
-                        role: a.role || ""
-                    })));
-                } else if (task && task.assigned_to) {
-                    // Backward compatibility
-                    setAssignees([{ userId: task.assigned_to, role: "" }]);
-                } else {
-                    setAssignees([]);
+                    if (task && task.assignments) {
+                        setAssignees(task.assignments.map((a: any) => ({
+                            userId: a.user_id,
+                            role: a.role || ""
+                        })));
+                    } else if (task && task.assigned_to) {
+                        // Backward compatibility
+                        setAssignees([{ userId: task.assigned_to, role: "" }]);
+                    } else {
+                        setAssignees([]);
+                    }
+                } finally {
+                    setIsLoading(false);
                 }
             });
         }
@@ -186,7 +192,6 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         });
     }
 
-
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             {trigger ? (
@@ -211,227 +216,233 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                    {error && (
-                        <Alert variant="destructive">
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    )}
-
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="title" className="text-right">
-                            タイトル <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                            id="title"
-                            name="title"
-                            defaultValue={task?.title}
-                            placeholder="例: 投稿確認"
-                            className="col-span-3"
-                            required
-                        />
+                {isLoading ? (
+                    <div className="flex justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                        {error && (
+                            <Alert variant="destructive">
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="client_id" className="text-right">
-                            クライアント
-                        </Label>
-                        <select
-                            id="client_id"
-                            name="client_id"
-                            defaultValue={task?.client_id || ""}
-                            className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <option value="">(選択なし)</option>
-                            {clients.map((client) => (
-                                <option key={client.id} value={client.id}>
-                                    {client.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="title" className="text-right">
+                                タイトル <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                                id="title"
+                                name="title"
+                                defaultValue={task?.title}
+                                placeholder="例: 投稿確認"
+                                className="col-span-3"
+                                required
+                            />
+                        </div>
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="status" className="text-right">
-                            ステータス
-                        </Label>
-                        <select
-                            id="status"
-                            name="status"
-                            defaultValue={task?.status || "in_progress"}
-                            className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <option value="in_progress">進行中</option>
-                            <option value="pending">確認待ち</option>
-                            <option value="completed">完了</option>
-                        </select>
-                    </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="client_id" className="text-right">
+                                クライアント
+                            </Label>
+                            <select
+                                id="client_id"
+                                name="client_id"
+                                defaultValue={task?.client_id || ""}
+                                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <option value="">(選択なし)</option>
+                                {clients.map((client) => (
+                                    <option key={client.id} value={client.id}>
+                                        {client.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="due_date" className="text-right">
-                            期限 <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                            id="due_date"
-                            name="due_date"
-                            type="date"
-                            defaultValue={task?.due_date?.split("T")[0]}
-                            className="col-span-3"
-                            required
-                        />
-                    </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="status" className="text-right">
+                                ステータス
+                            </Label>
+                            <select
+                                id="status"
+                                name="status"
+                                defaultValue={task?.status || "in_progress"}
+                                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <option value="in_progress">進行中</option>
+                                <option value="pending">確認待ち</option>
+                                <option value="completed">完了</option>
+                            </select>
+                        </div>
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="priority" className="text-right">
-                            優先度
-                        </Label>
-                        <select
-                            id="priority"
-                            name="priority"
-                            defaultValue={task?.priority || "medium"}
-                            className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <option value="urgent">緊急</option>
-                            <option value="high">高</option>
-                            <option value="medium">中</option>
-                            <option value="low">低</option>
-                        </select>
-                    </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="due_date" className="text-right">
+                                期限 <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                                id="due_date"
+                                name="due_date"
+                                type="date"
+                                defaultValue={task?.due_date?.split("T")[0]}
+                                className="col-span-3"
+                                required
+                            />
+                        </div>
 
-                    <div className="grid grid-cols-4 items-start gap-4">
-                        <Label className="text-right pt-2">
-                            担当者
-                        </Label>
-                        <div className="col-span-3 space-y-2">
-                            {assignees.map((assignee, index) => (
-                                <div key={index} className="flex gap-2 items-center">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="priority" className="text-right">
+                                優先度
+                            </Label>
+                            <select
+                                id="priority"
+                                name="priority"
+                                defaultValue={task?.priority || "medium"}
+                                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <option value="urgent">緊急</option>
+                                <option value="high">高</option>
+                                <option value="medium">中</option>
+                                <option value="low">低</option>
+                            </select>
+                        </div>
+
+                        <div className="grid grid-cols-4 items-start gap-4">
+                            <Label className="text-right pt-2">
+                                担当者
+                            </Label>
+                            <div className="col-span-3 space-y-2">
+                                {assignees.map((assignee, index) => (
+                                    <div key={index} className="flex gap-2 items-center">
+                                        <select
+                                            value={assignee.userId}
+                                            onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
+                                            className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <option value="">(担当者を選択)</option>
+                                            {members.map((member) => (
+                                                <option key={member.user.id} value={member.user.id}>
+                                                    {member.user.name || member.user.email}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <Input
+                                            value={assignee.role}
+                                            onChange={(e) => updateAssignee(index, 'role', e.target.value)}
+                                            placeholder="役割 (例: レビュアー)"
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => removeAssignee(index)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addAssignee}
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    担当者を追加
+                                </Button>
+                                <input type="hidden" name="assignees" value={JSON.stringify(assignees.filter(a => a.userId))} />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="management_url" className="text-right">
+                                管理URL
+                            </Label>
+                            <Input
+                                id="management_url"
+                                name="management_url"
+                                defaultValue={task?.attributes?.management_url || ""}
+                                placeholder="https://docs.google.com/..."
+                                className="col-span-3"
+                            />
+                        </div>
+
+                        {customFields.map((field) => (
+                            <div key={field.id} className="grid grid-cols-4 items-center gap-4 group">
+                                <div className="text-right flex items-center justify-end gap-2">
+                                    <TaskFieldEditor
+                                        field={field}
+                                        onSave={handleSaveField}
+                                        onDelete={handleDeleteField}
+                                        trigger={
+                                            <Label htmlFor={`custom_${field.id}`} className="cursor-pointer hover:underline hover:text-primary">
+                                                {field.label}
+                                            </Label>
+                                        }
+                                    />
+                                </div>
+                                {field.type === 'select' ? (
                                     <select
-                                        value={assignee.userId}
-                                        onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
-                                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        id={`custom_${field.id}`}
+                                        name={`custom_${field.label}`}
+                                        defaultValue={task?.attributes?.[field.label] || ""}
+                                        className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        <option value="">(担当者を選択)</option>
-                                        {members.map((member) => (
-                                            <option key={member.user.id} value={member.user.id}>
-                                                {member.user.name || member.user.email}
+                                        <option value="">(選択なし)</option>
+                                        {field.options?.map((opt) => (
+                                            <option key={opt} value={opt}>
+                                                {opt}
                                             </option>
                                         ))}
                                     </select>
+                                ) : (
                                     <Input
-                                        value={assignee.role}
-                                        onChange={(e) => updateAssignee(index, 'role', e.target.value)}
-                                        placeholder="役割 (例: レビュアー)"
-                                        className="flex-1"
+                                        id={`custom_${field.id}`}
+                                        name={`custom_${field.label}`}
+                                        type={field.type}
+                                        defaultValue={task?.attributes?.[field.label] || ""}
+                                        className="col-span-3"
                                     />
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => removeAssignee(index)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={addAssignee}
-                            >
-                                <Plus className="mr-2 h-4 w-4" />
-                                担当者を追加
-                            </Button>
-                            <input type="hidden" name="assignees" value={JSON.stringify(assignees.filter(a => a.userId))} />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="management_url" className="text-right">
-                            管理URL
-                        </Label>
-                        <Input
-                            id="management_url"
-                            name="management_url"
-                            defaultValue={task?.attributes?.management_url || ""}
-                            placeholder="https://docs.google.com/..."
-                            className="col-span-3"
-                        />
-                    </div>
-
-                    {customFields.map((field) => (
-                        <div key={field.id} className="grid grid-cols-4 items-center gap-4 group">
-                            <div className="text-right flex items-center justify-end gap-2">
-                                <TaskFieldEditor
-                                    field={field}
-                                    onSave={handleSaveField}
-                                    onDelete={handleDeleteField}
-                                    trigger={
-                                        <Label htmlFor={`custom_${field.id}`} className="cursor-pointer hover:underline hover:text-primary">
-                                            {field.label}
-                                        </Label>
-                                    }
-                                />
+                                )}
                             </div>
-                            {field.type === 'select' ? (
-                                <select
-                                    id={`custom_${field.id}`}
-                                    name={`custom_${field.label}`}
-                                    defaultValue={task?.attributes?.[field.label] || ""}
-                                    className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    <option value="">(選択なし)</option>
-                                    {field.options?.map((opt) => (
-                                        <option key={opt} value={opt}>
-                                            {opt}
-                                        </option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <Input
-                                    id={`custom_${field.id}`}
-                                    name={`custom_${field.label}`}
-                                    type={field.type}
-                                    defaultValue={task?.attributes?.[field.label] || ""}
-                                    className="col-span-3"
-                                />
-                            )}
+                        ))}
+
+                        <div className="flex justify-center py-2">
+                            <TaskFieldEditor
+                                onSave={handleSaveField}
+                                trigger={
+                                    <Button type="button" variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        項目を追加
+                                    </Button>
+                                }
+                            />
                         </div>
-                    ))}
 
-                    <div className="flex justify-center py-2">
-                        <TaskFieldEditor
-                            onSave={handleSaveField}
-                            trigger={
-                                <Button type="button" variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    項目を追加
+                        <DialogFooter className="flex justify-between sm:justify-between">
+                            {isEditMode ? (
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={handleDelete}
+                                    disabled={isPending}
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    削除
                                 </Button>
-                            }
-                        />
-                    </div>
-
-                    <DialogFooter className="flex justify-between sm:justify-between">
-                        {isEditMode ? (
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                onClick={handleDelete}
-                                disabled={isPending}
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                削除
+                            ) : (
+                                <div></div> // Spacer
+                            )}
+                            <Button type="submit" disabled={isPending}>
+                                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isEditMode ? "更新" : "作成"}
                             </Button>
-                        ) : (
-                            <div></div> // Spacer
-                        )}
-                        <Button type="submit" disabled={isPending}>
-                            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isEditMode ? "更新" : "作成"}
-                        </Button>
-                    </DialogFooter>
-                </form>
+                        </DialogFooter>
+                    </form>
+                )}
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }
