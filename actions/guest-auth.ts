@@ -5,9 +5,9 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 /**
- * Verify guest token and create session
+ * Get guest info without setting cookies (for initial page load)
  */
-export async function verifyAndLoginGuest(token: string) {
+export async function getGuestInfo(token: string) {
     const supabase = await createClient();
 
     // Query team_members to find the token
@@ -38,8 +38,51 @@ export async function verifyAndLoginGuest(token: string) {
         return { error: 'Invalid or expired token' };
     }
 
+    return {
+        success: true,
+        user: memberData.user,
+        teamName: memberData.team.name
+    };
+}
+
+/**
+ * Join as guest - sets cookie and redirects (called on form submit)
+ */
+export async function joinGuest(formData: FormData) {
+    const token = formData.get('token') as string;
+    const name = formData.get('name') as string;
+
+    if (!token || !name) {
+        throw new Error('Token and name are required');
+    }
+
+    const supabase = await createClient();
+
+    // Verify token is still valid
+    const { data: member, error } = await supabase
+        .from('team_members')
+        .select('id, user_id, team_id')
+        .eq('access_token', token)
+        .single();
+
+    const memberData = member as { id: string; user_id: string; team_id: string } | null;
+
+    if (error || !memberData) {
+        throw new Error('Invalid or expired token');
+    }
+
+    // Update user's name
+    const { error: updateError } = await supabase
+        .from('users')
+        .update({ name })
+        .eq('id', memberData.user_id);
+
+    if (updateError) {
+        console.error('Error updating user name:', updateError);
+        throw new Error('Failed to update profile');
+    }
+
     // Set HttpOnly cookie for guest session
-    // Valid for 30 days
     const cookieStore = await cookies();
     cookieStore.set('socialops-guest-token', token, {
         httpOnly: true,
@@ -50,11 +93,5 @@ export async function verifyAndLoginGuest(token: string) {
     });
 
     // Redirect to dashboard
-    // redirect('/');
-
-    return {
-        success: true,
-        user: memberData.user,
-        teamName: memberData.team.name
-    };
+    redirect('/');
 }
