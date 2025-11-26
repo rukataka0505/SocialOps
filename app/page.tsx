@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { logout } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link"; // ★追加
 
 export default async function Home() {
   const supabase = await createClient();
@@ -32,41 +33,48 @@ export default async function Home() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>クライアント管理</CardTitle>
-                <CardDescription>顧客情報の管理</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  クライアント情報を一元管理できます
-                </p>
-              </CardContent>
-            </Card>
+            {/* ★修正: Linkで包む & ホバー時の色変化を追加 */}
+            <Link href="/clients" className="block h-full">
+              <Card className="h-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+                <CardHeader>
+                  <CardTitle>クライアント管理</CardTitle>
+                  <CardDescription>顧客情報の管理</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    クライアント情報を一元管理できます
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card>
+            {/* タスク管理 (v7.0仕様ではダッシュボード自体がタスク一覧になる予定ですが、一旦プレースホルダー) */}
+            <Card className="h-full opacity-60">
               <CardHeader>
                 <CardTitle>タスク管理</CardTitle>
                 <CardDescription>業務タスクの追跡</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  日々のタスクを効率的に管理
+                  日々のタスクを効率的に管理 (開発中)
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>ルーティン</CardTitle>
-                <CardDescription>定期業務の自動化</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  繰り返しタスクを自動生成
-                </p>
-              </CardContent>
-            </Card>
+            {/* ルーティン (クライアント詳細の中に機能があるので、クライアント管理へ飛ばす) */}
+            <Link href="/clients" className="block h-full">
+              <Card className="h-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+                <CardHeader>
+                  <CardTitle>ルーティン</CardTitle>
+                  <CardDescription>定期業務の自動化</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    繰り返しタスクを自動生成
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
 
           <Card>
@@ -94,4 +102,3 @@ export default async function Home() {
     </div>
   );
 }
-

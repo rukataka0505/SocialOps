@@ -72,20 +72,11 @@ export function ClientActions({ client }: ClientActionsProps) {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Controlled Dialog for Edit */}
-            {isDialogOpen && (
-                <ClientDialog
-                    client={client}
-                    trigger={<span className="hidden" />} // Hidden trigger as we control open state via parent? 
-                // Actually ClientDialog controls its own state internally.
-                // We need to refactor ClientDialog to accept open/onOpenChange if we want to control it from outside
-                // OR we can just render it and let it be.
-                // But wait, ClientDialog uses a Trigger.
-                // If I want to open it from DropdownMenuItem, I should probably put the DialogTrigger inside the MenuItem?
-                // No, nesting DialogTrigger in DropdownMenuItem can be tricky with closing behavior.
-                // Best practice: State control.
-                />
-            )}
+            <ClientDialog
+                client={client}
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+            />
         </>
     );
 }
