@@ -136,6 +136,7 @@ export async function getTeamMembers(teamId: string) {
         .from('team_members')
         .select(`
       role,
+      created_at,
       user:users (
         id,
         email,
@@ -143,11 +144,22 @@ export async function getTeamMembers(teamId: string) {
         avatar_url
       )
     `)
-        .eq('team_id', teamId);
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: true });
 
     if (error) {
-        console.error('Error fetching team members:', error);
+        console.error('Error fetching team members:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+        });
         return [];
+    }
+
+    console.log('Members found:', members?.length || 0);
+    if (members && members.length > 0) {
+        console.log('Sample member data:', JSON.stringify(members[0], null, 2));
     }
 
     return members as any[];
