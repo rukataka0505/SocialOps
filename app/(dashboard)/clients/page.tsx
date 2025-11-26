@@ -20,9 +20,9 @@ export default async function ClientsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Clients</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">クライアント管理</h2>
                     <p className="text-muted-foreground">
-                        Manage your clients and their contact information.
+                        クライアントと連絡先情報を管理します。
                     </p>
                 </div>
                 <ClientDialog />
@@ -32,10 +32,10 @@ export default async function ClientsPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Contact</TableHead>
-                            <TableHead>Memo</TableHead>
-                            <TableHead>Created At</TableHead>
+                            <TableHead>名前</TableHead>
+                            <TableHead>連絡先</TableHead>
+                            <TableHead>メモ</TableHead>
+                            <TableHead>登録日</TableHead>
                             <TableHead className="w-[70px]"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -43,7 +43,7 @@ export default async function ClientsPage() {
                         {clients.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="h-24 text-center">
-                                    No clients found.
+                                    クライアントが見つかりません。
                                 </TableCell>
                             </TableRow>
                         ) : (

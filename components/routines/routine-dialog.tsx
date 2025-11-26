@@ -20,13 +20,13 @@ import { Loader2, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const DAYS = [
-    { id: "Mon", label: "Mon" },
-    { id: "Tue", label: "Tue" },
-    { id: "Wed", label: "Wed" },
-    { id: "Thu", label: "Thu" },
-    { id: "Fri", label: "Fri" },
-    { id: "Sat", label: "Sat" },
-    { id: "Sun", label: "Sun" },
+    { id: "Mon", label: "月" },
+    { id: "Tue", label: "火" },
+    { id: "Wed", label: "水" },
+    { id: "Thu", label: "木" },
+    { id: "Fri", label: "金" },
+    { id: "Sat", label: "土" },
+    { id: "Sun", label: "日" },
 ];
 
 interface RoutineDialogProps {
@@ -53,14 +53,14 @@ export function RoutineDialog({ clientId }: RoutineDialogProps) {
             <DialogTrigger asChild>
                 <Button>
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Routine
+                    ルーチン追加
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Add Routine</DialogTitle>
+                    <DialogTitle>ルーチン追加</DialogTitle>
                     <DialogDescription>
-                        Set up a new routine schedule for this client.
+                        新しいルーチンを設定します。
                     </DialogDescription>
                 </DialogHeader>
 
@@ -73,12 +73,12 @@ export function RoutineDialog({ clientId }: RoutineDialogProps) {
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="title" className="text-right">
-                            Name <span className="text-red-500">*</span>
+                            ルーチン名 <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="title"
                             name="title"
-                            placeholder="e.g. Morning Check"
+                            placeholder="例: 朝の挨拶"
                             className="col-span-3"
                             required
                         />
@@ -86,7 +86,7 @@ export function RoutineDialog({ clientId }: RoutineDialogProps) {
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="time" className="text-right">
-                            Time <span className="text-red-500">*</span>
+                            投稿時間 <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="time"
@@ -99,7 +99,7 @@ export function RoutineDialog({ clientId }: RoutineDialogProps) {
 
                     <div className="grid grid-cols-4 gap-4">
                         <Label className="text-right pt-2">
-                            Days <span className="text-red-500">*</span>
+                            曜日 <span className="text-red-500">*</span>
                         </Label>
                         <div className="col-span-3 grid grid-cols-3 gap-2">
                             {DAYS.map((day) => (
@@ -116,7 +116,7 @@ export function RoutineDialog({ clientId }: RoutineDialogProps) {
                     <DialogFooter>
                         <Button type="submit" disabled={isPending}>
                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create Routine
+                            ルーチンを作成
                         </Button>
                     </DialogFooter>
                 </form>

@@ -23,7 +23,7 @@ export function RoutineList({ clientId, routines }: RoutineListProps) {
     const [isPending, startTransition] = useTransition();
 
     const handleDelete = (routineId: string) => {
-        if (confirm("Are you sure you want to delete this routine?")) {
+        if (confirm("このルーチンを削除してもよろしいですか？")) {
             startTransition(async () => {
                 await deleteRoutine(routineId, clientId);
             });
@@ -33,13 +33,13 @@ export function RoutineList({ clientId, routines }: RoutineListProps) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Routines</h3>
+                <h3 className="text-lg font-medium">ルーチン設定</h3>
                 <RoutineDialog clientId={clientId} />
             </div>
 
             {routines.length === 0 ? (
                 <div className="text-sm text-muted-foreground text-center py-8 border rounded-md border-dashed">
-                    No routines set up yet.
+                    ルーチンが設定されていません。
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -67,14 +67,14 @@ export function RoutineList({ clientId, routines }: RoutineListProps) {
                                 <div className="flex flex-col space-y-2 text-sm text-muted-foreground">
                                     <div className="flex items-center">
                                         <Clock className="mr-2 h-4 w-4" />
-                                        {routine.frequency?.time || "No time"}
+                                        {routine.frequency?.time || "時間未設定"}
                                     </div>
                                     <div className="flex items-center">
                                         <Calendar className="mr-2 h-4 w-4" />
                                         <div className="flex flex-wrap gap-1">
                                             {Array.isArray(routine.frequency?.days)
                                                 ? routine.frequency.days.join(", ")
-                                                : "No days"}
+                                                : "曜日未設定"}
                                         </div>
                                     </div>
                                 </div>

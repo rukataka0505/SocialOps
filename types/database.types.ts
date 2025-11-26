@@ -95,6 +95,7 @@ export interface Database {
                     phone: string | null;
                     company: string | null;
                     notes: string | null;
+                    spreadsheet_url: string | null;
                     created_at: string;
                     updated_at: string;
                     deleted_at: string | null;
@@ -107,6 +108,7 @@ export interface Database {
                     phone?: string | null;
                     company?: string | null;
                     notes?: string | null;
+                    spreadsheet_url?: string | null;
                     created_at?: string;
                     updated_at?: string;
                     deleted_at?: string | null;
@@ -119,6 +121,7 @@ export interface Database {
                     phone?: string | null;
                     company?: string | null;
                     notes?: string | null;
+                    spreadsheet_url?: string | null;
                     created_at?: string;
                     updated_at?: string;
                     deleted_at?: string | null;
@@ -171,6 +174,7 @@ export interface Database {
                     routine_id: string | null;
                     title: string;
                     description: string | null;
+                    attributes: Json;
                     status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
                     priority: 'low' | 'medium' | 'high' | 'urgent';
                     due_date: string | null;
@@ -188,6 +192,7 @@ export interface Database {
                     routine_id?: string | null;
                     title: string;
                     description?: string | null;
+                    attributes?: Json;
                     status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
                     priority?: 'low' | 'medium' | 'high' | 'urgent';
                     due_date?: string | null;
@@ -205,6 +210,7 @@ export interface Database {
                     routine_id?: string | null;
                     title?: string;
                     description?: string | null;
+                    attributes?: Json;
                     status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
                     priority?: 'low' | 'medium' | 'high' | 'urgent';
                     due_date?: string | null;

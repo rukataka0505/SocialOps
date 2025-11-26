@@ -25,6 +25,7 @@ type Client = {
     email: string | null;
     phone: string | null;
     notes: string | null;
+    spreadsheet_url: string | null;
 };
 
 interface ClientDialogProps {
@@ -75,17 +76,17 @@ export function ClientDialog({
                 {trigger || (
                     <Button>
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Client
+                        クライアント追加
                     </Button>
                 )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>{client ? "Edit Client" : "New Client"}</DialogTitle>
+                    <DialogTitle>{client ? "クライアント編集" : "新規クライアント登録"}</DialogTitle>
                     <DialogDescription>
                         {client
-                            ? "Update the client details below."
-                            : "Enter the details for the new client."}
+                            ? "以下のクライアント情報を更新してください。"
+                            : "新規クライアントの情報を入力してください。"}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -98,7 +99,7 @@ export function ClientDialog({
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="name" className="text-right">
-                            Name <span className="text-red-500">*</span>
+                            名前 <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="name"
@@ -111,7 +112,7 @@ export function ClientDialog({
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="email" className="text-right">
-                            Email
+                            メールアドレス
                         </Label>
                         <Input
                             id="email"
@@ -124,7 +125,7 @@ export function ClientDialog({
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="phone" className="text-right">
-                            Phone
+                            電話番号
                         </Label>
                         <Input
                             id="phone"
@@ -136,8 +137,22 @@ export function ClientDialog({
                     </div>
 
                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="spreadsheet_url" className="text-right">
+                            管理シートURL
+                        </Label>
+                        <Input
+                            id="spreadsheet_url"
+                            name="spreadsheet_url"
+                            type="url"
+                            placeholder="https://docs.google.com/spreadsheets/d/..."
+                            defaultValue={client?.spreadsheet_url || ""}
+                            className="col-span-3"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="notes" className="text-right">
-                            Memo
+                            メモ
                         </Label>
                         <Textarea
                             id="notes"
@@ -150,7 +165,7 @@ export function ClientDialog({
                     <DialogFooter>
                         <Button type="submit" disabled={isPending}>
                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {client ? "Save Changes" : "Create Client"}
+                            {client ? "変更を保存" : "クライアントを作成"}
                         </Button>
                     </DialogFooter>
                 </form>

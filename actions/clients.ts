@@ -55,6 +55,7 @@ export async function createClient(prevState: ClientState | null, formData: Form
         const name = formData.get("name") as string;
         const email = formData.get("email") as string;
         const phone = formData.get("phone") as string;
+        const spreadsheet_url = formData.get("spreadsheet_url") as string;
         const notes = formData.get("notes") as string;
 
         if (!name) {
@@ -66,6 +67,7 @@ export async function createClient(prevState: ClientState | null, formData: Form
             name,
             email: email || null,
             phone: phone || null,
+            spreadsheet_url: spreadsheet_url || null,
             notes: notes || null,
         });
 
@@ -89,6 +91,7 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
         const name = formData.get("name") as string;
         const email = formData.get("email") as string;
         const phone = formData.get("phone") as string;
+        const spreadsheet_url = formData.get("spreadsheet_url") as string;
         const notes = formData.get("notes") as string;
 
         if (!name) {
@@ -101,6 +104,7 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
                 name,
                 email: email || null,
                 phone: phone || null,
+                spreadsheet_url: spreadsheet_url || null,
                 notes: notes || null,
                 updated_at: new Date().toISOString(),
             })
