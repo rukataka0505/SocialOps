@@ -129,7 +129,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
     const isAuthRoute = request.nextUrl.pathname.startsWith('/login');
     const isProtectedRoute = request.nextUrl.pathname === '/dashboard' ||
         request.nextUrl.pathname.startsWith('/clients') ||
-        request.nextUrl.pathname.startsWith('/settings');
+        request.nextUrl.pathname.startsWith('/settings') ||
+        request.nextUrl.pathname.startsWith('/onboarding');
 
     // Redirect authenticated users away from login page
     // OR if bypass is active (treat as authenticated)
