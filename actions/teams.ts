@@ -72,6 +72,10 @@ export async function getInvitation(token: string) {
         return null;
     }
 
+    if (inv.max_uses && (inv.used_count || 0) >= inv.max_uses) {
+        return null;
+    }
+
     return inv;
 }
 

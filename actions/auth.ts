@@ -18,6 +18,7 @@ export async function login(
 ): Promise<AuthState> {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
+    const next = formData.get("next") as string;
 
     if (!email || !password) {
         return { error: "メールアドレスとパスワードを入力してください" };
@@ -35,7 +36,7 @@ export async function login(
     }
 
     revalidatePath("/", "layout");
-    redirect("/");
+    redirect(next || "/");
 }
 
 /**
@@ -47,6 +48,7 @@ export async function signup(
 ): Promise<AuthState> {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
+    const next = formData.get("next") as string;
 
     if (!email || !password) {
         return { error: "メールアドレスとパスワードを入力してください" };
@@ -74,7 +76,7 @@ export async function signup(
     }
 
     revalidatePath("/", "layout");
-    redirect("/");
+    redirect(next || "/");
 }
 
 /**
