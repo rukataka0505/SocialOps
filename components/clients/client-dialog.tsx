@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient, updateClient, ClientState } from "@/actions/clients";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Pencil } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type Client = {
@@ -74,9 +74,9 @@ export function ClientDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 {trigger || (
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        クライアント追加
+                    <Button variant={client ? "ghost" : "default"} size={client ? "sm" : "default"}>
+                        {client ? <Pencil className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
+                        {client ? "編集" : "クライアント追加"}
                     </Button>
                 )}
             </DialogTrigger>

@@ -17,9 +17,12 @@ export default async function ClientsPage() {
     const clients = await getClients();
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-4xl mx-auto p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <div>
+                    <Link href="/" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-2">
+                        ← ダッシュボードに戻る
+                    </Link>
                     <h2 className="text-2xl font-bold tracking-tight">クライアント管理</h2>
                     <p className="text-muted-foreground">
                         クライアントと連絡先情報を管理します。

@@ -356,18 +356,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="management_url" className="text-right">
-                                管理URL
-                            </Label>
-                            <Input
-                                id="management_url"
-                                name="management_url"
-                                defaultValue={task?.attributes?.management_url || ""}
-                                placeholder="https://docs.google.com/..."
-                                className="col-span-3"
-                            />
-                        </div>
+
 
                         {customFields.map((field) => (
                             <div key={field.id} className="grid grid-cols-4 items-center gap-4 group">

@@ -35,7 +35,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
     const teamMembers = await getTeamMembers(client.team_id);
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-4xl mx-auto p-6 space-y-6">
             <div className="flex items-center space-x-4">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/clients">

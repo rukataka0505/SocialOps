@@ -38,6 +38,11 @@ export async function getTodayTasks() {
             .from("tasks")
             .select(`
                 *,
+                client:clients(
+                    id,
+                    name,
+                    spreadsheet_url
+                ),
                 assignments:task_assignments(
                     user_id,
                     role,
@@ -214,6 +219,11 @@ export async function getTasks(start: string, end: string) {
             .from("tasks")
             .select(`
                 *,
+                client:clients(
+                    id,
+                    name,
+                    spreadsheet_url
+                ),
                 assignments:task_assignments(
                     user_id,
                     role,

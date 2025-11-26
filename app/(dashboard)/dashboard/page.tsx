@@ -24,14 +24,15 @@ export default async function DashboardPage() {
     // Get team_id and role
     const { data } = await supabase
         .from("team_members")
-        .select("team_id, role")
+        .select("team_id, role, team:teams(name)")
         .eq("user_id", user.id)
         .single();
 
-    const teamMember = data as { team_id: string; role: 'owner' | 'admin' | 'member' } | null;
+    const teamMember = data as { team_id: string; role: 'owner' | 'admin' | 'member'; team: { name: string } } | null;
 
     const teamId = teamMember?.team_id;
     const currentUserRole = teamMember?.role;
+    const teamName = teamMember?.team?.name || 'Team';
     const members = teamId ? await getTeamMembers(teamId) : [];
 
     // Fetch tasks for the current month (for Calendar)
@@ -62,6 +63,10 @@ export default async function DashboardPage() {
                             <span className="text-xs text-slate-400">▼</span>
                         </span>
                     </UserProfileDialog>
+                    <div className="h-6 w-px bg-slate-200" />
+                    <span className="text-sm font-medium text-slate-600">
+                        {teamName}
+                    </span>
                 </div>
                 <div className="flex items-center gap-3">
                     <TaskDialog members={members} />
