@@ -19,8 +19,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 
 import { getClients } from "@/actions/clients";
-import { getTeamSettings } from "@/actions/teams";
-import { TaskFieldManager, TaskField } from "./task-field-manager";
+import { getTeamSettings, updateTeamSettings } from "@/actions/teams";
+import { TaskFieldEditor } from "./task-field-editor";
+import { TaskField } from "./task-field-manager";
 
 interface TeamMember {
     role: string;
@@ -75,17 +76,11 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         setError(null);
 
         const formData = new FormData(event.currentTarget);
-        // No need to manually construct data object here as we pass formData directly to actions
-        // But for updateTask we need an object.
 
         startTransition(async () => {
             try {
                 let result;
                 if (isEditMode) {
-                    // For update, we need to construct the object manually because updateTask expects an object
-                    // This is a bit inconsistent with createTask but let's follow existing pattern or adapt.
-                    // The existing updateTask takes (taskId, data object).
-                    // We need to extract everything from formData.
                     const data: any = {};
                     formData.forEach((value, key) => {
                         if (key.startsWith('custom_')) {
@@ -99,16 +94,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         }
                     });
 
-                    // Merge existing attributes if any? 
-                    // For now, let's assume we are sending what we want to update.
-                    // Ideally updateTask should handle formData too, but let's stick to object for now.
-
                     result = await updateTask(task.id, data);
                 } else {
-                    // createTask expects (prevState, formData) signature if used with useActionState,
-                    // but here we call it directly. We need to adapt or call it as a function.
-                    // The current createTask implementation takes (prevState, formData).
-                    // We can pass null as prevState.
                     result = await createTask(null, formData);
                 }
 
@@ -138,6 +125,28 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         });
     }
 
+    const handleSaveField = async (newField: TaskField) => {
+        // Check if updating existing or adding new
+        const exists = customFields.find(f => f.id === newField.id);
+        let updatedFields;
+        if (exists) {
+            updatedFields = customFields.map(f => f.id === newField.id ? newField : f);
+        } else {
+            updatedFields = [...customFields, newField];
+        }
+
+        setCustomFields(updatedFields);
+        await updateTeamSettings({ task_fields: updatedFields });
+        router.refresh();
+    };
+
+    const handleDeleteField = async (id: string) => {
+        const updatedFields = customFields.filter(f => f.id !== id);
+        setCustomFields(updatedFields);
+        await updateTeamSettings({ task_fields: updatedFields });
+        router.refresh();
+    };
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             {trigger ? (
@@ -156,7 +165,6 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                 <DialogHeader>
                     <div className="flex items-center justify-between">
                         <DialogTitle>{isEditMode ? "タスク編集" : "タスク追加"}</DialogTitle>
-                        <TaskFieldManager initialFields={customFields} />
                     </div>
                     <DialogDescription>
                         {isEditMode ? "タスクの内容を編集します。" : "新しいタスクを手動で追加します。"}
@@ -267,14 +275,23 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     </div>
 
                     {customFields.map((field) => (
-                        <div key={field.id} className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor={`custom_${field.id}`} className="text-right">
-                                {field.label}
-                            </Label>
+                        <div key={field.id} className="grid grid-cols-4 items-center gap-4 group">
+                            <div className="text-right flex items-center justify-end gap-2">
+                                <TaskFieldEditor
+                                    field={field}
+                                    onSave={handleSaveField}
+                                    onDelete={handleDeleteField}
+                                    trigger={
+                                        <Label htmlFor={`custom_${field.id}`} className="cursor-pointer hover:underline hover:text-primary">
+                                            {field.label}
+                                        </Label>
+                                    }
+                                />
+                            </div>
                             {field.type === 'select' ? (
                                 <select
                                     id={`custom_${field.id}`}
-                                    name={`custom_${field.label}`} // Use label as key for readability in attributes, or ID? Plan said ID but label is friendlier. Let's use label for now as ID is random.
+                                    name={`custom_${field.label}`}
                                     defaultValue={task?.attributes?.[field.label] || ""}
                                     className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
@@ -296,6 +313,18 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             )}
                         </div>
                     ))}
+
+                    <div className="flex justify-center py-2">
+                        <TaskFieldEditor
+                            onSave={handleSaveField}
+                            trigger={
+                                <Button type="button" variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    項目を追加
+                                </Button>
+                            }
+                        />
+                    </div>
 
                     <DialogFooter className="flex justify-between sm:justify-between">
                         {isEditMode ? (
