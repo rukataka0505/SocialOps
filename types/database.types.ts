@@ -326,6 +326,41 @@ export interface Database {
                     created_at?: string;
                 };
             };
+            team_invitations: {
+                Row: {
+                    id: string;
+                    team_id: string;
+                    token: string;
+                    role: string | null;
+                    expires_at: string;
+                    max_uses: number | null;
+                    used_count: number | null;
+                    created_by: string | null;
+                    created_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    team_id: string;
+                    token: string;
+                    role?: string | null;
+                    expires_at: string;
+                    max_uses?: number | null;
+                    used_count?: number | null;
+                    created_by?: string | null;
+                    created_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    team_id?: string;
+                    token?: string;
+                    role?: string | null;
+                    expires_at?: string;
+                    max_uses?: number | null;
+                    used_count?: number | null;
+                    created_by?: string | null;
+                    created_at?: string | null;
+                };
+            };
         };
         Views: {
             [_ in never]: never;

@@ -20,6 +20,7 @@ type Client = {
     email: string | null;
     phone: string | null;
     notes: string | null;
+    spreadsheet_url: string | null;
 };
 
 interface ClientActionsProps {

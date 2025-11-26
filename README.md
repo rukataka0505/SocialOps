@@ -51,6 +51,6 @@
 - [x] Routine Management (JSON Frequency)
 - [x] Task Generation Engine v1
 - [x] **Schema Flexibility (JSONB/Spreadsheet URL)**
-- [ ] Team Invitation System
+- [x] Team Invitation System
 - [ ] Role Assignment Logic
 - [ ] Calendar UI Implementation
