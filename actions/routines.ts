@@ -5,6 +5,8 @@ import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database.types";
+import { generateTasksForRoutine } from "@/lib/logic/generator";
+import { nextSunday } from "date-fns";
 
 export type RoutineState = {
     error?: string;
@@ -23,7 +25,7 @@ async function getTeamId(supabase: SupabaseClient<Database>) {
         .single();
 
     if (teamError || !teamMember) throw new Error("No team found for user");
-    return teamMember.team_id;
+    return { teamId: teamMember.team_id, userId: user.id };
 }
 
 export async function getRoutines(clientId: string) {
@@ -49,7 +51,7 @@ export async function createRoutine(clientId: string, prevState: RoutineState | 
     const supabase = await createSupabaseClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const { teamId, userId } = await getTeamId(supabase);
 
         const title = formData.get("title") as string;
         const time = formData.get("time") as string;
@@ -64,15 +66,35 @@ export async function createRoutine(clientId: string, prevState: RoutineState | 
             time: time
         };
 
-        const { error } = await (supabase as any).from("routines").insert({
-            team_id: teamId,
-            client_id: clientId,
-            title,
-            frequency,
-            start_date: new Date().toISOString(), // Default to now
-        });
+        const { data: routine, error } = await (supabase as any)
+            .from("routines")
+            .insert({
+                team_id: teamId,
+                client_id: clientId,
+                title,
+                frequency,
+                start_date: new Date().toISOString(), // Default to now
+            })
+            .select()
+            .single();
 
         if (error) throw error;
+
+        // Generate tasks for the new routine
+        const rangeStart = new Date();
+        const rangeEnd = nextSunday(rangeStart);
+        const tasks = generateTasksForRoutine(routine, rangeStart, rangeEnd, userId);
+
+        if (tasks.length > 0) {
+            const { error: tasksError } = await (supabase as any)
+                .from("tasks")
+                .insert(tasks, { ignoreDuplicates: true });
+
+            if (tasksError) {
+                console.error("Error generating tasks:", tasksError);
+                // We don't throw here to avoid failing the routine creation if task generation fails
+            }
+        }
 
         revalidatePath(`/clients/${clientId}`);
         return { success: true, message: "Routine created successfully" };
