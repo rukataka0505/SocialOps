@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { getTeamMembers } from '@/actions/teams';
-import { InviteSection } from './invite-section';
 import { GuestSection } from './guest-section';
 import { redirect } from 'next/navigation';
 
@@ -79,17 +78,6 @@ export default async function TeamSettingsPage() {
                     </div>
                 </div>
 
-                {/* Invite Section */}
-                {(membership.role === 'owner' || membership.role === 'admin') && (
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <h2 className="text-xl font-semibold mb-4">メンバー招待</h2>
-                        <p className="text-gray-600 mb-4">
-                            招待リンクを共有して、新しいメンバーをチームに追加します。
-                            リンクの有効期限は7日間です。
-                        </p>
-                        <InviteSection teamId={membership.team_id} />
-                    </div>
-                )}
 
                 {/* Guest Section */}
                 {(membership.role === 'owner' || membership.role === 'admin') && (
