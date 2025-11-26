@@ -52,5 +52,5 @@
 - [x] Task Generation Engine v1
 - [x] **Schema Flexibility (JSONB/Spreadsheet URL)**
 - [x] Team Invitation System
-- [ ] Role Assignment Logic
+- [x] Client Staffing & Role Assignment
 - [ ] Calendar UI Implementation

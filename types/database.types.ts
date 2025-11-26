@@ -361,6 +361,29 @@ export interface Database {
                     created_at?: string | null;
                 };
             };
+            client_staff: {
+                Row: {
+                    id: string;
+                    client_id: string;
+                    user_id: string;
+                    role_name: string;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    client_id: string;
+                    user_id: string;
+                    role_name: string;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    client_id?: string;
+                    user_id?: string;
+                    role_name?: string;
+                    created_at?: string;
+                };
+            };
         };
         Views: {
             [_ in never]: never;

@@ -1,9 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { getRoutines } from "@/actions/routines";
+import { getStaff } from "@/actions/staffing";
+import { getTeamMembers } from "@/actions/teams";
 import { RoutineList } from "@/components/routines/routine-list";
+import { StaffSection } from "@/components/clients/staff-section";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -32,6 +34,8 @@ export default async function ClientDetailPage({ params }: PageProps) {
     }
 
     const routines = await getRoutines(id);
+    const staff = await getStaff(id);
+    const teamMembers = await getTeamMembers(client.team_id);
 
     return (
         <div className="space-y-6">
@@ -49,9 +53,9 @@ export default async function ClientDetailPage({ params }: PageProps) {
                     </p>
                 </div>
                 {client.spreadsheet_url && (
-                    <Button className="ml-auto" variant="outline" asChild>
+                    <Button className="ml-auto bg-green-600 hover:bg-green-700 text-white" asChild>
                         <a href={client.spreadsheet_url} target="_blank" rel="noopener noreferrer">
-                            <span className="mr-2">📑</span>
+                            <FileSpreadsheet className="mr-2 h-4 w-4" />
                             管理シートを開く
                             <ExternalLink className="ml-2 h-4 w-4" />
                         </a>
@@ -81,7 +85,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
                 </div>
 
                 <div>
-                    {/* Placeholder for future stats or other info */}
+                    <StaffSection clientId={client.id} staff={staff} teamMembers={teamMembers} />
                 </div>
             </div>
 
