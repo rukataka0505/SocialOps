@@ -72,8 +72,8 @@ export async function joinGuest(formData: FormData) {
     }
 
     // Update user's name
-    const { error: updateError } = await supabase
-        .from('users')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase.from('users') as any)
         .update({ name })
         .eq('id', memberData.user_id);
 
