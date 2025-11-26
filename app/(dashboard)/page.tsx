@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { logout } from "@/actions/auth";
 import { redirect } from "next/navigation";
+import { getTeamMembers } from "@/actions/teams";
+import { TaskDialog } from "@/components/tasks/task-dialog";
+
 
 export default async function DashboardPage() {
     const tasks = await getTodayTasks();
@@ -18,6 +21,16 @@ export default async function DashboardPage() {
     if (!user) {
         redirect('/login');
     }
+
+    // Get team_id for fetching members
+    const { data: teamMember } = await (supabase as any)
+        .from("team_members")
+        .select("team_id")
+        .eq("user_id", user.id)
+        .single();
+
+    const teamId = teamMember?.team_id;
+    const members = teamId ? await getTeamMembers(teamId) : [];
 
     const userName = user?.user_metadata.full_name || user?.email || 'ゲスト';
 
@@ -30,6 +43,7 @@ export default async function DashboardPage() {
 
     // Stats
     const totalTasks = tasks.length;
+
 
     return (
         <div className="max-w-4xl mx-auto py-12 px-6">
@@ -68,6 +82,7 @@ export default async function DashboardPage() {
                             残り {totalTasks} 件
                         </span>
                     </h2>
+                    <TaskDialog members={members} />
                 </div>
 
                 {tasks.length > 0 ? (

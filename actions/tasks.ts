@@ -94,9 +94,49 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
     }
 }
 
-// Placeholder for other actions
-export async function createTask() {
-    // Implementation pending
+// Create a manual task (not from routine)
+export async function createTask(prevState: any, formData: FormData) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) throw new Error("Unauthorized");
+
+        // Extract and validate form data
+        const title = formData.get("title") as string;
+        const due_date = formData.get("due_date") as string;
+        const priority = (formData.get("priority") as string) || "medium";
+        const assigned_to = formData.get("assigned_to") as string;
+
+        if (!title || !due_date) {
+            return { success: false, error: "タイトルと期限は必須です" };
+        }
+
+        // Insert task with routine_id as NULL
+        const { error } = await (supabase as any)
+            .from("tasks")
+            .insert({
+                team_id: teamId,
+                title,
+                due_date,
+                priority,
+                assigned_to: assigned_to || null,
+                routine_id: null,
+                status: "pending",
+                created_by: user.id,
+            });
+
+        if (error) throw error;
+
+        revalidatePath("/");
+        return { success: true };
+    } catch (error) {
+        console.error("Error creating task:", error);
+        return { success: false, error: "タスクの作成に失敗しました" };
+    }
 }
 
 export async function updateTask() {
