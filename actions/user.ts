@@ -20,8 +20,8 @@ export async function updateProfile(formData: FormData) {
     }
 
     // Update public.users table
-    const { error } = await supabase
-        .from('users')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('users') as any)
         .update({ name })
         .eq('id', user.id);
 
