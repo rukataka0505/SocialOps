@@ -29,9 +29,10 @@ const DnDCalendar = withDragAndDrop(Calendar);
 interface CalendarBoardProps {
     tasks: any[];
     members: any[];
+    currentUserId: string;
 }
 
-export function CalendarBoard({ tasks, members }: CalendarBoardProps) {
+export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardProps) {
     const [view, setView] = useState<View>(Views.MONTH);
     const [date, setDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<any>(null);
@@ -94,29 +95,41 @@ export function CalendarBoard({ tasks, members }: CalendarBoardProps) {
 
     const eventPropGetter = useCallback(
         (event: any, start: Date, end: Date, isSelected: boolean) => {
-            const priorityColors: Record<string, string> = {
-                urgent: "#ef4444", // red-500
-                high: "#f97316",   // orange-500
-                medium: "#3b82f6", // blue-500
-                low: "#10b981",    // emerald-500
+            const statusColors: Record<string, string> = {
+                in_progress: "#3b82f6", // blue-500
+                pending: "#f97316",     // orange-500
+                completed: "#6b7280",   // gray-500
+                cancelled: "#9ca3af",   // gray-400
             };
 
-            const priority = event.resource.priority || "medium";
-            const backgroundColor = priorityColors[priority];
+            const status = event.resource.status || "in_progress";
+            const backgroundColor = statusColors[status] || "#3b82f6";
+
+            // Check if task is assigned to current user
+            const assignments = event.resource.assignments || [];
+            const isAssignedToMe = assignments.some((a: any) => a.user_id === currentUserId) || event.resource.assigned_to === currentUserId;
+
+            const style: React.CSSProperties = {
+                backgroundColor,
+                borderRadius: "4px",
+                opacity: 0.9,
+                color: "white",
+                border: "0px",
+                display: "block",
+                fontSize: "0.8rem",
+            };
+
+            if (isAssignedToMe) {
+                style.border = "2px solid #1e40af"; // blue-800
+                style.boxShadow = "0 0 0 1px white, 0 0 4px rgba(0,0,0,0.3)";
+                style.fontWeight = "bold";
+            }
 
             return {
-                style: {
-                    backgroundColor,
-                    borderRadius: "4px",
-                    opacity: 0.9,
-                    color: "white",
-                    border: "0px",
-                    display: "block",
-                    fontSize: "0.8rem",
-                },
+                style,
             };
         },
-        []
+        [currentUserId]
     );
 
     const components = {

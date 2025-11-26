@@ -239,6 +239,22 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     </div>
 
                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="status" className="text-right">
+                            ステータス
+                        </Label>
+                        <select
+                            id="status"
+                            name="status"
+                            defaultValue={task?.status || "in_progress"}
+                            className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <option value="in_progress">進行中</option>
+                            <option value="pending">確認待ち</option>
+                            <option value="completed">完了</option>
+                        </select>
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="due_date" className="text-right">
                             期限 <span className="text-red-500">*</span>
                         </Label>

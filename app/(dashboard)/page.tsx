@@ -82,7 +82,7 @@ export default async function DashboardPage() {
             <div className="flex flex-1 overflow-hidden">
                 {/* Calendar Area */}
                 <main className="flex-1 p-4 overflow-hidden bg-gray-50/50">
-                    <CalendarBoard tasks={tasks} members={members} />
+                    <CalendarBoard tasks={tasks} members={members} currentUserId={user.id} />
                 </main>
 
                 {/* Side Panel */}

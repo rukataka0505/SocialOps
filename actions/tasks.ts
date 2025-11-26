@@ -117,6 +117,7 @@ export async function createTask(prevState: any, formData: FormData) {
         const title = formData.get("title") as string;
         const due_date = formData.get("due_date") as string;
         const priority = (formData.get("priority") as string) || "medium";
+        const status = (formData.get("status") as string) || "in_progress";
         const client_id = formData.get("client_id") as string;
 
         // Handle assignees
@@ -158,7 +159,7 @@ export async function createTask(prevState: any, formData: FormData) {
                 client_id: client_id || null,
                 attributes,
                 routine_id: null,
-                status: "pending",
+                status,
                 created_by: user.id,
                 source_type: 'manual',
             })
