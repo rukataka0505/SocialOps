@@ -18,6 +18,10 @@ export async function verifyAndLoginGuest(token: string) {
             team_id,
             user_id,
             role,
+            user:users (
+                name,
+                email
+            ),
             team:teams (
                 name
             )
@@ -25,7 +29,12 @@ export async function verifyAndLoginGuest(token: string) {
         .eq('access_token', token)
         .single();
 
-    if (error || !member) {
+    const memberData = member as {
+        user: { name: string | null; email: string };
+        team: { name: string };
+    } | null;
+
+    if (error || !memberData) {
         return { error: 'Invalid or expired token' };
     }
 
@@ -45,7 +54,7 @@ export async function verifyAndLoginGuest(token: string) {
 
     return {
         success: true,
-        user: member.user,
-        teamName: member.team.name
+        user: memberData.user,
+        teamName: memberData.team.name
     };
 }
