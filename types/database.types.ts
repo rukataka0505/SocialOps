@@ -69,6 +69,7 @@ export interface Database {
                     team_id: string;
                     user_id: string;
                     role: 'owner' | 'admin' | 'member';
+                    access_token: string | null;
                     created_at: string;
                 };
                 Insert: {
@@ -76,6 +77,7 @@ export interface Database {
                     team_id: string;
                     user_id: string;
                     role?: 'owner' | 'admin' | 'member';
+                    access_token?: string | null;
                     created_at?: string;
                 };
                 Update: {
@@ -83,6 +85,7 @@ export interface Database {
                     team_id?: string;
                     user_id?: string;
                     role?: 'owner' | 'admin' | 'member';
+                    access_token?: string | null;
                     created_at?: string;
                 };
             };
