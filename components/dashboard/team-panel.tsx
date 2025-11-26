@@ -11,39 +11,31 @@ interface TeamPanelProps {
 
 export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
     return (
-        <Card className="h-full border-l rounded-none border-y-0 border-r-0 shadow-none bg-slate-50/50">
-            <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold">Members</CardTitle>
+        <Card className="h-full border-none rounded-none shadow-none bg-white">
+            <CardHeader className="pb-4 pt-6 px-6">
+                <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-blue-500 rounded-full" />
+                    Members
+                </CardTitle>
             </CardHeader>
-            <CardContent>
-                <div className="space-y-2">
+            <CardContent className="px-4">
+                <div className="space-y-1">
                     {members.map((member, index) => {
                         // Guard: Skip if member or user data is missing
                         if (!member || !member.user) {
-                            console.warn('Missing user data for member at index:', index, member);
-                            return (
-                                <div key={`unknown-${index}`} className="flex items-center gap-3 p-2 bg-yellow-50 rounded-md border border-yellow-200">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarFallback>?</AvatarFallback>
-                                    </Avatar>
-                                    <div className="overflow-hidden">
-                                        <p className="text-sm font-medium leading-none truncate text-yellow-700">Unknown User</p>
-                                        <p className="text-xs text-yellow-600 capitalize mt-1">{member?.role || 'member'}</p>
-                                    </div>
-                                </div>
-                            );
+                            return null;
                         }
 
                         return (
                             <MemberDetail key={member.user.id} member={member} currentUserRole={currentUserRole}>
-                                <div className="flex items-center gap-3 p-2 hover:bg-white rounded-md cursor-pointer transition-all border border-transparent hover:border-slate-200 hover:shadow-sm">
-                                    <Avatar className="h-8 w-8">
+                                <div className="flex items-center gap-3 p-2.5 hover:bg-blue-50/50 rounded-xl cursor-pointer transition-all group">
+                                    <Avatar className="h-9 w-9 border border-slate-100 group-hover:border-blue-200 transition-colors">
                                         <AvatarImage src={member.user.avatar_url || ""} />
-                                        <AvatarFallback>{member.user.name?.[0] || "?"}</AvatarFallback>
+                                        <AvatarFallback className="bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600">{member.user.name?.[0] || "?"}</AvatarFallback>
                                     </Avatar>
                                     <div className="overflow-hidden">
-                                        <p className="text-sm font-medium leading-none truncate">{member.user.name || member.user.email}</p>
-                                        <p className="text-xs text-muted-foreground capitalize mt-1">{member.role}</p>
+                                        <p className="text-sm font-medium leading-none truncate text-slate-700 group-hover:text-blue-700">{member.user.name || member.user.email}</p>
+                                        <p className="text-xs text-slate-400 capitalize mt-1 group-hover:text-blue-400">{member.role}</p>
                                     </div>
                                 </div>
                             </MemberDetail>

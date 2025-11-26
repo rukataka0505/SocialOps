@@ -97,9 +97,9 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
         (event: any, start: Date, end: Date, isSelected: boolean) => {
             const statusColors: Record<string, string> = {
                 in_progress: "#3b82f6", // blue-500
-                pending: "#f97316",     // orange-500
-                completed: "#6b7280",   // gray-500
-                cancelled: "#9ca3af",   // gray-400
+                pending: "#f59e0b",     // amber-500
+                completed: "#94a3b8",   // slate-400
+                cancelled: "#cbd5e1",   // slate-300
             };
 
             const status = event.resource.status || "in_progress";
@@ -111,18 +111,19 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
 
             const style: React.CSSProperties = {
                 backgroundColor,
-                borderRadius: "4px",
-                opacity: 0.9,
+                borderRadius: "6px",
+                opacity: 0.95,
                 color: "white",
                 border: "0px",
                 display: "block",
-                fontSize: "0.8rem",
+                fontSize: "0.75rem",
+                padding: "2px 4px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
             };
 
             if (isAssignedToMe) {
-                style.border = "2px solid #1e40af"; // blue-800
-                style.boxShadow = "0 0 0 1px white, 0 0 4px rgba(0,0,0,0.3)";
-                style.fontWeight = "bold";
+                style.borderLeft = "3px solid #1e3a8a"; // blue-900
+                style.fontWeight = "600";
             }
 
             return {
@@ -162,13 +163,13 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
     };
 
     return (
-        <div className="h-full w-full bg-white p-4 rounded-lg shadow-sm border flex flex-col">
+        <div className="h-full w-full bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
             <DnDCalendar
                 localizer={localizer}
                 events={localEvents}
                 startAccessor={(event: any) => event.start}
                 endAccessor={(event: any) => event.end}
-                style={{ height: "calc(100vh - 140px)" }}
+                style={{ height: "calc(100vh - 180px)" }}
                 views={['month', 'week', 'day']}
                 view={view}
                 date={date}
@@ -194,6 +195,7 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                     event: "イベント",
                     noEventsInRange: "この期間にイベントはありません。",
                 }}
+                className="modern-calendar"
             />
 
             {selectedTask && (

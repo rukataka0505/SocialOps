@@ -44,34 +44,35 @@ export default async function DashboardPage() {
     const userName = user?.user_metadata.name || user?.user_metadata.full_name || user?.email || 'ゲスト';
 
     return (
-        <div className="flex flex-col h-screen bg-white">
+        <div className="flex flex-col h-screen bg-slate-50">
             {/* Header */}
-            <header className="flex items-center justify-between px-6 py-3 border-b bg-white shrink-0">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-bold text-gray-900">
+            <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-100 shrink-0 shadow-sm z-10">
+                <div className="flex items-center gap-6">
+                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                         SocialOps
                     </h1>
+                    <div className="h-6 w-px bg-slate-200" />
                     <UserProfileDialog initialName={userName}>
-                        <span className="text-sm text-gray-500 hover:text-gray-800 cursor-pointer flex items-center gap-2" title="プロフィールを編集">
-                            {userName}さん
-                            <span className="text-xs text-gray-400">✎</span>
+                        <span className="text-sm font-medium text-slate-600 hover:text-blue-600 cursor-pointer flex items-center gap-2 transition-colors" title="プロフィールを編集">
+                            {userName}
+                            <span className="text-xs text-slate-400">▼</span>
                         </span>
                     </UserProfileDialog>
                 </div>
                 <div className="flex items-center gap-3">
                     <TaskDialog members={members} />
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant="ghost" size="sm" className="text-slate-600 hover:text-blue-600 hover:bg-blue-50" asChild>
                         <Link href="/settings/team">
-                            ⚙️ チーム設定
+                            チーム設定
                         </Link>
                     </Button>
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant="ghost" size="sm" className="text-slate-600 hover:text-blue-600 hover:bg-blue-50" asChild>
                         <Link href="/clients">
-                            クライアント管理
+                            クライアント
                         </Link>
                     </Button>
                     <form action={logout}>
-                        <Button variant="ghost" size="sm" className="text-gray-500" type="submit">
+                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-500 hover:bg-red-50" type="submit">
                             ログアウト
                         </Button>
                     </form>
@@ -81,12 +82,12 @@ export default async function DashboardPage() {
             {/* Main Content */}
             <div className="flex flex-1 overflow-hidden">
                 {/* Calendar Area */}
-                <main className="flex-1 p-4 overflow-hidden bg-gray-50/50">
+                <main className="flex-1 p-6 overflow-hidden">
                     <CalendarBoard tasks={tasks} members={members} currentUserId={user.id} />
                 </main>
 
                 {/* Side Panel */}
-                <aside className="w-72 border-l bg-white overflow-y-auto">
+                <aside className="w-80 border-l border-slate-100 bg-white overflow-y-auto shadow-sm z-10">
                     <TeamPanel members={members} currentUserRole={currentUserRole} />
                 </aside>
             </div>
