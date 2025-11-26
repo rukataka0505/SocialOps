@@ -147,8 +147,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
     }
 
     // Redirect unauthenticated users to login page
-    // UNLESS bypass is active
-    if (isProtectedRoute && !user && !isDevBypass) {
+    // UNLESS bypass is active OR guest cookie is present
+    const hasGuestCookie = request.cookies.has('socialops-guest-token');
+
+    if (isProtectedRoute && !user && !isDevBypass && !hasGuestCookie) {
         const url = request.nextUrl.clone();
         url.pathname = '/login';
         return NextResponse.redirect(url);

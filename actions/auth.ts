@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -85,6 +86,11 @@ export async function signup(
 export async function logout() {
     const supabase = await createClient();
     await supabase.auth.signOut();
+
+    // Clear guest cookie
+    const cookieStore = await cookies();
+    cookieStore.delete('socialops-guest-token');
+
     revalidatePath("/", "layout");
     redirect("/login");
 }
