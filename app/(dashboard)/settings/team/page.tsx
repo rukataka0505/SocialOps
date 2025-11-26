@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getTeamMembers } from '@/actions/teams';
 import { InviteSection } from './invite-section';
+import { GuestSection } from './guest-section';
 import { redirect } from 'next/navigation';
 
 export default async function TeamSettingsPage() {
@@ -89,7 +90,20 @@ export default async function TeamSettingsPage() {
                         <InviteSection teamId={membership.team_id} />
                     </div>
                 )}
+
+                {/* Guest Section */}
+                {(membership.role === 'owner' || membership.role === 'admin') && (
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <h2 className="text-xl font-semibold mb-4">ゲストメンバー管理</h2>
+                        <p className="text-gray-600 mb-4">
+                            アカウント不要のゲストメンバーを追加できます。
+                            名前を入力するだけで専用のアクセスURLが発行されます。
+                        </p>
+                        <GuestSection teamId={membership.team_id} />
+                    </div>
+                )}
             </div>
         </div>
     );
 }
+
