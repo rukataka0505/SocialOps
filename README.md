@@ -33,6 +33,14 @@
 ダッシュボードを「リスト型」から  
 **「カレンダー＋メンバーリストの2ペイン構成」**へ完全リニューアル完了。
 
+### ✅ Phase 5: Web App Transformation (Completed)
+
+Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な操作感」**へ進化。
+
+- **Persistent Header:** ヘッダー（ナビゲーション）をレイアウト層に移動し、ページ遷移時も常駐。
+- **Instant Switching:** ダッシュボード、クライアント、設定画面を「タブ切り替え」の感覚で瞬時に移動。
+- **Cockpit UI:** 「戻る」ボタンを廃止し、常にヘッダーから全ての機能にアクセス可能。
+
 ---
 
 #### ✅ Step 1: View Layer (表示) - 完了
@@ -85,7 +93,7 @@
 
 ---
 
-### 📌 Phase 5: Polish (Next Steps)
+### 📌 Phase 6: Polish (Next Steps)
 
 - **Notifications:** 期限切れアラート等の通知機能。
 - **Filter & Highlight:** メンバー / クライアント / チャンネル別のフィルタリングとハイライト。
@@ -157,6 +165,7 @@
 - [x] Member Detail Console
 - [x] Drag & Drop (Date Reschedule)
 - [x] Custom Fields (Per-Task)
+- [x] Web App Architecture (Persistent Layout)
 - [ ] Notifications
 - [ ] Filter & Highlight
 - [ ] Analytics Dashboard

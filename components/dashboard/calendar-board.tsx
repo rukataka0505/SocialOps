@@ -40,7 +40,20 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [localEvents, setLocalEvents] = useState<any[]>([]);
+    const [isMobile, setIsMobile] = useState(false);
     const router = useRouter();
+
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Initialize local events from props
     useEffect(() => {
@@ -187,7 +200,7 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                 culture="ja"
                 onSelectEvent={handleSelectEvent}
                 onEventDrop={onEventDrop}
-                draggableAccessor={() => true}
+                draggableAccessor={() => !isMobile}
                 resizable={false}
                 eventPropGetter={eventPropGetter}
                 components={components}

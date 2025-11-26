@@ -95,3 +95,36 @@ export async function joinGuest(formData: FormData) {
     // Redirect to dashboard
     redirect('/');
 }
+
+/**
+ * Auto-join returning guest (who already has a name set)
+ */
+export async function autoJoinGuest(token: string) {
+    const supabase = await createClient();
+
+    // Verify token is still valid
+    const { data: member, error } = await supabase
+        .from('team_members')
+        .select('id, user_id, team_id')
+        .eq('access_token', token)
+        .single();
+
+    const memberData = member as { id: string; user_id: string; team_id: string } | null;
+
+    if (error || !memberData) {
+        throw new Error('Invalid or expired token');
+    }
+
+    // Set HttpOnly cookie for guest session
+    const cookieStore = await cookies();
+    cookieStore.set('socialops-guest-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: '/',
+    });
+
+    // Redirect to dashboard
+    redirect('/');
+}
