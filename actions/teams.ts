@@ -152,3 +152,41 @@ export async function getTeamMembers(teamId: string) {
 
     return members as any[];
 }
+export async function updateMemberRole(userId: string, role: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        throw new Error('Unauthorized');
+    }
+
+    try {
+        // Get team_id of the current user
+        const { data: currentUserMember } = await supabase
+            .from('team_members')
+            .select('team_id, role')
+            .eq('user_id', user.id)
+            .single();
+
+        if (!currentUserMember) throw new Error('No team found');
+
+        // Only owner or admin can update roles
+        const currentUserRole = (currentUserMember as any).role;
+        if (currentUserRole !== 'owner' && currentUserRole !== 'admin') {
+            throw new Error('Permission denied');
+        }
+
+        // Update target user's role
+        const { error } = await (supabase.from('team_members') as any)
+            .update({ role })
+            .eq('user_id', userId)
+            .eq('team_id', (currentUserMember as any).team_id);
+
+        if (error) throw error;
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating member role:', error);
+        return { success: false, error };
+    }
+}
