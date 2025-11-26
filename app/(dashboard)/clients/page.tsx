@@ -11,6 +11,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import Link from "next/link";
 
 export default async function ClientsPage() {
     const clients = await getClients();
@@ -49,7 +50,9 @@ export default async function ClientsPage() {
                             clients.map((client: any) => (
                                 <TableRow key={client.id}>
                                     <TableCell className="font-medium">
-                                        {client.name}
+                                        <Link href={`/clients/${client.id}`} className="hover:underline">
+                                            {client.name}
+                                        </Link>
                                         {client.company && (
                                             <div className="text-xs text-muted-foreground">
                                                 {client.company}

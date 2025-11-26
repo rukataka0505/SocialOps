@@ -128,9 +128,10 @@ export interface Database {
                 Row: {
                     id: string;
                     team_id: string;
+                    client_id: string | null;
                     title: string;
                     description: string | null;
-                    frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+                    frequency: Json;
                     start_date: string;
                     created_at: string;
                     updated_at: string;
@@ -139,9 +140,10 @@ export interface Database {
                 Insert: {
                     id?: string;
                     team_id: string;
+                    client_id?: string | null;
                     title: string;
                     description?: string | null;
-                    frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+                    frequency: Json;
                     start_date: string;
                     created_at?: string;
                     updated_at?: string;
@@ -150,9 +152,10 @@ export interface Database {
                 Update: {
                     id?: string;
                     team_id?: string;
+                    client_id?: string | null;
                     title?: string;
                     description?: string | null;
-                    frequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+                    frequency?: Json;
                     start_date?: string;
                     created_at?: string;
                     updated_at?: string;
