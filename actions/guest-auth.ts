@@ -41,5 +41,11 @@ export async function verifyAndLoginGuest(token: string) {
     });
 
     // Redirect to dashboard
-    redirect('/');
+    // redirect('/');
+
+    return {
+        success: true,
+        user: member.user,
+        teamName: member.team.name
+    };
 }

@@ -152,6 +152,8 @@ export async function getTeamMembers(teamId: string) {
 
     return members as any[];
 }
+import { revalidatePath } from 'next/cache';
+
 export async function updateMemberRole(userId: string, role: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -184,6 +186,7 @@ export async function updateMemberRole(userId: string, role: string) {
 
         if (error) throw error;
 
+        revalidatePath('/');
         return { success: true };
     } catch (error) {
         console.error('Error updating member role:', error);

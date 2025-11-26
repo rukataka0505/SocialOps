@@ -3,7 +3,7 @@ import { getTeamMembers } from "@/actions/teams";
 import { CalendarBoard } from "@/components/dashboard/calendar-board";
 import { TeamPanel } from "@/components/dashboard/team-panel";
 import { createClient } from "@/lib/supabase/server";
-import { startOfMonth, endOfMonth, subMonths, addMonths, format } from "date-fns";
+import { startOfMonth, endOfMonth, format } from "date-fns";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -33,10 +33,10 @@ export default async function DashboardPage() {
     const currentUserRole = teamMember?.role;
     const members = teamId ? await getTeamMembers(teamId) : [];
 
-    // Fetch tasks for a broad range (Current Month +/- 1-2 months)
+    // Fetch tasks for the current month
     const now = new Date();
-    const start = startOfMonth(subMonths(now, 1));
-    const end = endOfMonth(addMonths(now, 2));
+    const start = startOfMonth(now);
+    const end = endOfMonth(now);
     const tasks = await getTasks(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd'));
 
     // Prioritize user_metadata.name (or full_name) over email
