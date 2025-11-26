@@ -138,6 +138,16 @@ export async function createTask(prevState: any, formData: FormData) {
             attributes.management_url = management_url;
         }
 
+        // Extract custom field definitions if present
+        const customFieldsJson = formData.get("_fields") as string;
+        if (customFieldsJson) {
+            try {
+                attributes._fields = JSON.parse(customFieldsJson);
+            } catch (e) {
+                console.error("Failed to parse custom fields JSON", e);
+            }
+        }
+
         for (const [key, value] of Array.from(formData.entries())) {
             if (key.startsWith('custom_')) {
                 attributes[key.replace('custom_', '')] = value;

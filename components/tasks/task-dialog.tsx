@@ -19,7 +19,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 
 import { getClients } from "@/actions/clients";
-import { getTeamSettings, updateTeamSettings } from "@/actions/teams";
 import { TaskFieldEditor } from "./task-field-editor";
 import { TaskField } from "./task-field-manager";
 
@@ -60,14 +59,17 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     useEffect(() => {
         if (open) {
             setError(null);
-            // Fetch clients and settings when dialog opens
+            // Fetch clients when dialog opens
             startTransition(async () => {
-                const [fetchedClients, settings] = await Promise.all([
-                    getClients(),
-                    getTeamSettings()
-                ]);
+                const fetchedClients = await getClients();
                 setClients(fetchedClients);
-                setCustomFields(settings.task_fields || []);
+
+                // Load custom fields from task attributes if editing
+                if (task && task.attributes && task.attributes._fields) {
+                    setCustomFields(task.attributes._fields);
+                } else {
+                    setCustomFields([]);
+                }
 
                 if (task && task.assignments) {
                     setAssignees(task.assignments.map((a: any) => ({
@@ -98,6 +100,31 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         setAssignees(newAssignees);
     };
 
+    const addCustomField = (field: TaskField) => {
+        setCustomFields([...customFields, field]);
+    };
+
+    const updateCustomField = (field: TaskField) => {
+        setCustomFields(customFields.map(f => f.id === field.id ? field : f));
+    };
+
+    const deleteCustomField = (fieldId: string) => {
+        setCustomFields(customFields.filter(f => f.id !== fieldId));
+    };
+
+    const handleSaveField = (field: TaskField) => {
+        const existingField = customFields.find(f => f.id === field.id);
+        if (existingField) {
+            updateCustomField(field);
+        } else {
+            addCustomField(field);
+        }
+    };
+
+    const handleDeleteField = (fieldId: string) => {
+        deleteCustomField(fieldId);
+    };
+
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setError(null);
@@ -121,9 +148,16 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         }
                     });
 
+                    // Save custom field definitions
+                    if (!data.attributes) data.attributes = {};
+                    data.attributes._fields = customFields;
+
                     result = await updateTask(task.id, data);
                 } else {
-                    result = await createTask(null, formData);
+                    // Add custom field definitions to formData
+                    const formDataWithFields = new FormData(event.currentTarget);
+                    formDataWithFields.set('_fields', JSON.stringify(customFields));
+                    result = await createTask(null, formDataWithFields);
                 }
 
                 if (result.success) {
@@ -152,27 +186,6 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         });
     }
 
-    const handleSaveField = async (newField: TaskField) => {
-        // Check if updating existing or adding new
-        const exists = customFields.find(f => f.id === newField.id);
-        let updatedFields;
-        if (exists) {
-            updatedFields = customFields.map(f => f.id === newField.id ? newField : f);
-        } else {
-            updatedFields = [...customFields, newField];
-        }
-
-        setCustomFields(updatedFields);
-        await updateTeamSettings({ task_fields: updatedFields });
-        router.refresh();
-    };
-
-    const handleDeleteField = async (id: string) => {
-        const updatedFields = customFields.filter(f => f.id !== id);
-        setCustomFields(updatedFields);
-        await updateTeamSettings({ task_fields: updatedFields });
-        router.refresh();
-    };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
