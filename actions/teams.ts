@@ -200,3 +200,63 @@ export async function updateMemberRole(userId: string, role: string) {
         return { success: false, error };
     }
 }
+
+// Helper to get team ID (duplicated from tasks.ts, should be shared but keeping local for now)
+async function getTeamId(supabase: any) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error("Unauthorized");
+
+    const { data: teamMember, error: teamError } = await supabase
+        .from("team_members")
+        .select("team_id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (teamError || !teamMember) throw new Error("No team found for user");
+    return teamMember.team_id;
+}
+
+export async function updateTeamSettings(settings: any) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        const { error } = await (supabase as any)
+            .from("teams")
+            .update({
+                settings,
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", teamId);
+
+        if (error) throw error;
+
+        revalidatePath("/");
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating team settings:", error);
+        return { success: false, error };
+    }
+}
+
+export async function getTeamSettings() {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        const { data: team, error } = await (supabase as any)
+            .from("teams")
+            .select("settings")
+            .eq("id", teamId)
+            .single();
+
+        if (error) throw error;
+
+        return team?.settings || {};
+    } catch (error) {
+        console.error("Error fetching team settings:", error);
+        return {};
+    }
+}

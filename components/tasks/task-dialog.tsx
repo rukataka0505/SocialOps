@@ -18,6 +18,10 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 
+import { getClients } from "@/actions/clients";
+import { getTeamSettings } from "@/actions/teams";
+import { TaskFieldManager, TaskField } from "./task-field-manager";
+
 interface TeamMember {
     role: string;
     user: {
@@ -46,11 +50,23 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
+    const [clients, setClients] = useState<any[]>([]);
+    const [customFields, setCustomFields] = useState<TaskField[]>([]);
+
     const isEditMode = !!task;
 
     useEffect(() => {
         if (open) {
             setError(null);
+            // Fetch clients and settings when dialog opens
+            startTransition(async () => {
+                const [fetchedClients, settings] = await Promise.all([
+                    getClients(),
+                    getTeamSettings()
+                ]);
+                setClients(fetchedClients);
+                setCustomFields(settings.task_fields || []);
+            });
         }
     }, [open]);
 
@@ -59,17 +75,34 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         setError(null);
 
         const formData = new FormData(event.currentTarget);
-        const data = {
-            title: formData.get("title") as string,
-            due_date: formData.get("due_date") as string,
-            priority: formData.get("priority") as string,
-            assigned_to: (formData.get("assigned_to") as string) || null,
-        };
+        // No need to manually construct data object here as we pass formData directly to actions
+        // But for updateTask we need an object.
 
         startTransition(async () => {
             try {
                 let result;
                 if (isEditMode) {
+                    // For update, we need to construct the object manually because updateTask expects an object
+                    // This is a bit inconsistent with createTask but let's follow existing pattern or adapt.
+                    // The existing updateTask takes (taskId, data object).
+                    // We need to extract everything from formData.
+                    const data: any = {};
+                    formData.forEach((value, key) => {
+                        if (key.startsWith('custom_')) {
+                            if (!data.attributes) data.attributes = {};
+                            data.attributes[key.replace('custom_', '')] = value;
+                        } else if (key === 'management_url') {
+                            if (!data.attributes) data.attributes = {};
+                            data.attributes.management_url = value;
+                        } else {
+                            data[key] = value;
+                        }
+                    });
+
+                    // Merge existing attributes if any? 
+                    // For now, let's assume we are sending what we want to update.
+                    // Ideally updateTask should handle formData too, but let's stick to object for now.
+
                     result = await updateTask(task.id, data);
                 } else {
                     // createTask expects (prevState, formData) signature if used with useActionState,
@@ -119,9 +152,12 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     </DialogTrigger>
                 )
             )}
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>{isEditMode ? "タスク編集" : "タスク追加"}</DialogTitle>
+                    <div className="flex items-center justify-between">
+                        <DialogTitle>{isEditMode ? "タスク編集" : "タスク追加"}</DialogTitle>
+                        <TaskFieldManager initialFields={customFields} />
+                    </div>
                     <DialogDescription>
                         {isEditMode ? "タスクの内容を編集します。" : "新しいタスクを手動で追加します。"}
                     </DialogDescription>
@@ -146,6 +182,25 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             className="col-span-3"
                             required
                         />
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="client_id" className="text-right">
+                            クライアント
+                        </Label>
+                        <select
+                            id="client_id"
+                            name="client_id"
+                            defaultValue={task?.client_id || ""}
+                            className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <option value="">(選択なし)</option>
+                            {clients.map((client) => (
+                                <option key={client.id} value={client.id}>
+                                    {client.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -197,6 +252,50 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             ))}
                         </select>
                     </div>
+
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="management_url" className="text-right">
+                            管理URL
+                        </Label>
+                        <Input
+                            id="management_url"
+                            name="management_url"
+                            defaultValue={task?.attributes?.management_url || ""}
+                            placeholder="https://docs.google.com/..."
+                            className="col-span-3"
+                        />
+                    </div>
+
+                    {customFields.map((field) => (
+                        <div key={field.id} className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor={`custom_${field.id}`} className="text-right">
+                                {field.label}
+                            </Label>
+                            {field.type === 'select' ? (
+                                <select
+                                    id={`custom_${field.id}`}
+                                    name={`custom_${field.label}`} // Use label as key for readability in attributes, or ID? Plan said ID but label is friendlier. Let's use label for now as ID is random.
+                                    defaultValue={task?.attributes?.[field.label] || ""}
+                                    className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <option value="">(選択なし)</option>
+                                    {field.options?.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                            {opt}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <Input
+                                    id={`custom_${field.id}`}
+                                    name={`custom_${field.label}`}
+                                    type={field.type}
+                                    defaultValue={task?.attributes?.[field.label] || ""}
+                                    className="col-span-3"
+                                />
+                            )}
+                        </div>
+                    ))}
 
                     <DialogFooter className="flex justify-between sm:justify-between">
                         {isEditMode ? (

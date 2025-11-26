@@ -110,6 +110,25 @@ export async function createTask(prevState: any, formData: FormData) {
         const due_date = formData.get("due_date") as string;
         const priority = (formData.get("priority") as string) || "medium";
         const assigned_to = formData.get("assigned_to") as string;
+        const client_id = formData.get("client_id") as string;
+
+        // Handle attributes
+        const attributes: Record<string, any> = {};
+        const management_url = formData.get("management_url") as string;
+        if (management_url) {
+            attributes.management_url = management_url;
+        }
+
+        // Parse custom fields from formData
+        // We expect custom fields to be prefixed or we just grab everything else?
+        // Better to rely on a specific convention or just parse known fields + extra.
+        // For now, let's assume the UI sends everything and we might need to filter.
+        // But to be safe and simple, let's look for keys starting with 'custom_'.
+        for (const [key, value] of Array.from(formData.entries())) {
+            if (key.startsWith('custom_')) {
+                attributes[key.replace('custom_', '')] = value;
+            }
+        }
 
         if (!title || !due_date) {
             return { success: false, error: "タイトルと期限は必須です" };
@@ -124,6 +143,8 @@ export async function createTask(prevState: any, formData: FormData) {
                 due_date,
                 priority,
                 assigned_to: assigned_to || null,
+                client_id: client_id || null,
+                attributes,
                 routine_id: null,
                 status: "pending",
                 created_by: user.id,
@@ -179,9 +200,15 @@ export async function updateTask(taskId: string, data: any) {
         const teamId = await getTeamId(supabase);
 
         // Remove undefined fields
-        const updateData = Object.fromEntries(
+        const updateData: any = Object.fromEntries(
             Object.entries(data).filter(([_, v]) => v !== undefined)
         );
+
+        // If attributes are being updated, we might want to merge them or replace?
+        // Supabase JSONB updates are usually merges if we use jsonb_set, but simple update replaces the column.
+        // So we should probably fetch existing if we want to merge, OR assume the UI sends the full set.
+        // For simplicity, let's assume 'data' contains the full attributes object if it's being updated.
+
 
         const { error } = await (supabase as any)
             .from("tasks")
