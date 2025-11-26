@@ -127,7 +127,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
     } = await supabase.auth.getUser();
 
     const isAuthRoute = request.nextUrl.pathname.startsWith('/login');
-    const isProtectedRoute = request.nextUrl.pathname === '/' ||
+    const isProtectedRoute = request.nextUrl.pathname === '/dashboard' ||
         request.nextUrl.pathname.startsWith('/clients') ||
         request.nextUrl.pathname.startsWith('/settings');
 
@@ -135,7 +135,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
     // OR if bypass is active (treat as authenticated)
     if (isAuthRoute && (user || isDevBypass)) {
         const url = request.nextUrl.clone();
-        url.pathname = '/';
+        url.pathname = '/dashboard';
+        return NextResponse.redirect(url);
+    }
+
+    // Redirect authenticated users from LP to dashboard
+    if (request.nextUrl.pathname === '/' && (user || isDevBypass)) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/dashboard';
         return NextResponse.redirect(url);
     }
 
