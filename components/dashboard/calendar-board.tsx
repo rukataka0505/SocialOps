@@ -12,6 +12,13 @@ import { TaskDialog } from "@/components/tasks/task-dialog";
 import { TaskDetailDialog } from "@/components/tasks/task-detail-dialog";
 import { updateTask } from "@/actions/tasks";
 import { useRouter } from "next/navigation";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TaskTooltip } from "@/components/tasks/task-tooltip";
 
 const locales = {
     "ja": ja,
@@ -162,24 +169,33 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
             const assignee = task.assignee;
 
             return (
-                <div className="flex items-center gap-1 overflow-hidden px-1 h-full">
-                    <div className="flex -space-x-1 overflow-hidden shrink-0">
-                        {assignments.length > 0 ? (
-                            assignments.map((assignment: any) => (
-                                <Avatar key={assignment.user_id} className="h-4 w-4 border border-white ring-1 ring-background">
-                                    <AvatarImage src={assignment.user?.avatar_url || ""} />
-                                    <AvatarFallback className="text-[6px]">{assignment.user?.name?.[0] || "?"}</AvatarFallback>
-                                </Avatar>
-                            ))
-                        ) : assignee ? (
-                            <Avatar className="h-4 w-4 border border-white">
-                                <AvatarImage src={assignee.avatar_url || ""} />
-                                <AvatarFallback className="text-[8px]">{assignee.name?.[0] || "?"}</AvatarFallback>
-                            </Avatar>
-                        ) : null}
-                    </div>
-                    <span className="truncate font-medium text-xs">{event.title}</span>
-                </div>
+                <TooltipProvider delayDuration={500}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 overflow-hidden px-1 h-full w-full">
+                                <div className="flex -space-x-1 overflow-hidden shrink-0">
+                                    {assignments.length > 0 ? (
+                                        assignments.map((assignment: any) => (
+                                            <Avatar key={assignment.user_id} className="h-4 w-4 border border-white ring-1 ring-background">
+                                                <AvatarImage src={assignment.user?.avatar_url || ""} />
+                                                <AvatarFallback className="text-[6px]">{assignment.user?.name?.[0] || "?"}</AvatarFallback>
+                                            </Avatar>
+                                        ))
+                                    ) : assignee ? (
+                                        <Avatar className="h-4 w-4 border border-white">
+                                            <AvatarImage src={assignee.avatar_url || ""} />
+                                            <AvatarFallback className="text-[8px]">{assignee.name?.[0] || "?"}</AvatarFallback>
+                                        </Avatar>
+                                    ) : null}
+                                </div>
+                                <span className="truncate font-medium text-xs">{event.title}</span>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" align="start" className="p-0 border-slate-200">
+                            <TaskTooltip task={task} />
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             );
         },
     };
