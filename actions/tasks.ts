@@ -389,3 +389,42 @@ export async function getMemberTasks(userId: string) {
         return [];
     }
 }
+
+export async function getClientMilestones(clientId: string, start: Date, end: Date) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+        const startStr = format(start, 'yyyy-MM-dd', { timeZone: 'Asia/Tokyo' });
+        const endStr = format(end, 'yyyy-MM-dd', { timeZone: 'Asia/Tokyo' });
+
+        const { data: tasks, error } = await (supabase as any)
+            .from("tasks")
+            .select(`
+                *,
+                assignments:task_assignments(
+                    user_id,
+                    role,
+                    user:users(
+                        id,
+                        name,
+                        avatar_url
+                    )
+                )
+            `)
+            .eq("team_id", teamId)
+            .eq("client_id", clientId)
+            .eq("is_milestone", true)
+            .gte("due_date", startStr)
+            .lte("due_date", endStr)
+            .is("deleted_at", null)
+            .order("due_date", { ascending: true });
+
+        if (error) throw error;
+
+        return tasks || [];
+    } catch (error) {
+        console.error("Error fetching client milestones:", error);
+        return [];
+    }
+}
