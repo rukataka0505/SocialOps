@@ -93,7 +93,7 @@ export async function joinGuest(formData: FormData) {
     });
 
     // Redirect to dashboard
-    redirect('/');
+    redirect('/dashboard');
 }
 
 /**
@@ -126,5 +126,5 @@ export async function autoJoinGuest(token: string) {
     });
 
     // Redirect to dashboard
-    redirect('/');
+    redirect('/dashboard');
 }

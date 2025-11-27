@@ -141,7 +141,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
     }
 
     // Redirect authenticated users from LP to dashboard
-    if (request.nextUrl.pathname === '/' && (user || isDevBypass)) {
+    // Also redirect guests from LP to dashboard
+    const hasGuestCookie = request.cookies.has('socialops-guest-token');
+
+    if (request.nextUrl.pathname === '/' && (user || isDevBypass || hasGuestCookie)) {
         const url = request.nextUrl.clone();
         url.pathname = '/dashboard';
         return NextResponse.redirect(url);
@@ -149,7 +152,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
 
     // Redirect unauthenticated users to login page
     // UNLESS bypass is active OR guest cookie is present
-    const hasGuestCookie = request.cookies.has('socialops-guest-token');
 
     if (isProtectedRoute && !user && !isDevBypass && !hasGuestCookie) {
         const url = request.nextUrl.clone();
