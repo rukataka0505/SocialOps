@@ -111,6 +111,10 @@ export interface Database {
                     completed_at: string | null;
                     deleted_at: string | null;
                     source_type: string;
+                    workflow_status: string | null;
+                    parent_id: string | null;
+                    is_milestone: boolean;
+                    is_private: boolean;
                 };
                 Insert: {
                     id?: string;
@@ -131,6 +135,10 @@ export interface Database {
                     completed_at?: string | null;
                     deleted_at?: string | null;
                     source_type: string;
+                    workflow_status?: string | null;
+                    parent_id?: string | null;
+                    is_milestone?: boolean;
+                    is_private?: boolean;
                 };
                 Update: {
                     id?: string;
@@ -151,6 +159,10 @@ export interface Database {
                     completed_at?: string | null;
                     deleted_at?: string | null;
                     source_type?: string;
+                    workflow_status?: string | null;
+                    parent_id?: string | null;
+                    is_milestone?: boolean;
+                    is_private?: boolean;
                 };
             };
             projects: {
@@ -302,6 +314,8 @@ export interface Database {
                     phone: string | null;
                     spreadsheet_url: string | null;
                     notes: string | null;
+                    credentials: Json;
+                    resources: Json;
                     created_at: string;
                     updated_at: string;
                     deleted_at: string | null;
@@ -314,6 +328,8 @@ export interface Database {
                     phone?: string | null;
                     spreadsheet_url?: string | null;
                     notes?: string | null;
+                    credentials?: Json;
+                    resources?: Json;
                     created_at?: string;
                     updated_at?: string;
                     deleted_at?: string | null;
@@ -326,6 +342,8 @@ export interface Database {
                     phone?: string | null;
                     spreadsheet_url?: string | null;
                     notes?: string | null;
+                    credentials?: Json;
+                    resources?: Json;
                     created_at?: string;
                     updated_at?: string;
                     deleted_at?: string | null;

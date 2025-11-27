@@ -57,6 +57,18 @@ export async function createClient(prevState: ClientState | null, formData: Form
         const phone = formData.get("phone") as string;
         const spreadsheet_url = formData.get("spreadsheet_url") as string;
         const notes = formData.get("notes") as string;
+        const credentialsJson = formData.get("credentials") as string;
+        const resourcesJson = formData.get("resources") as string;
+
+        let credentials = [];
+        let resources = [];
+
+        try {
+            if (credentialsJson) credentials = JSON.parse(credentialsJson);
+            if (resourcesJson) resources = JSON.parse(resourcesJson);
+        } catch (e) {
+            console.error("Failed to parse client JSON fields", e);
+        }
 
         if (!name) {
             return { error: "Client name is required" };
@@ -69,6 +81,8 @@ export async function createClient(prevState: ClientState | null, formData: Form
             phone: phone || null,
             spreadsheet_url: spreadsheet_url || null,
             notes: notes || null,
+            credentials,
+            resources,
         });
 
         if (error) throw error;
@@ -93,6 +107,18 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
         const phone = formData.get("phone") as string;
         const spreadsheet_url = formData.get("spreadsheet_url") as string;
         const notes = formData.get("notes") as string;
+        const credentialsJson = formData.get("credentials") as string;
+        const resourcesJson = formData.get("resources") as string;
+
+        let credentials;
+        let resources;
+
+        try {
+            if (credentialsJson) credentials = JSON.parse(credentialsJson);
+            if (resourcesJson) resources = JSON.parse(resourcesJson);
+        } catch (e) {
+            console.error("Failed to parse client JSON fields", e);
+        }
 
         if (!name) {
             return { error: "Client name is required" };
@@ -106,6 +132,8 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
                 phone: phone || null,
                 spreadsheet_url: spreadsheet_url || null,
                 notes: notes || null,
+                ...(credentials !== undefined && { credentials }),
+                ...(resources !== undefined && { resources }),
                 updated_at: new Date().toISOString(),
             })
             .eq("id", clientId);

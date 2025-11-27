@@ -18,13 +18,7 @@ export default async function ClientsPage() {
 
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">クライアント管理</h2>
-                    <p className="text-muted-foreground">
-                        クライアントと連絡先情報を管理します。
-                    </p>
-                </div>
+            <div className="flex items-center justify-end">
                 <ClientDialog />
             </div>
 

@@ -123,7 +123,12 @@ export async function createTask(prevState: any, formData: FormData) {
         const due_date = formData.get("due_date") as string;
         const priority = (formData.get("priority") as string) || "medium";
         const status = (formData.get("status") as string) || "in_progress";
+
         const client_id = formData.get("client_id") as string;
+        const workflow_status = formData.get("workflow_status") as string;
+        const parent_id = formData.get("parent_id") as string;
+        const is_milestone = formData.get("is_milestone") === "true";
+        const is_private = formData.get("is_private") === "true";
 
         // Handle assignees
         const assigneesJson = formData.get("assignees") as string;
@@ -177,6 +182,10 @@ export async function createTask(prevState: any, formData: FormData) {
                 status,
                 created_by: user.id,
                 source_type: 'manual',
+                workflow_status: workflow_status || null,
+                parent_id: parent_id || null,
+                is_milestone,
+                is_private,
             })
             .select()
             .single();

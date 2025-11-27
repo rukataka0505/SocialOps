@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Header } from "@/components/layout/header";
+import { Header } from "@/components/dashboard/header";
 
 export const metadata: Metadata = {
     title: "Dashboard | SocialOps",

@@ -39,9 +39,7 @@ export default async function TeamSettingsPage() {
 
     return (
         <div className="max-w-4xl mx-auto p-6">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold">チーム設定</h1>
-            </div>
+
 
             <div className="grid gap-8">
                 {/* Team Profile */}
