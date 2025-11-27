@@ -84,6 +84,7 @@ export function TaskFieldEditor({ field, onSave, onDelete, trigger }: TaskFieldE
                                 <option value="number">数値</option>
                                 <option value="date">日付</option>
                                 <option value="select">選択肢</option>
+                                <option value="url">URL</option>
                             </select>
                         </div>
                         {type === "select" && (

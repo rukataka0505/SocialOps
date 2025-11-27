@@ -19,6 +19,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { TaskTooltip } from "@/components/tasks/task-tooltip";
+import { CalendarToolbar } from "./calendar-toolbar";
 
 const locales = {
     "ja": ja,
@@ -198,6 +199,7 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                 </TooltipProvider>
             );
         },
+        toolbar: CalendarToolbar,
     };
 
     return (

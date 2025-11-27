@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 export type TaskField = {
     id: string;
     label: string;
-    type: 'text' | 'number' | 'date' | 'select';
+    type: 'text' | 'number' | 'date' | 'select' | 'url';
     options?: string[]; // For select type, comma separated string in UI
 };
 
@@ -100,6 +100,7 @@ export function TaskFieldManager({ initialFields }: TaskFieldManagerProps) {
                                             <option value="number">数値</option>
                                             <option value="date">日付</option>
                                             <option value="select">選択肢</option>
+                                            <option value="url">URL</option>
                                         </select>
                                     </div>
                                 </div>

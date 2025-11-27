@@ -82,6 +82,31 @@ export function TaskTooltip({ task }: TaskTooltipProps) {
                     </div>
                 </div>
 
+                {/* Custom Fields */}
+                {customFields.map((field: any) => {
+                    const value = task.attributes?.[field.label];
+                    if (!value) return null;
+
+                    if (field.type === 'url') {
+                        return (
+                            <div key={field.id} className="space-y-0.5">
+                                <h5 className="text-[10px] font-medium text-muted-foreground">{field.label}</h5>
+                                <div className="flex items-center gap-1 text-xs text-blue-600">
+                                    <ExternalLink className="h-2.5 w-2.5" />
+                                    <span className="truncate max-w-[200px]">{value}</span>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div key={field.id} className="space-y-0.5">
+                            <h5 className="text-[10px] font-medium text-muted-foreground">{field.label}</h5>
+                            <p className="text-xs line-clamp-2">{value}</p>
+                        </div>
+                    );
+                })}
+
                 {/* Assignees */}
                 <div className="space-y-1">
                     <h5 className="text-[10px] font-medium text-muted-foreground">担当者</h5>

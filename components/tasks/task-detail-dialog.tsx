@@ -133,6 +133,22 @@ export function TaskDetailDialog({ task, open, onOpenChange, onEdit, members }: 
                         {customFields.map((field: any) => {
                             const value = task.attributes?.[field.label];
                             if (!value) return null;
+                            if (field.type === 'url') {
+                                return (
+                                    <div key={field.id} className="space-y-1">
+                                        <h4 className="text-sm font-medium text-muted-foreground">{field.label}</h4>
+                                        <a
+                                            href={value}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm text-blue-600 hover:underline flex items-center gap-1 break-all"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            {value}
+                                        </a>
+                                    </div>
+                                );
+                            }
                             return (
                                 <div key={field.id} className="space-y-1">
                                     <h4 className="text-sm font-medium text-muted-foreground">{field.label}</h4>
