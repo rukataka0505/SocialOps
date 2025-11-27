@@ -281,10 +281,13 @@ export async function updateTask(taskId: string, data: any) {
             Object.entries(taskData).filter(([_, v]) => v !== undefined)
         );
 
-        // Handle client_id specifically to avoid UUID error
-        if (updateData.client_id === "") {
-            updateData.client_id = null;
-        }
+        // Handle all UUID fields - convert empty strings to null to avoid UUID errors
+        const uuidFields = ['client_id', 'project_id', 'routine_id', 'assigned_to', 'parent_id'];
+        uuidFields.forEach(field => {
+            if (updateData[field] === "" || updateData[field] === "undefined") {
+                updateData[field] = null;
+            }
+        });
 
         const { error } = await (supabase as any)
             .from("tasks")

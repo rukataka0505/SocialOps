@@ -149,7 +149,11 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     setOpen(false);
                     router.refresh();
                 } else {
-                    setError(result.error?.toString() || "エラーが発生しました");
+                    // Handle error object properly
+                    const errorMsg = typeof result.error === 'string'
+                        ? result.error
+                        : (result.error as any)?.message || JSON.stringify(result.error) || "エラーが発生しました";
+                    setError(errorMsg);
                 }
             } catch (e) {
                 setError("予期せぬエラーが発生しました");
@@ -192,7 +196,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                 setSubtaskDueDate("");
                 router.refresh();
                 // Ideally refresh subtasks list here
-                alert("サブタスクを追加しました（画面を更新すると表示されます）");
+                alert("サブタスクを追加しました(画面を更新すると表示されます)");
             } else {
                 setError("サブタスクの追加に失敗しました");
             }
