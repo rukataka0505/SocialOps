@@ -14,9 +14,10 @@ interface HeaderProps {
     userName: string;
     teamName: string;
     members: any[]; // Using any[] for now to match existing usage, ideally should be typed
+    settings?: any;
 }
 
-export function Header({ user, userName, teamName, members }: HeaderProps) {
+export function Header({ user, userName, teamName, members, settings }: HeaderProps) {
     const pathname = usePathname();
 
     const isActive = (path: string) => {
@@ -74,7 +75,7 @@ export function Header({ user, userName, teamName, members }: HeaderProps) {
                     </UserProfileDialog>
                 </div>
 
-                <TaskDialog members={members} />
+                <TaskDialog members={members} settings={settings} />
 
                 <form action={logout}>
                     <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full" type="submit" title="ログアウト">

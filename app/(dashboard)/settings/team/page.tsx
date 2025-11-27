@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getTeamMembers, getTeamSettings } from '@/actions/teams';
 import { GuestSection } from './guest-section';
 import { TeamProfileSection } from './team-profile-section';
+import { TaskSettings } from '@/components/settings/task-settings';
 import { redirect } from 'next/navigation';
 import {
     Tooltip,
@@ -36,6 +37,7 @@ export default async function TeamSettingsPage() {
     }
 
     const members = await getTeamMembers(membership.team_id);
+    const settings = await getTeamSettings();
 
     return (
         <div className="max-w-4xl mx-auto p-6">
@@ -48,6 +50,14 @@ export default async function TeamSettingsPage() {
                         teamId={membership.team_id}
                         initialName={membership.team?.name || ''}
                     />
+                )}
+
+                {/* Task Settings */}
+                {(membership.role === 'owner' || membership.role === 'admin') && (
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <h2 className="text-xl font-semibold mb-4">タスク設定</h2>
+                        <TaskSettings initialSettings={settings} />
+                    </div>
                 )}
 
                 {/* Member List */}

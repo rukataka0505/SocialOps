@@ -42,8 +42,9 @@ export default async function DashboardLayout({
     // Fetch members for TaskDialog in Header
     // We need to import getTeamMembers here or fetch directly
     // Importing server action is fine
-    const { getTeamMembers } = await import("@/actions/teams");
+    const { getTeamMembers, getTeamSettings } = await import("@/actions/teams");
     const members = await getTeamMembers(membership.team_id);
+    const settings = await getTeamSettings();
 
     // Prioritize user_metadata.name (or full_name) over email
     const userName = user?.user_metadata.name || user?.user_metadata.full_name || user?.email || 'ゲスト';
@@ -55,6 +56,7 @@ export default async function DashboardLayout({
                 userName={userName}
                 teamName={teamName}
                 members={members}
+                settings={settings}
             />
             <main className="flex-1 overflow-y-auto relative">
                 {children}
