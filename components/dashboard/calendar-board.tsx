@@ -146,7 +146,6 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                 color: "white",
                 border: "0px",
                 display: "block",
-                fontSize: "0.75rem",
                 padding: "2px 4px",
                 boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
             };
@@ -177,19 +176,19 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                                 <div className="flex -space-x-1 overflow-hidden shrink-0">
                                     {assignments.length > 0 ? (
                                         assignments.map((assignment: any) => (
-                                            <Avatar key={assignment.user_id} className="h-4 w-4 border border-white ring-1 ring-background">
+                                            <Avatar key={assignment.user_id} className="h-3 w-3 md:h-4 md:w-4 border border-white ring-1 ring-background">
                                                 <AvatarImage src={assignment.user?.avatar_url || ""} />
-                                                <AvatarFallback className="text-[6px]">{assignment.user?.name?.[0] || "?"}</AvatarFallback>
+                                                <AvatarFallback className="text-[4px] md:text-[6px]">{assignment.user?.name?.[0] || "?"}</AvatarFallback>
                                             </Avatar>
                                         ))
                                     ) : assignee ? (
-                                        <Avatar className="h-4 w-4 border border-white">
+                                        <Avatar className="h-3 w-3 md:h-4 md:w-4 border border-white">
                                             <AvatarImage src={assignee.avatar_url || ""} />
-                                            <AvatarFallback className="text-[8px]">{assignee.name?.[0] || "?"}</AvatarFallback>
+                                            <AvatarFallback className="text-[6px] md:text-[8px]">{assignee.name?.[0] || "?"}</AvatarFallback>
                                         </Avatar>
                                     ) : null}
                                 </div>
-                                <span className="truncate font-medium text-xs">{event.title}</span>
+                                <span className="truncate font-medium text-[10px] md:text-xs lg:text-sm leading-tight">{event.title}</span>
                             </div>
                         </TooltipTrigger>
                         <TooltipContent side="right" align="start" className="p-0 border-slate-200">
@@ -198,6 +197,13 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                     </Tooltip>
                 </TooltipProvider>
             );
+        },
+        month: {
+            dateHeader: ({ label }: any) => (
+                <span className="text-xs md:text-sm lg:text-base font-medium text-slate-700">
+                    {label}
+                </span>
+            ),
         },
         toolbar: CalendarToolbar,
     };

@@ -56,7 +56,7 @@ export default async function DashboardLayout({
                 teamName={teamName}
                 members={members}
             />
-            <main className="flex-1 overflow-hidden relative">
+            <main className="flex-1 overflow-y-auto relative">
                 {children}
             </main>
         </div>

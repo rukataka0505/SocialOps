@@ -33,16 +33,10 @@ export default function GuestAccessPage({ params }: { params: Promise<{ token: s
                     setStatus('error');
                     setErrorMessage('無効な招待リンクか、有効期限が切れています。');
                 } else if (result && result.success) {
-                    // Check if user already has a name (returning guest)
-                    if (result.user?.name && result.user.name.trim()) {
-                        // Auto-join returning guest
-                        await autoJoinGuest(guestToken);
-                    } else {
-                        // First-time guest - show name confirmation
-                        setName(result.user?.email || '');
-                        setTeamName(result.teamName || 'チーム');
-                        setStatus('editing');
-                    }
+                    // Always show name confirmation for guests (new or returning)
+                    setName(result.user?.name || result.user?.email || '');
+                    setTeamName(result.teamName || 'チーム');
+                    setStatus('editing');
                 }
             } catch (error) {
                 console.error('Failed to load guest info:', error);
