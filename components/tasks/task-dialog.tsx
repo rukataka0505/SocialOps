@@ -305,27 +305,33 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                     placeholder="例: 投稿確認"
                                     className="col-span-3"
                                     required
+                                    autoFocus
                                 />
                             </div>
 
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="client_id" className="text-right">
-                                    クライアント
-                                </Label>
-                                <select
-                                    id="client_id"
-                                    name="client_id"
-                                    defaultValue={task?.client_id || ""}
-                                    className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    <option value="">(選択なし)</option>
-                                    {clients.map((client) => (
-                                        <option key={client.id} value={client.id}>
-                                            {client.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            {/* Client Selection - Hidden if pre-filled in creation mode */}
+                            {(!isEditMode && task?.client_id) ? (
+                                <input type="hidden" name="client_id" value={task.client_id} />
+                            ) : (
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="client_id" className="text-right">
+                                        クライアント
+                                    </Label>
+                                    <select
+                                        id="client_id"
+                                        name="client_id"
+                                        defaultValue={task?.client_id || ""}
+                                        className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <option value="">(選択なし)</option>
+                                        {clients.map((client) => (
+                                            <option key={client.id} value={client.id}>
+                                                {client.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="workflow_status" className="text-right">
@@ -348,19 +354,24 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                 {task?.is_milestone && <input type="hidden" name="is_milestone" value="true" />}
                             </div>
 
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="due_date" className="text-right">
-                                    期限 <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    id="due_date"
-                                    name="due_date"
-                                    type="date"
-                                    defaultValue={task?.due_date?.split("T")[0]}
-                                    className="col-span-3"
-                                    required
-                                />
-                            </div>
+                            {/* Due Date - Hidden if pre-filled in creation mode */}
+                            {(!isEditMode && task?.due_date) ? (
+                                <input type="hidden" name="due_date" value={task.due_date.split("T")[0]} />
+                            ) : (
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="due_date" className="text-right">
+                                        期限 <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="due_date"
+                                        name="due_date"
+                                        type="date"
+                                        defaultValue={task?.due_date?.split("T")[0]}
+                                        className="col-span-3"
+                                        required
+                                    />
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="priority" className="text-right">
@@ -379,52 +390,55 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-4 items-start gap-4">
-                                <Label className="text-right pt-2">
-                                    担当者
-                                </Label>
-                                <div className="col-span-3 space-y-2">
-                                    {assignees.map((assignee, index) => (
-                                        <div key={index} className="flex gap-2 items-center">
-                                            <select
-                                                value={assignee.userId}
-                                                onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
-                                                className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                            >
-                                                <option value="">(担当者を選択)</option>
-                                                {members.map((member) => (
-                                                    <option key={member.user.id} value={member.user.id}>
-                                                        {member.user.name || member.user.email}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <Input
-                                                value={assignee.role}
-                                                onChange={(e) => updateAssignee(index, 'role', e.target.value)}
-                                                placeholder="役割"
-                                                className="flex-1"
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => removeAssignee(index)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={addAssignee}
-                                    >
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        担当者を追加
-                                    </Button>
+                            {/* Assignees - Hidden for new milestones */}
+                            {(!isEditMode && task?.is_milestone) ? null : (
+                                <div className="grid grid-cols-4 items-start gap-4">
+                                    <Label className="text-right pt-2">
+                                        担当者
+                                    </Label>
+                                    <div className="col-span-3 space-y-2">
+                                        {assignees.map((assignee, index) => (
+                                            <div key={index} className="flex gap-2 items-center">
+                                                <select
+                                                    value={assignee.userId}
+                                                    onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
+                                                    className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    <option value="">(担当者を選択)</option>
+                                                    {members.map((member) => (
+                                                        <option key={member.user.id} value={member.user.id}>
+                                                            {member.user.name || member.user.email}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <Input
+                                                    value={assignee.role}
+                                                    onChange={(e) => updateAssignee(index, 'role', e.target.value)}
+                                                    placeholder="役割"
+                                                    className="flex-1"
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => removeAssignee(index)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={addAssignee}
+                                        >
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            担当者を追加
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Custom Fields */}
                             {customFieldDefinitions.map((field) => (
@@ -482,7 +496,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
                         {isEditMode && (
                             <div className="border-t pt-6 mt-2">
-                                <h3 className="font-medium mb-4">サブタスク ({subtasks.length})</h3>
+                                <h3 className="font-medium mb-4">制作プロセス（サブタスク） ({subtasks.length})</h3>
                                 <div className="space-y-4">
                                     {/* Subtask List */}
                                     <div className="space-y-2">
