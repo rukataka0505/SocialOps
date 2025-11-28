@@ -1,32 +1,48 @@
-import { getClient } from "@/actions/clients";
+import { createClient } from '@/lib/supabase/server';
+import { ClientOverview } from '@/components/clients/client-overview';
+import { RoutineList } from '@/components/routines/routine-list';
 import { getRoutines } from "@/actions/routines";
 import { getTeamMembers } from "@/actions/teams";
-import { ClientOverview } from "@/components/clients/client-overview";
-import { RoutineList } from "@/components/routines/routine-list";
-import { notFound } from "next/navigation";
 
-interface PageProps {
+export default async function ClientSettingsPage({
+    params,
+}: {
     params: Promise<{ id: string }>;
-}
-
-export default async function ClientSettingsPage({ params }: PageProps) {
+}) {
     const { id } = await params;
-    const client = await getClient(id);
+    const supabase = await createClient();
 
-    if (!client) {
-        notFound();
-    }
+    const { data: client } = await (supabase as any)
+        .from('clients')
+        .select('*')
+        .eq('id', id)
+        .single();
 
+    if (!client) return null;
+
+    // Fetch additional data required by RoutineList
     const routines = await getRoutines(id);
     const teamMembers = await getTeamMembers(client.team_id);
 
     return (
-        <div className="space-y-6">
-            <ClientOverview client={client} />
-            <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4">ルーチン設定</h3>
-                <RoutineList clientId={client.id} routines={routines} staffMembers={teamMembers} />
-            </div>
+        <div className="mx-auto max-w-4xl space-y-8 pb-10">
+            {/* 基本情報・契約情報・Credentials */}
+            <section>
+                <h2 className="mb-4 text-lg font-semibold">基本設定</h2>
+                <ClientOverview client={client} />
+            </section>
+
+            {/* ルーチン設定 */}
+            <section>
+                <h2 className="mb-4 text-lg font-semibold">自動作成ルーチン</h2>
+                <div className="rounded-xl border bg-card p-6 shadow-sm">
+                    <RoutineList
+                        clientId={id}
+                        routines={routines}
+                        staffMembers={teamMembers}
+                    />
+                </div>
+            </section>
         </div>
     );
 }

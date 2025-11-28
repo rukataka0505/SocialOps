@@ -89,7 +89,7 @@ export async function createClient(prevState: ClientState | null, formData: Form
         }
 
         if (!name) {
-            return { error: "Client name is required" };
+            return { error: "Case name is required" };
         }
 
         const { error } = await (supabase as any).from("clients").insert({
@@ -106,9 +106,9 @@ export async function createClient(prevState: ClientState | null, formData: Form
         if (error) throw error;
 
         revalidatePath("/clients");
-        return { success: true, message: "Client created successfully" };
+        return { success: true, message: "Case created successfully" };
     } catch (error: any) {
-        return { error: error.message || "Failed to create client" };
+        return { error: error.message || "Failed to create case" };
     }
 }
 
@@ -139,7 +139,7 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
         }
 
         if (!name) {
-            return { error: "Client name is required" };
+            return { error: "Case name is required" };
         }
 
         const { error } = await (supabase as any)
@@ -159,9 +159,9 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
         if (error) throw error;
 
         revalidatePath("/clients");
-        return { success: true, message: "Client updated successfully" };
+        return { success: true, message: "Case updated successfully" };
     } catch (error: any) {
-        return { error: error.message || "Failed to update client" };
+        return { error: error.message || "Failed to update case" };
     }
 }
 
@@ -179,8 +179,8 @@ export async function deleteClient(clientId: string): Promise<ClientState> {
         if (error) throw error;
 
         revalidatePath("/clients");
-        return { success: true, message: "Client deleted successfully" };
+        return { success: true, message: "Case deleted successfully" };
     } catch (error: any) {
-        return { error: error.message || "Failed to delete client" };
+        return { error: error.message || "Failed to delete case" };
     }
 }

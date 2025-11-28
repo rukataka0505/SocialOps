@@ -37,7 +37,7 @@ export default async function ClientsPage() {
                         {clients.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="h-24 text-center">
-                                    クライアントが見つかりません。
+                                    案件が見つかりません。
                                 </TableCell>
                             </TableRow>
                         ) : (

@@ -1,43 +1,40 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
-interface ClientTabsProps {
-    clientId: string;
-}
-
-export function ClientTabs({ clientId }: ClientTabsProps) {
+export function ClientTabs({ clientId }: { clientId: string }) {
     const pathname = usePathname();
-    const isSettings = pathname.includes("/settings");
+    const isSettings = pathname.includes('/settings');
 
     return (
-        <div className="border-b">
-            <div className="flex h-10 items-center space-x-6 text-sm font-medium text-muted-foreground">
-                <Link
-                    href={`/clients/${clientId}`}
+        <div className="flex items-center space-x-2 border-b px-6 pt-2">
+            <Link href={`/clients/${clientId}`}>
+                <div
                     className={cn(
-                        "flex h-full items-center border-b-2 px-2 transition-colors hover:text-primary",
+                        "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                         !isSettings
                             ? "border-primary text-primary"
-                            : "border-transparent"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
                     )}
                 >
-                    投稿管理
-                </Link>
-                <Link
-                    href={`/clients/${clientId}/settings`}
+                    投稿管理 (Ops)
+                </div>
+            </Link>
+            <Link href={`/clients/${clientId}/settings`}>
+                <div
                     className={cn(
-                        "flex h-full items-center border-b-2 px-2 transition-colors hover:text-primary",
+                        "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                         isSettings
                             ? "border-primary text-primary"
-                            : "border-transparent"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
                     )}
                 >
-                    案件設定
-                </Link>
-            </div>
+                    案件設定 (Settings)
+                </div>
+            </Link>
         </div>
     );
 }

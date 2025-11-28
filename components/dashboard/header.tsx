@@ -28,7 +28,8 @@ export function Header({ user, userName, teamName, members, settings }: HeaderPr
 
     const navItems = [
         { name: "ダッシュボード", path: "/dashboard" },
-        { name: "クライアント", path: "/clients" },
+        { name: "投稿管理", path: "/ops" },
+        { name: "案件設定", path: "/management" },
         { name: "チーム設定", path: "/settings/team" },
     ];
 

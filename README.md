@@ -214,8 +214,10 @@ SocialOps/
 │   ├── (dashboard)/
 │   │   ├── layout.tsx               # 共通レイアウト（Header含む）
 │   │   ├── dashboard/page.tsx       # ダッシュボード（カレンダー + タスクリスト）
+│   │   ├── ops/page.tsx             # 投稿管理（案件一覧）
+│   │   ├── management/page.tsx      # 案件設定（案件一覧 + 追加）
 │   │   ├── clients/
-│   │   │   ├── page.tsx             # クライアント一覧
+│   │   │   ├── page.tsx             # (Deprecated) クライアント一覧
 │   │   │   └── [id]/page.tsx        # クライアント詳細（案件コックピット）
 │   │   └── settings/
 │   │       └── team/page.tsx        # チーム設定

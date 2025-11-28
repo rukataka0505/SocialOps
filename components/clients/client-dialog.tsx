@@ -76,17 +76,17 @@ export function ClientDialog({
                 {trigger || (
                     <Button variant={client ? "ghost" : "default"} size={client ? "sm" : "default"}>
                         {client ? <Pencil className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
-                        {client ? "編集" : "クライアント追加"}
+                        {client ? "編集" : "案件追加"}
                     </Button>
                 )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>{client ? "クライアント編集" : "新規クライアント登録"}</DialogTitle>
+                    <DialogTitle>{client ? "案件編集" : "新規案件登録"}</DialogTitle>
                     <DialogDescription>
                         {client
-                            ? "以下のクライアント情報を更新してください。"
-                            : "新規クライアントの情報を入力してください。"}
+                            ? "以下の案件情報を更新してください。"
+                            : "新規案件の情報を入力してください。"}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -99,7 +99,7 @@ export function ClientDialog({
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="name" className="text-right">
-                            名前 <span className="text-red-500">*</span>
+                            案件名 <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="name"
@@ -165,7 +165,7 @@ export function ClientDialog({
                     <DialogFooter>
                         <Button type="submit" disabled={isPending}>
                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {client ? "変更を保存" : "クライアントを作成"}
+                            {client ? "変更を保存" : "案件を作成"}
                         </Button>
                     </DialogFooter>
                 </form>

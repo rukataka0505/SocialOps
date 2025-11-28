@@ -1,52 +1,60 @@
-import { getClient } from "@/actions/clients";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, ExternalLink, FileSpreadsheet } from "lucide-react";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ClientTabs } from "@/components/clients/client-tabs";
+import { createClient } from '@/lib/supabase/server';
+import { notFound } from 'next/navigation';
+import { ClientTabs } from '@/components/clients/client-tabs';
+import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
-interface LayoutProps {
+// レイアウトはサーバーコンポーネントとしてデータ取得を行う
+export default async function ClientLayout({
+    children,
+    params,
+}: {
     children: React.ReactNode;
     params: Promise<{ id: string }>;
-}
-
-export default async function ClientLayout({ children, params }: LayoutProps) {
+}) {
     const { id } = await params;
-    const client = await getClient(id);
+    const supabase = await createClient();
+
+    const { data: client } = await (supabase as any)
+        .from('clients')
+        .select('*')
+        .eq('id', id)
+        .single();
 
     if (!client) {
         notFound();
     }
 
     return (
-        <div className="max-w-6xl mx-auto p-6 space-y-6">
-            <div className="flex items-center space-x-4">
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href="/clients">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                </Button>
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">{client.name}</h2>
-                    <p className="text-muted-foreground">
-                        {client.company ? `${client.company} - ` : ""}
-                        案件コックピット
-                    </p>
+        <div className="flex h-full flex-col bg-background">
+            {/* 共通ヘッダー */}
+            <div className="flex items-center justify-between border-b px-6 py-4">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-2xl font-bold tracking-tight">{client.name}</h1>
+                    <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                        投稿管理
+                    </span>
                 </div>
                 {client.spreadsheet_url && (
-                    <Button className="ml-auto bg-green-600 hover:bg-green-700 text-white" asChild>
-                        <a href={client.spreadsheet_url} target="_blank" rel="noopener noreferrer">
-                            <FileSpreadsheet className="mr-2 h-4 w-4" />
-                            管理シート
-                            <ExternalLink className="ml-2 h-4 w-4" />
+                    <Button variant="outline" size="sm" asChild>
+                        <a
+                            href={client.spreadsheet_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="gap-2"
+                        >
+                            <Image src="/file.svg" alt="Sheet" width={16} height={16} />
+                            管理シートを開く
                         </a>
                     </Button>
                 )}
             </div>
 
-            <ClientTabs clientId={client.id} />
+            {/* タブナビゲーション */}
+            <ClientTabs clientId={id} />
 
-            <div className="mt-6">
+            {/* ページコンテンツ */}
+            <div className="flex-1 overflow-auto bg-muted/10 p-6">
                 {children}
             </div>
         </div>
