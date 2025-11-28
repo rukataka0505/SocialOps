@@ -243,6 +243,36 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
         );
     };
 
+    const handleReset = () => {
+        if (!window.confirm("すべての設定を初期状態に戻しますか？\n※追加した項目は削除され、標準項目のみになります。")) return;
+
+        // Reset to system defaults
+        const defaultRegular = SYSTEM_FIELDS.map(sf => {
+            if (sf.id === 'workflow_status') {
+                return {
+                    ...sf,
+                    options: ['未着手', '進行中', '確認待ち', '完了']
+                };
+            }
+            return sf;
+        }) as CustomFieldDefinition[];
+
+        const defaultPost = SYSTEM_FIELDS
+            .filter(f => f.id !== 'assigned_to')
+            .map(sf => {
+                if (sf.id === 'workflow_status') {
+                    return {
+                        ...sf,
+                        options: ['未着手', '進行中', '確認待ち', '完了']
+                    };
+                }
+                return sf;
+            }) as CustomFieldDefinition[];
+
+        setRegularFields(defaultRegular);
+        setPostFields(defaultPost);
+    };
+
     return (
         <div className="space-y-8">
             <Card>
@@ -274,7 +304,10 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                 </CardContent>
             </Card>
 
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+                <Button variant="outline" onClick={handleReset} disabled={isPending} className="text-muted-foreground hover:text-destructive">
+                    デフォルトに戻す
+                </Button>
                 <Button onClick={handleSave} disabled={isPending} size="lg">
                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     設定を保存
