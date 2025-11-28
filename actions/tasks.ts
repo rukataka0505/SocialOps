@@ -112,12 +112,110 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
         const status = isCompleted ? 'completed' : 'pending';
         const completed_at = isCompleted ? new Date().toISOString() : null;
 
+        // First, get the task to check if it has a parent
+        const { data: currentTask, error: fetchError } = await (supabase as any)
+            .from("tasks")
+            .select("id, parent_id, title")
+            .eq("id", taskId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // Update the task status
         const { error } = await (supabase as any)
             .from("tasks")
             .update({ status, completed_at })
             .eq("id", taskId);
 
         if (error) throw error;
+
+        // Workflow Automation: If this is a child task, check parent status
+        if (currentTask.parent_id) {
+            const parentId = currentTask.parent_id;
+
+            // Get all sibling tasks (including this one)
+            const { data: siblings, error: siblingsError } = await (supabase as any)
+                .from("tasks")
+                .select("id, status, title")
+                .eq("parent_id", parentId)
+                .is("deleted_at", null);
+
+            if (siblingsError) throw siblingsError;
+
+            // Get parent task info
+            const { data: parentTask, error: parentError } = await (supabase as any)
+                .from("tasks")
+                .select("id, title, workflow_status, assignments:task_assignments(user_id)")
+                .eq("id", parentId)
+                .single();
+
+            if (parentError) throw parentError;
+
+            const { data: { user } } = await supabase.auth.getUser();
+            const currentUserId = user?.id;
+
+            // Auto-Advance Logic: All siblings completed → Parent to "確認待ち"
+            if (isCompleted) {
+                const allCompleted = siblings.every((s: any) => s.status === 'completed');
+
+                if (allCompleted) {
+                    // Update parent to "確認待ち"
+                    const { error: parentUpdateError } = await (supabase as any)
+                        .from("tasks")
+                        .update({ workflow_status: '確認待ち' })
+                        .eq("id", parentId);
+
+                    if (parentUpdateError) throw parentUpdateError;
+
+                    // Notify parent task assignees
+                    const { createNotification } = await import("./notifications");
+                    const assigneeIds = parentTask.assignments
+                        ?.map((a: any) => a.user_id)
+                        .filter((id: string) => id !== currentUserId) || [];
+
+                    if (assigneeIds.length > 0) {
+                        await createNotification(
+                            assigneeIds,
+                            "status_change",
+                            "タスクステータスが自動更新されました",
+                            `全てのサブタスクが完了したため、タスク「${parentTask.title}」のステータスが「確認待ち」に変更されました。`,
+                            `/dashboard?taskId=${parentId}`,
+                            currentUserId
+                        );
+                    }
+                }
+            }
+            // Auto-Revert Logic: Task uncompleted → Parent back to "進行中"
+            else {
+                const parentStatus = parentTask.workflow_status;
+                if (parentStatus === '確認待ち' || parentStatus === '完了') {
+                    // Revert parent to "進行中"
+                    const { error: parentRevertError } = await (supabase as any)
+                        .from("tasks")
+                        .update({ workflow_status: '進行中' })
+                        .eq("id", parentId);
+
+                    if (parentRevertError) throw parentRevertError;
+
+                    // Notify parent task assignees
+                    const { createNotification } = await import("./notifications");
+                    const assigneeIds = parentTask.assignments
+                        ?.map((a: any) => a.user_id)
+                        .filter((id: string) => id !== currentUserId) || [];
+
+                    if (assigneeIds.length > 0) {
+                        await createNotification(
+                            assigneeIds,
+                            "status_change",
+                            "タスクステータスが自動更新されました",
+                            `サブタスクが未完了に戻されたため、タスク「${parentTask.title}」のステータスが「進行中」に変更されました。`,
+                            `/dashboard?taskId=${parentId}`,
+                            currentUserId
+                        );
+                    }
+                }
+            }
+        }
 
         revalidatePath("/");
         return { success: true };
