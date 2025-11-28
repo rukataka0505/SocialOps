@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,7 @@ interface TaskSettingsProps {
         custom_field_definitions?: CustomFieldDefinition[]; // Legacy support
         regular_task_fields?: CustomFieldDefinition[];
         post_task_fields?: CustomFieldDefinition[];
+        client_fields?: CustomFieldDefinition[];
     };
 }
 
@@ -106,6 +107,13 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
         )
     );
 
+    const [clientFields, setClientFields] = useState<CustomFieldDefinition[]>(
+        initializeFields(
+            initialSettings.client_fields || [],
+            (f) => true
+        )
+    );
+
     // Custom Field Management Helper
     const createFieldManager = (
         fields: CustomFieldDefinition[],
@@ -137,13 +145,57 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
     const regularManager = createFieldManager(regularFields, setRegularFields);
     const postManager = createFieldManager(postFields, setPostFields);
 
+    // Client System Fields Definition
+    const CLIENT_SYSTEM_FIELDS: CustomFieldDefinition[] = [
+        { id: 'name', label: '案件名', type: 'text', required: true, system: true },
+        { id: 'email', label: 'メールアドレス', type: 'text', system: true },
+        { id: 'phone', label: '電話番号', type: 'text', system: true },
+        { id: 'spreadsheet_url', label: '管理シートURL', type: 'url', system: true },
+        { id: 'notes', label: 'メモ', type: 'textarea', system: true },
+    ];
+
+    // Initialize client fields with system defaults if empty
+    useEffect(() => {
+        if (clientFields.length === 0) {
+            // Merge logic similar to initializeFields but specific for Client System Fields
+            // actually initializeFields uses SYSTEM_FIELDS constant which is for Tasks.
+            // Let's manually init client fields here or create a helper.
+            setClientFields(CLIENT_SYSTEM_FIELDS);
+        }
+    }, []);
+
+    // Helper to merge client system fields with custom fields
+    // We need a separate initializer or just use the state directly if we want to be simple.
+    // But let's respect the pattern.
+    // Redefine initializeFields to be generic or create initializeClientFields.
+
+    // Let's just use a specific effect or state init for clients since it uses different system fields.
+    // Actually, let's refactor the state init to handle client fields correctly.
+
+    const [clientFieldsState, setClientFieldsState] = useState<CustomFieldDefinition[]>(() => {
+        const saved = initialSettings.client_fields || [];
+        const merged = [...CLIENT_SYSTEM_FIELDS];
+
+        // Update system fields with saved values
+        merged.forEach((sf, index) => {
+            const found = saved.find(f => f.id === sf.id);
+            if (found) {
+                merged[index] = { ...sf, ...found, system: true, type: sf.type };
+            }
+        });
+
+        // Add non-system custom fields
+        const nonSystem = saved.filter(f => !CLIENT_SYSTEM_FIELDS.some(sf => sf.id === f.id));
+        return [...merged, ...nonSystem];
+    });
+
+    const clientManager = createFieldManager(clientFieldsState, setClientFieldsState);
+
     const handleSave = () => {
         if (!window.confirm("設定を保存してよろしいですか？")) return;
 
         startTransition(async () => {
             // Extract workflow statuses from the regular task 'workflow_status' field
-            // We assume regular task settings are the source of truth for team-wide statuses for now,
-            // or we could check both. Let's use regularFields.
             const statusField = regularFields.find(f => f.id === 'workflow_status');
             const statuses = statusField?.options || ['未着手', '進行中', '確認待ち', '完了'];
 
@@ -152,6 +204,7 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                 workflow_statuses: statuses,
                 regular_task_fields: regularFields,
                 post_task_fields: postFields,
+                client_fields: clientFieldsState,
                 custom_field_definitions: regularFields, // Legacy sync
             };
             await updateTeamSettings(settings);
@@ -271,22 +324,24 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
 
         setRegularFields(defaultRegular);
         setPostFields(defaultPost);
+        setClientFieldsState(CLIENT_SYSTEM_FIELDS);
     };
 
     return (
         <div className="space-y-8">
             <Card>
                 <CardHeader>
-                    <CardTitle>タスク入力項目設定</CardTitle>
+                    <CardTitle>入力項目設定</CardTitle>
                     <CardDescription>
-                        タスク作成時に入力する項目を定義します。ドラッグ＆ドロップで並べ替えが可能です。
+                        タスクや案件の入力項目を定義します。ドラッグ＆ドロップで並べ替えが可能です。
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="regular" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-4">
-                            <TabsTrigger value="regular">通常タスク (Regular)</TabsTrigger>
-                            <TabsTrigger value="post">投稿タスク (Post)</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-3 mb-4">
+                            <TabsTrigger value="regular">通常タスク</TabsTrigger>
+                            <TabsTrigger value="post">投稿タスク</TabsTrigger>
+                            <TabsTrigger value="client">案件 (Client)</TabsTrigger>
                         </TabsList>
                         <TabsContent value="regular">
                             <div className="mb-4 text-sm text-muted-foreground">
@@ -299,6 +354,12 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                                 投稿タスク（案件タスク）で使用される入力項目です。
                             </div>
                             {renderFieldEditor(postFields, postManager)}
+                        </TabsContent>
+                        <TabsContent value="client">
+                            <div className="mb-4 text-sm text-muted-foreground">
+                                案件（クライアント）情報で使用される入力項目です。
+                            </div>
+                            {renderFieldEditor(clientFieldsState, clientManager)}
                         </TabsContent>
                     </Tabs>
                 </CardContent>

@@ -26,6 +26,7 @@ type Client = {
     phone: string | null;
     notes: string | null;
     spreadsheet_url: string | null;
+    attributes: Record<string, any>;
 };
 
 interface ClientDialogProps {
@@ -41,20 +42,18 @@ export function ClientDialog({
     client,
     trigger,
     open: controlledOpen,
-    onOpenChange: controlledOnOpenChange
-}: ClientDialogProps) {
+    onOpenChange: controlledOnOpenChange,
+    settings
+}: ClientDialogProps & { settings?: any }) {
     const [internalOpen, setInternalOpen] = useState(false);
 
     const isControlled = controlledOpen !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
     const setOpen = isControlled ? controlledOnOpenChange : setInternalOpen;
 
-    // Ensure setOpen is defined if controlledOnOpenChange is undefined (though types suggest it should be passed if open is passed)
-    // But for safety in JS/loose usage:
     const handleOpenChange = (newOpen: boolean) => {
         setOpen?.(newOpen);
     };
-
 
     // Determine which action to use
     const actionFn = client
@@ -70,6 +69,18 @@ export function ClientDialog({
         }
     }, [state.success, setOpen]);
 
+    // Parse attributes if editing
+    const attributes = client?.attributes as Record<string, any> || {};
+
+    // Get client fields from settings or use defaults
+    const clientFields = settings?.client_fields || [
+        { id: 'name', label: '案件名', type: 'text', required: true, system: true },
+        { id: 'email', label: 'メールアドレス', type: 'text', system: true },
+        { id: 'phone', label: '電話番号', type: 'text', system: true },
+        { id: 'spreadsheet_url', label: '管理シートURL', type: 'url', system: true },
+        { id: 'notes', label: 'メモ', type: 'textarea', system: true },
+    ];
+
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
@@ -80,7 +91,7 @@ export function ClientDialog({
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{client ? "案件編集" : "新規案件登録"}</DialogTitle>
                     <DialogDescription>
@@ -97,70 +108,56 @@ export function ClientDialog({
                         </Alert>
                     )}
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                            案件名 <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                            id="name"
-                            name="name"
-                            defaultValue={client?.name}
-                            className="col-span-3"
-                            required
-                        />
-                    </div>
+                    {/* Hidden input for field definitions snapshot */}
+                    <input type="hidden" name="_fields" value={JSON.stringify(clientFields)} />
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">
-                            メールアドレス
-                        </Label>
-                        <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            defaultValue={client?.email || ""}
-                            className="col-span-3"
-                        />
-                    </div>
+                    {clientFields.map((field: any) => {
+                        const value = field.system
+                            ? (client as any)?.[field.id]
+                            : attributes[field.id];
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="phone" className="text-right">
-                            電話番号
-                        </Label>
-                        <Input
-                            id="phone"
-                            name="phone"
-                            type="tel"
-                            defaultValue={client?.phone || ""}
-                            className="col-span-3"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="spreadsheet_url" className="text-right">
-                            管理シートURL
-                        </Label>
-                        <Input
-                            id="spreadsheet_url"
-                            name="spreadsheet_url"
-                            type="url"
-                            placeholder="https://docs.google.com/spreadsheets/d/..."
-                            defaultValue={client?.spreadsheet_url || ""}
-                            className="col-span-3"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="notes" className="text-right">
-                            メモ
-                        </Label>
-                        <Textarea
-                            id="notes"
-                            name="notes"
-                            defaultValue={client?.notes || ""}
-                            className="col-span-3"
-                        />
-                    </div>
+                        return (
+                            <div key={field.id} className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor={field.id} className="text-right">
+                                    {field.label}
+                                    {field.required && <span className="text-red-500 ml-1">*</span>}
+                                </Label>
+                                {field.type === 'textarea' ? (
+                                    <Textarea
+                                        id={field.id}
+                                        name={field.id}
+                                        defaultValue={value || ""}
+                                        className="col-span-3"
+                                        required={field.required}
+                                    />
+                                ) : field.type === 'select' ? (
+                                    <div className="col-span-3">
+                                        <select
+                                            id={field.id}
+                                            name={field.id}
+                                            defaultValue={value || ""}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            required={field.required}
+                                        >
+                                            <option value="">選択してください</option>
+                                            {field.options?.map((opt: string) => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <Input
+                                        id={field.id}
+                                        name={field.id}
+                                        type={field.type === 'url' ? 'url' : field.type === 'number' ? 'number' : 'text'}
+                                        defaultValue={value || ""}
+                                        className="col-span-3"
+                                        required={field.required}
+                                    />
+                                )}
+                            </div>
+                        );
+                    })}
 
                     <DialogFooter>
                         <Button type="submit" disabled={isPending}>

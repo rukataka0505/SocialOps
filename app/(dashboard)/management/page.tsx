@@ -1,4 +1,5 @@
 import { getClients } from "@/actions/clients";
+import { getTeamSettings } from "@/actions/teams";
 import { ClientDialog } from "@/components/clients/client-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,12 +19,13 @@ type Client = Database['public']['Tables']['clients']['Row'];
 
 export default async function ManagementPage() {
     const clients = await getClients();
+    const settings = await getTeamSettings();
 
     return (
         <div className="max-w-6xl mx-auto p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">案件設定 (Case Settings)</h1>
-                <ClientDialog />
+                <ClientDialog settings={settings} />
             </div>
 
             <div className="rounded-md border bg-white">

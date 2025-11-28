@@ -314,6 +314,7 @@ export interface Database {
                     phone: string | null;
                     spreadsheet_url: string | null;
                     notes: string | null;
+                    attributes: Json;
                     credentials: Json;
                     resources: Json;
                     created_at: string;

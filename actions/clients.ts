@@ -77,13 +77,30 @@ export async function createClient(prevState: ClientState | null, formData: Form
         const notes = formData.get("notes") as string;
         const credentialsJson = formData.get("credentials") as string;
         const resourcesJson = formData.get("resources") as string;
+        const fieldsJson = formData.get("_fields") as string;
 
         let credentials = [];
         let resources = [];
+        let attributes: Record<string, any> = {};
 
         try {
             if (credentialsJson) credentials = JSON.parse(credentialsJson);
             if (resourcesJson) resources = JSON.parse(resourcesJson);
+
+            // Extract custom fields based on definition
+            if (fieldsJson) {
+                const fields = JSON.parse(fieldsJson);
+                fields.forEach((field: any) => {
+                    if (!field.system) {
+                        const value = formData.get(field.id);
+                        if (value !== null) {
+                            attributes[field.id] = value;
+                        }
+                    }
+                });
+                // Save field definitions snapshot
+                attributes['_fields'] = fields;
+            }
         } catch (e) {
             console.error("Failed to parse client JSON fields", e);
         }
@@ -101,6 +118,7 @@ export async function createClient(prevState: ClientState | null, formData: Form
             notes: notes || null,
             credentials,
             resources,
+            attributes
         });
 
         if (error) throw error;
@@ -116,10 +134,6 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
     const supabase = await createSupabaseClient();
 
     try {
-        // Verify ownership/team access implicitly by checking if the client exists for this team?
-        // For now, just update. RLS should handle security if set up, but we should be careful.
-        // We'll rely on RLS for strict security, but here we just do the update.
-
         const name = formData.get("name") as string;
         const email = formData.get("email") as string;
         const phone = formData.get("phone") as string;
@@ -127,13 +141,30 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
         const notes = formData.get("notes") as string;
         const credentialsJson = formData.get("credentials") as string;
         const resourcesJson = formData.get("resources") as string;
+        const fieldsJson = formData.get("_fields") as string;
 
         let credentials;
         let resources;
+        let attributes: Record<string, any> = {};
 
         try {
             if (credentialsJson) credentials = JSON.parse(credentialsJson);
             if (resourcesJson) resources = JSON.parse(resourcesJson);
+
+            // Extract custom fields based on definition
+            if (fieldsJson) {
+                const fields = JSON.parse(fieldsJson);
+                fields.forEach((field: any) => {
+                    if (!field.system) {
+                        const value = formData.get(field.id);
+                        if (value !== null) {
+                            attributes[field.id] = value;
+                        }
+                    }
+                });
+                // Save field definitions snapshot
+                attributes['_fields'] = fields;
+            }
         } catch (e) {
             console.error("Failed to parse client JSON fields", e);
         }
@@ -142,18 +173,39 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
             return { error: "Case name is required" };
         }
 
+        // Fetch existing attributes to merge if needed, but for now we overwrite custom fields
+        // Ideally we should merge with existing if we want to keep fields not in current form (e.g. hidden ones)
+        // But here we assume form has all active fields.
+        // Let's just update what we have.
+
+        const updateData: any = {
+            name,
+            email: email || null,
+            phone: phone || null,
+            spreadsheet_url: spreadsheet_url || null,
+            notes: notes || null,
+            updated_at: new Date().toISOString(),
+        };
+
+        if (credentials !== undefined) updateData.credentials = credentials;
+        if (resources !== undefined) updateData.resources = resources;
+
+        // We need to be careful not to wipe existing attributes if we only send partial updates?
+        // But formData usually contains all fields in the form.
+        // For simplicity, we'll fetch existing client to merge attributes if we want to be safe,
+        // or just overwrite if we trust the form.
+        // Let's fetch to be safe and merge.
+
+        const { data: existing } = await (supabase as any).from("clients").select("attributes").eq("id", clientId).single();
+        if (existing) {
+            updateData.attributes = { ...existing.attributes, ...attributes };
+        } else {
+            updateData.attributes = attributes;
+        }
+
         const { error } = await (supabase as any)
             .from("clients")
-            .update({
-                name,
-                email: email || null,
-                phone: phone || null,
-                spreadsheet_url: spreadsheet_url || null,
-                notes: notes || null,
-                ...(credentials !== undefined && { credentials }),
-                ...(resources !== undefined && { resources }),
-                updated_at: new Date().toISOString(),
-            })
+            .update(updateData)
             .eq("id", clientId);
 
         if (error) throw error;

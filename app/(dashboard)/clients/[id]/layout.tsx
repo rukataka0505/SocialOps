@@ -4,6 +4,9 @@ import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 
+import { ClientInfoDialog } from '@/components/clients/client-info-dialog';
+import { getTeamSettings } from '@/actions/teams';
+
 // レイアウトはサーバーコンポーネントとしてデータ取得を行う
 export default async function ClientLayout({
     children,
@@ -25,6 +28,8 @@ export default async function ClientLayout({
         notFound();
     }
 
+    const settings = await getTeamSettings();
+
     return (
         <div className="flex h-full flex-col bg-background">
             {/* 共通ヘッダー */}
@@ -34,6 +39,7 @@ export default async function ClientLayout({
                     <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                         投稿管理
                     </span>
+                    <ClientInfoDialog client={client} settings={settings} />
                 </div>
                 {client.spreadsheet_url && (
                     <Button variant="outline" size="sm" asChild>
