@@ -62,9 +62,7 @@ export default async function DashboardPage() {
                 </main>
 
                 {/* Right: Team Panel */}
-                <aside className="w-full lg:w-80 border-l border-slate-100 bg-white shadow-sm z-10">
-                    <TeamPanel members={members} currentUserRole={currentUserRole} />
-                </aside>
+                <TeamPanel members={members} currentUserRole={currentUserRole} />
             </div>
         </div>
     );

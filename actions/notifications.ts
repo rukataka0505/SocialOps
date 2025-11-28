@@ -106,7 +106,7 @@ export async function createNotification(
             type,
             title,
             message: content,
-            read: false,
+            is_read: false,
             metadata: {
                 resource_url,
                 actor_id
@@ -140,7 +140,7 @@ export async function getNotifications(limit = 20) {
             .from("notifications")
             .select("*")
             .eq("user_id", user.id)
-            .eq("read", false)
+            .eq("is_read", false)
             .order("created_at", { ascending: false })
             .limit(limit);
 
@@ -162,7 +162,7 @@ export async function markAsRead(notificationId: string) {
     try {
         const { error } = await (supabase as any)
             .from("notifications")
-            .update({ read: true })
+            .update({ is_read: true })
             .eq("id", notificationId);
 
         if (error) throw error;
@@ -187,9 +187,9 @@ export async function markAllAsRead() {
 
         const { error } = await (supabase as any)
             .from("notifications")
-            .update({ read: true })
+            .update({ is_read: true })
             .eq("user_id", user.id)
-            .eq("read", false);
+            .eq("is_read", false);
 
         if (error) throw error;
 
