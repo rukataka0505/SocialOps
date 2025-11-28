@@ -635,3 +635,59 @@ export async function submitDeliverable(taskId: string, url: string) {
         return { success: false, error };
     }
 }
+
+export async function getTaskWithHierarchy(taskId: string) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        // 1. Get the target task to check for parent_id
+        const { data: initialTask, error: initialError } = await (supabase as any)
+            .from("tasks")
+            .select("id, parent_id")
+            .eq("id", taskId)
+            .single();
+
+        if (initialError) throw initialError;
+
+        // 2. Determine the actual ID to fetch (Parent or Self)
+        const targetId = initialTask.parent_id || initialTask.id;
+
+        // 3. Fetch full details for the target task
+        const { data: task, error } = await (supabase as any)
+            .from("tasks")
+            .select(`
+                *,
+                client:clients(id, name, spreadsheet_url),
+                assignments:task_assignments(user_id, role, user:users(id, name, avatar_url)),
+                subtasks:tasks(
+                    *,
+                    assignments:task_assignments(user_id, role, user:users(id, name, avatar_url)),
+                    attributes
+                ),
+                comments:task_comments(
+                    *,
+                    user:users(id, name, avatar_url)
+                )
+            `)
+            .eq("id", targetId)
+            .eq("team_id", teamId)
+            .single();
+
+        if (error) throw error;
+
+        // Sort subtasks and comments
+        if (task.subtasks) {
+            task.subtasks.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+        }
+        if (task.comments) {
+            task.comments.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        }
+
+        return task;
+    } catch (error) {
+        console.error("Error fetching task hierarchy:", error);
+        return null;
+    }
+}

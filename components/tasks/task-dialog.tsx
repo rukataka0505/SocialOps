@@ -20,7 +20,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { createTask, updateTask, deleteTask, getSubtasks, toggleTaskStatus, getTaskComments, addComment, submitDeliverable } from "@/actions/tasks";
+import { createTask, updateTask, deleteTask, getSubtasks, toggleTaskStatus, getTaskComments, addComment, submitDeliverable, getTaskWithHierarchy } from "@/actions/tasks";
 import { Loader2, Plus, Trash2, CheckSquare, Link as LinkIcon, Paperclip, Send, ExternalLink, Edit2, User } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
@@ -67,6 +67,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
+    const [currentTask, setCurrentTask] = useState<any>(task);
     const [clients, setClients] = useState<any[]>([]);
     const [assignees, setAssignees] = useState<{ userId: string; role: string }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -82,8 +83,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     const [newComment, setNewComment] = useState("");
     const commentsEndRef = useRef<HTMLDivElement>(null);
 
-    const isEditMode = !!(task && task.id);
-    const isMilestone = task?.is_milestone === true;
+    const isEditMode = !!(currentTask && currentTask.id);
+    const isMilestone = currentTask?.is_milestone === true;
 
     // Fetch data when dialog opens
     useEffect(() => {
@@ -95,40 +96,48 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     const fetchedClients = await getClients();
                     setClients(fetchedClients);
 
-                    if (task) {
-                        // Initialize assignees
-                        if (task.assignments) {
-                            setAssignees(task.assignments.map((a: any) => ({
-                                userId: a.user_id,
-                                role: a.role || ""
-                            })));
-                        } else if (task.assigned_to) {
-                            setAssignees([{ userId: task.assigned_to, role: "" }]);
+                    if (task && task.id) {
+                        // Always fetch the hierarchy (Parent Task)
+                        const hierarchyTask = await getTaskWithHierarchy(task.id);
+
+                        if (hierarchyTask) {
+                            setCurrentTask(hierarchyTask);
+
+                            // Initialize assignees from the fetched parent task
+                            if (hierarchyTask.assignments) {
+                                setAssignees(hierarchyTask.assignments.map((a: any) => ({
+                                    userId: a.user_id,
+                                    role: a.role || ""
+                                })));
+                            } else if (hierarchyTask.assigned_to) {
+                                setAssignees([{ userId: hierarchyTask.assigned_to, role: "" }]);
+                            } else {
+                                setAssignees([]);
+                            }
+
+                            // Set subtasks and comments from the fetched parent task
+                            setSubtasks(hierarchyTask.subtasks || []);
+                            setComments(hierarchyTask.comments || []);
                         } else {
-                            setAssignees([]);
+                            // Fallback if fetch fails (shouldn't happen usually)
+                            setCurrentTask(task);
                         }
-
-                        // Use eager loaded data if available, otherwise fetch
-                        if (task.subtasks) {
-                            setSubtasks(task.subtasks);
-                        } else if (isEditMode) {
-                            const fetchedSubtasks = await getSubtasks(task.id);
-                            setSubtasks(fetchedSubtasks);
-                        }
-
-                        if (task.comments) {
-                            setComments(task.comments);
-                        } else if (isEditMode) {
-                            const fetchedComments = await getTaskComments(task.id);
-                            setComments(fetchedComments);
-                        }
+                    } else {
+                        // New task creation
+                        setCurrentTask(task);
+                        setAssignees([]);
+                        setSubtasks([]);
+                        setComments([]);
                     }
                 } finally {
                     setIsLoading(false);
                 }
             });
+        } else {
+            // Reset state when closed
+            setCurrentTask(task);
         }
-    }, [open, task, isEditMode]);
+    }, [open, task]);
 
     // Scroll to bottom of comments when they change
     useEffect(() => {
@@ -182,7 +191,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     });
 
                     data.assignees = assignees.filter(a => a.userId);
-                    result = await updateTask(task.id, data);
+                    result = await updateTask(currentTask.id, data);
                 } else {
                     const formDataWithAssignees = new FormData(event.currentTarget);
                     formDataWithAssignees.set('assignees', JSON.stringify(assignees.filter(a => a.userId)));
@@ -208,7 +217,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         if (!confirm("本当にこのタスクを削除しますか？")) return;
 
         startTransition(async () => {
-            const result = await deleteTask(task.id);
+            const result = await deleteTask(currentTask.id);
             if (result.success) {
                 setOpen(false);
                 router.refresh();
@@ -228,7 +237,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
             const formData = new FormData();
             formData.append('title', subtaskTitle);
             formData.append('due_date', subtaskDueDate);
-            formData.append('parent_id', task.id);
+            formData.append('parent_id', currentTask.id);
             formData.append('status', 'in_progress');
 
             if (subtaskAssignee) {
@@ -240,7 +249,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                 setSubtaskTitle("");
                 setSubtaskAssignee("");
                 setSubtaskDueDate("");
-                const fetchedSubtasks = await getSubtasks(task.id);
+                const fetchedSubtasks = await getSubtasks(currentTask.id);
                 setSubtasks(fetchedSubtasks);
                 router.refresh();
             } else {
@@ -288,7 +297,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
             if (!result.success) {
                 setError("担当者の更新に失敗しました");
-                const fetchedSubtasks = await getSubtasks(task.id);
+                const fetchedSubtasks = await getSubtasks(currentTask.id);
                 setSubtasks(fetchedSubtasks);
             } else {
                 router.refresh();
@@ -300,7 +309,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         startTransition(async () => {
             const result = await submitDeliverable(subtaskId, url);
             if (result.success) {
-                const fetchedSubtasks = await getSubtasks(task.id);
+                const fetchedSubtasks = await getSubtasks(currentTask.id);
                 setSubtasks(fetchedSubtasks);
                 router.refresh();
             } else {
@@ -314,10 +323,10 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         if (!newComment.trim()) return;
 
         startTransition(async () => {
-            const result = await addComment(task.id, newComment);
+            const result = await addComment(currentTask.id, newComment);
             if (result.success) {
                 setNewComment("");
-                const fetchedComments = await getTaskComments(task.id);
+                const fetchedComments = await getTaskComments(currentTask.id);
                 setComments(fetchedComments);
                 router.refresh();
             } else {
@@ -359,7 +368,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     </div>
                 ) : (
                     <div className="flex-1 overflow-hidden">
-                        <form id="task-form" onSubmit={handleSubmit} className="h-full flex flex-col lg:flex-row gap-6">
+                        <form id="task-form" key={currentTask?.id} onSubmit={handleSubmit} className="h-full flex flex-col lg:flex-row gap-6">
                             {/* Left Column: Task Info & Subtasks */}
                             <div className="flex-1 flex flex-col gap-4 overflow-hidden">
                                 <ScrollArea className="flex-1 pr-4">
@@ -377,7 +386,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                 <Input
                                                     id="title"
                                                     name="title"
-                                                    defaultValue={task?.title}
+                                                    defaultValue={currentTask?.title}
                                                     placeholder="タスク名を入力"
                                                     className="text-lg font-medium"
                                                     required
@@ -385,8 +394,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             </div>
 
                                             {/* Client Selector (Hidden if client_id exists) */}
-                                            {task?.client_id ? (
-                                                <input type="hidden" name="client_id" value={task.client_id} />
+                                            {currentTask?.client_id ? (
+                                                <input type="hidden" name="client_id" value={currentTask.client_id} />
                                             ) : (
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="client_id">クライアント</Label>
@@ -402,6 +411,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                     </select>
                                                 </div>
                                             )}
+
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="due_date">期限</Label>
@@ -409,7 +419,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                         id="due_date"
                                                         name="due_date"
                                                         type="date"
-                                                        defaultValue={task?.due_date?.split("T")[0]}
+                                                        defaultValue={currentTask?.due_date?.split("T")[0]}
                                                         required
                                                     />
                                                 </div>
@@ -418,7 +428,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                     <select
                                                         id="workflow_status"
                                                         name="workflow_status"
-                                                        defaultValue={task?.workflow_status || workflowStatuses[0]}
+                                                        defaultValue={currentTask?.workflow_status || workflowStatuses[0]}
                                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                                     >
                                                         {workflowStatuses.map((status) => (
@@ -472,7 +482,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
                                             {/* Hidden Fields */}
                                             <input type="hidden" name="status" value="in_progress" />
-                                            {task?.is_milestone && <input type="hidden" name="is_milestone" value="true" />}
+                                            {currentTask?.is_milestone && <input type="hidden" name="is_milestone" value="true" />}
                                         </div>
 
                                         {/* Subtasks Section (Only in Edit Mode) */}
@@ -626,77 +636,80 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                         {isEditMode ? "保存" : "作成"}
                                     </Button>
                                 </div>
-                            </div>
+                            </div >
 
                             {/* Right Column: Comments (Only in Edit Mode) */}
-                            {isEditMode && (
-                                <div className="w-full lg:w-[350px] flex flex-col border-l pl-0 lg:pl-6 h-full">
-                                    <h3 className="font-semibold mb-4 flex items-center gap-2">
-                                        コメント ({comments.length})
-                                    </h3>
-                                    <ScrollArea className="flex-1 pr-4 -mr-4 mb-4">
-                                        <div className="space-y-4 pr-4">
-                                            {comments.map((comment) => (
-                                                <div key={comment.id} className="flex gap-3">
-                                                    <Avatar className="h-8 w-8 mt-1">
-                                                        <AvatarImage src={comment.user?.avatar_url || ""} />
-                                                        <AvatarFallback>{comment.user?.name?.[0] || "?"}</AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-sm font-medium">{comment.user?.name || "Unknown"}</span>
-                                                            <span className="text-xs text-muted-foreground">
-                                                                {format(new Date(comment.created_at), "MM/dd HH:mm", { locale: ja })}
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-sm mt-1 bg-slate-50 p-2 rounded-lg text-slate-700 whitespace-pre-wrap">
-                                                            {comment.content}
+                            {
+                                isEditMode && (
+                                    <div className="w-full lg:w-[350px] flex flex-col border-l pl-0 lg:pl-6 h-full">
+                                        <h3 className="font-semibold mb-4 flex items-center gap-2">
+                                            コメント ({comments.length})
+                                        </h3>
+                                        <ScrollArea className="flex-1 pr-4 -mr-4 mb-4">
+                                            <div className="space-y-4 pr-4">
+                                                {comments.map((comment) => (
+                                                    <div key={comment.id} className="flex gap-3">
+                                                        <Avatar className="h-8 w-8 mt-1">
+                                                            <AvatarImage src={comment.user?.avatar_url || ""} />
+                                                            <AvatarFallback>{comment.user?.name?.[0] || "?"}</AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-medium">{comment.user?.name || "Unknown"}</span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {format(new Date(comment.created_at), "MM/dd HH:mm", { locale: ja })}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-sm mt-1 bg-slate-50 p-2 rounded-lg text-slate-700 whitespace-pre-wrap">
+                                                                {comment.content}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))}
-                                            <div ref={commentsEndRef} />
-                                            {comments.length === 0 && (
-                                                <div className="text-center text-sm text-muted-foreground py-8">
-                                                    コメントはまだありません
-                                                </div>
-                                            )}
+                                                ))}
+                                                <div ref={commentsEndRef} />
+                                                {comments.length === 0 && (
+                                                    <div className="text-center text-sm text-muted-foreground py-8">
+                                                        コメントはまだありません
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </ScrollArea>
+                                        <div className="mt-auto">
+                                            <div className="relative">
+                                                <Textarea
+                                                    placeholder="コメントを入力..."
+                                                    value={newComment}
+                                                    onChange={(e) => setNewComment(e.target.value)}
+                                                    className="min-h-[80px] pr-10 resize-none"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                                            handleAddComment();
+                                                        }
+                                                    }}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    size="icon"
+                                                    className="absolute bottom-2 right-2 h-8 w-8"
+                                                    onClick={handleAddComment}
+                                                    disabled={!newComment.trim() || isPending}
+                                                >
+                                                    <Send className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-1 text-right">
+                                                Ctrl + Enter で送信
+                                            </p>
                                         </div>
-                                    </ScrollArea>
-                                    <div className="mt-auto">
-                                        <div className="relative">
-                                            <Textarea
-                                                placeholder="コメントを入力..."
-                                                value={newComment}
-                                                onChange={(e) => setNewComment(e.target.value)}
-                                                className="min-h-[80px] pr-10 resize-none"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                                                        handleAddComment();
-                                                    }
-                                                }}
-                                            />
-                                            <Button
-                                                type="button"
-                                                size="icon"
-                                                className="absolute bottom-2 right-2 h-8 w-8"
-                                                onClick={handleAddComment}
-                                                disabled={!newComment.trim() || isPending}
-                                            >
-                                                <Send className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-1 text-right">
-                                            Ctrl + Enter で送信
-                                        </p>
                                     </div>
-                                </div>
-                            )}
-                        </form>
-                    </div>
-                )}
-            </DialogContent>
-        </Dialog>
+                                )
+                            }
+                        </form >
+                    </div >
+                )
+                }
+            </DialogContent >
+        </Dialog >
     );
 }
 
