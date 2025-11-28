@@ -1,14 +1,13 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-    // Validate environment variables
+/**
+ * Validate environment variables and return error response if invalid
+ */
+function validateEnvironment() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    // Check for Dev Bypass Mode
-    const isDevBypass = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true' &&
-        !!process.env.NEXT_PUBLIC_MOCK_USER_ID;
     if (!supabaseUrl || !supabaseAnonKey ||
         supabaseUrl === 'your-project-url' ||
         supabaseAnonKey === 'your-anon-key') {
@@ -19,7 +18,6 @@ export async function middleware(request: NextRequest) {
         console.error('');
         console.error('💡 Supabaseダッシュボード → Settings → API で確認できます');
 
-        // Return a helpful error page instead of crashing
         return new NextResponse(
             `<!DOCTYPE html>
 <html lang="ja">
@@ -96,9 +94,45 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
         );
     }
 
-    let supabaseResponse = NextResponse.next({
-        request,
-    });
+    return null;
+}
+
+/**
+ * Determine the type of route being accessed
+ */
+function getRouteType(pathname: string) {
+    const isAuthRoute = pathname.startsWith('/login');
+    const isProtectedRoute = pathname === '/dashboard' ||
+        pathname.startsWith('/clients') ||
+        pathname.startsWith('/settings') ||
+        pathname.startsWith('/onboarding');
+    const isLandingPage = pathname === '/';
+
+    return { isAuthRoute, isProtectedRoute, isLandingPage };
+}
+
+/**
+ * Check if user is authenticated (including dev bypass and guest mode)
+ */
+function checkAuthentication(request: NextRequest, user: any) {
+    const isDevBypass = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true' &&
+        !!process.env.NEXT_PUBLIC_MOCK_USER_ID;
+    const hasGuestCookie = request.cookies.has('socialops-guest-token');
+    const isAuthenticated = !!(user || isDevBypass || hasGuestCookie);
+
+    return { isAuthenticated, isDevBypass, hasGuestCookie };
+}
+
+export async function middleware(request: NextRequest) {
+    // Validate environment variables
+    const envError = validateEnvironment();
+    if (envError) return envError;
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    // Initialize Supabase client
+    let supabaseResponse = NextResponse.next({ request });
 
     const supabase = createServerClient(
         supabaseUrl,
@@ -109,10 +143,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
                     return request.cookies.getAll();
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    });
+                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+                    supabaseResponse = NextResponse.next({ request });
                     cookiesToSet.forEach(({ name, value, options }) =>
                         supabaseResponse.cookies.set(name, value, options)
                     );
@@ -121,38 +153,28 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</pre>
         }
     );
 
-    // Refresh session if expired - required for Server Components
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const isAuthRoute = request.nextUrl.pathname.startsWith('/login');
-    const isProtectedRoute = request.nextUrl.pathname === '/dashboard' ||
-        request.nextUrl.pathname.startsWith('/clients') ||
-        request.nextUrl.pathname.startsWith('/settings') ||
-        request.nextUrl.pathname.startsWith('/onboarding');
+    // Determine route type and authentication status
+    const { isAuthRoute, isProtectedRoute, isLandingPage } = getRouteType(request.nextUrl.pathname);
+    const { isAuthenticated, isDevBypass, hasGuestCookie } = checkAuthentication(request, user);
 
     // Redirect authenticated users away from login page
-    // OR if bypass is active (treat as authenticated)
     if (isAuthRoute && (user || isDevBypass)) {
         const url = request.nextUrl.clone();
         url.pathname = '/dashboard';
         return NextResponse.redirect(url);
     }
 
-    // Redirect authenticated users from LP to dashboard
-    // Also redirect guests from LP to dashboard
-    const hasGuestCookie = request.cookies.has('socialops-guest-token');
-
-    if (request.nextUrl.pathname === '/' && (user || isDevBypass || hasGuestCookie)) {
+    // Redirect authenticated users from landing page to dashboard
+    if (isLandingPage && isAuthenticated) {
         const url = request.nextUrl.clone();
         url.pathname = '/dashboard';
         return NextResponse.redirect(url);
     }
 
     // Redirect unauthenticated users to login page
-    // UNLESS bypass is active OR guest cookie is present
-
     if (isProtectedRoute && !user && !isDevBypass && !hasGuestCookie) {
         const url = request.nextUrl.clone();
         url.pathname = '/login';

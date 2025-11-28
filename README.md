@@ -209,38 +209,67 @@ npx supabase db push
 ```
 SocialOps/
 ├── app/
+│   ├── (auth)/
+│   │   └── login/page.tsx           # ログインページ
 │   ├── (dashboard)/
-│   │   ├── layout.tsx          # Persistent layout with Header
-│   │   ├── dashboard/page.tsx  # Personal dashboard (filtered tasks)
+│   │   ├── layout.tsx               # 共通レイアウト（Header含む）
+│   │   ├── dashboard/page.tsx       # ダッシュボード（カレンダー + タスクリスト）
 │   │   ├── clients/
-│   │   │   ├── page.tsx        # Client list
-│   │   │   └── [id]/page.tsx   # Client Cockpit (Tabs)
+│   │   │   ├── page.tsx             # クライアント一覧
+│   │   │   └── [id]/page.tsx        # クライアント詳細（案件コックピット）
 │   │   └── settings/
-│   │       └── team/page.tsx   # Team settings
-│   ├── login/
-│   └── access/[token]/         # Guest access
+│   │       └── team/page.tsx        # チーム設定
+│   ├── access/[token]/              # ゲストアクセス
+│   ├── invite/[token]/              # チーム招待
+│   ├── onboarding/
+│   │   └── create-team/page.tsx     # チーム作成ウィザード
+│   ├── layout.tsx                   # ルートレイアウト
+│   └── page.tsx                     # ランディングページ
 ├── components/
 │   ├── dashboard/
-│   │   ├── header.tsx          # Persistent header with navigation
-│   │   ├── calendar-board.tsx  # Main calendar view
-│   │   ├── team-panel.tsx      # Member list sidebar
-│   │   └── my-tasks.tsx        # Personal task list
+│   │   ├── header.tsx               # ヘッダー（ナビゲーション）
+│   │   ├── calendar-board.tsx       # カレンダービュー
+│   │   ├── calendar-toolbar.tsx     # カレンダーツールバー
+│   │   ├── team-panel.tsx           # メンバーリストサイドバー
+│   │   ├── my-tasks.tsx             # 個人タスクリスト
+│   │   ├── member-detail.tsx        # メンバー詳細ダイアログ
+│   │   └── user-profile-dialog.tsx  # プロフィール編集ダイアログ
 │   ├── clients/
-│   │   ├── client-overview.tsx         # Client details, credentials, resources
-│   │   └── monthly-list-schedule.tsx   # Monthly schedule (vertical list)
+│   │   ├── client-dialog.tsx        # クライアント作成・編集ダイアログ
+│   │   ├── client-overview.tsx      # クライアント概要タブ
+│   │   ├── client-actions.tsx       # クライアントアクション
+│   │   └── monthly-list-schedule.tsx # 月次進行表
 │   ├── tasks/
-│   │   └── task-dialog.tsx     # Dynamic task dialog
+│   │   ├── task-dialog.tsx          # タスク作成・編集ダイアログ
+│   │   ├── task-detail-dialog.tsx   # タスク詳細ダイアログ
+│   │   └── task-field-editor.tsx    # カスタムフィールドエディター
+│   ├── routines/
+│   │   ├── routine-dialog.tsx       # ルーチン設定ダイアログ
+│   │   └── routine-list.tsx         # ルーチン一覧
 │   ├── settings/
-│   │   └── task-settings.tsx   # Team settings for workflows
-│   └── ui/                     # Shadcn UI components
+│   │   └── task-settings.tsx        # ワークフロー設定
+│   ├── lp/                          # ランディングページコンポーネント
+│   └── ui/                          # Shadcn UIコンポーネント
 ├── actions/
-│   ├── tasks.ts                # Task-related server actions
-│   ├── clients.ts              # Client-related server actions
-│   └── teams.ts                # Team-related server actions
+│   ├── auth.ts                      # 認証関連
+│   ├── clients.ts                   # クライアント管理
+│   ├── guest-auth.ts                # ゲスト認証
+│   ├── guests.ts                    # ゲストユーザー管理
+│   ├── onboarding.ts                # オンボーディング
+│   ├── routines.ts                  # ルーチン管理
+│   ├── tasks.ts                     # タスク管理
+│   ├── teams.ts                     # チーム管理
+│   └── user.ts                      # ユーザープロフィール
+├── lib/
+│   ├── supabase/
+│   │   ├── server.ts                # サーバーサイドSupabaseクライアント
+│   │   └── client.ts                # クライアントサイドSupabaseクライアント
+│   └── utils.ts                     # ユーティリティ関数
 ├── supabase/
-│   └── migrations/             # Database migration files
-└── types/
-    └── database.types.ts       # Supabase type definitions
+│   └── migrations/                  # DBマイグレーションファイル
+├── types/
+│   └── database.types.ts            # Supabase型定義
+└── middleware.ts                    # 認証・ルーティングミドルウェア
 ```
 
 ## License

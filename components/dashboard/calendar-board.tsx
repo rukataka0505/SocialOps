@@ -15,13 +15,7 @@ import { TaskDialog } from "@/components/tasks/task-dialog";
 import { TaskDetailDialog } from "@/components/tasks/task-detail-dialog";
 import { updateTask } from "@/actions/tasks";
 import { useRouter } from "next/navigation";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { TaskTooltip } from "@/components/tasks/task-tooltip";
+
 
 const locales = {
     "ja": ja,
@@ -214,33 +208,24 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
             const assignee = task.assignee;
 
             return (
-                <TooltipProvider delayDuration={500}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1 overflow-hidden px-1 h-full w-full">
-                                <div className="flex -space-x-1 overflow-hidden shrink-0">
-                                    {assignments.length > 0 ? (
-                                        assignments.map((assignment: any) => (
-                                            <Avatar key={assignment.user_id} className="h-3 w-3 md:h-4 md:w-4 border border-white ring-1 ring-background">
-                                                <AvatarImage src={assignment.user?.avatar_url || ""} />
-                                                <AvatarFallback className="text-[4px] md:text-[6px]">{assignment.user?.name?.[0] || "?"}</AvatarFallback>
-                                            </Avatar>
-                                        ))
-                                    ) : assignee ? (
-                                        <Avatar className="h-3 w-3 md:h-4 md:w-4 border border-white">
-                                            <AvatarImage src={assignee.avatar_url || ""} />
-                                            <AvatarFallback className="text-[6px] md:text-[8px]">{assignee.name?.[0] || "?"}</AvatarFallback>
-                                        </Avatar>
-                                    ) : null}
-                                </div>
-                                <span className="truncate font-medium text-[10px] md:text-xs lg:text-sm leading-tight">{event.title}</span>
-                            </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" align="start" className="p-0 border-slate-200">
-                            <TaskTooltip task={task} />
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                <div className="flex items-center gap-1 overflow-hidden px-1 h-full w-full cursor-pointer">
+                    <div className="flex -space-x-1 overflow-hidden shrink-0">
+                        {assignments.length > 0 ? (
+                            assignments.map((assignment: any) => (
+                                <Avatar key={assignment.user_id} className="h-3 w-3 md:h-4 md:w-4 border border-white ring-1 ring-background">
+                                    <AvatarImage src={assignment.user?.avatar_url || ""} />
+                                    <AvatarFallback className="text-[4px] md:text-[6px]">{assignment.user?.name?.[0] || "?"}</AvatarFallback>
+                                </Avatar>
+                            ))
+                        ) : assignee ? (
+                            <Avatar className="h-3 w-3 md:h-4 md:w-4 border border-white">
+                                <AvatarImage src={assignee.avatar_url || ""} />
+                                <AvatarFallback className="text-[6px] md:text-[8px]">{assignee.name?.[0] || "?"}</AvatarFallback>
+                            </Avatar>
+                        ) : null}
+                    </div>
+                    <span className="truncate font-medium text-[10px] md:text-xs lg:text-sm leading-tight">{event.title}</span>
+                </div>
             );
         },
         month: {
@@ -262,8 +247,8 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                     <button
                         onClick={() => setViewMode('my')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'my'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                     >
                         📅 自分のタスク
@@ -271,8 +256,8 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                     <button
                         onClick={() => setViewMode('all')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'all'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                     >
                         👥 チーム全体

@@ -10,7 +10,14 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Trash2, Settings2 } from "lucide-react";
-import { TaskField } from "./task-field-manager"; // We'll move the type definition later or keep it there
+
+// TaskField type definition (moved from task-field-manager.tsx)
+export interface TaskField {
+    id: string;
+    label: string;
+    type: 'text' | 'number' | 'date' | 'select' | 'url';
+    options?: string[];
+}
 
 interface TaskFieldEditorProps {
     field?: TaskField;
