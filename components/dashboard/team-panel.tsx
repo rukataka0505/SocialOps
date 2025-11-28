@@ -36,9 +36,16 @@ export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
                                 <span className="w-1 h-4 bg-blue-500 rounded-full" />
                                 <span>Members</span>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-                                <ChevronRight className="h-4 w-4 text-slate-500" />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                {(currentUserRole === 'admin' || currentUserRole === 'owner') && (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/team/members">メンバー管理</Link>
+                                    </Button>
+                                )}
+                                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                                    <ChevronRight className="h-4 w-4 text-slate-500" />
+                                </Button>
+                            </div>
                         </>
                     ) : (
                         <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
@@ -60,17 +67,7 @@ export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
                     ) : (
                         // Expanded State
                         <div className="flex flex-col h-full">
-                            {/* Team Settings Link */}
-                            {(currentUserRole === 'admin' || currentUserRole === 'owner') && (
-                                <div className="p-4 border-b border-slate-50">
-                                    <Button variant="outline" size="sm" className="w-full justify-start gap-2" asChild>
-                                        <Link href="/settings/team">
-                                            <Users className="h-4 w-4" />
-                                            チーム設定
-                                        </Link>
-                                    </Button>
-                                </div>
-                            )}
+
 
                             {/* Members List */}
                             <ScrollArea className="flex-1">
