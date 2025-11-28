@@ -111,7 +111,8 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
   - ソフトデリート対応
 
 - **カレンダー & ボード統合ダッシュボード**
-  - **月次カレンダー:** 全体のスケジュールを俯瞰。日付クリックでその週のボードへドリルダウン。
+  - **月次カレンダー:** タスク件数をステータス別バッジで表示（サマリービュー）。
+  - **日別タスクリスト:** 日付クリックでその日のタスク一覧をポップアップ表示。
   - **週次カンバンボード:** 曜日ごとのリスト形式でタスクを管理。ドラッグ&ドロップで直感的に日程変更。
   - **シームレスな切り替え:** 「月」と「週」をタブで瞬時に切り替え。
   - 担当者アイコン表示、ステータス別色分け、個人タスクフィルタリング。
@@ -180,7 +181,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - [x] Client Cockpit (Tabs: Overview, Schedule, Tasks)
 - [x] Credentials & Resources Management
 - [x] Monthly List Schedule (Vertical Format)
-- [x] Calendar & Weekly Board Integration
+- [x] Calendar Summary View & Day List Dialog
 - [x] Personal Dashboard Filtering
 - [x] Task Detail Dialog & Edit
 - [x] Dynamic Task Dialog (Team Settings Integration)

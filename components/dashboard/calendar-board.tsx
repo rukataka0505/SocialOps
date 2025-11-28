@@ -15,6 +15,7 @@ import { TaskDialog } from "@/components/tasks/task-dialog";
 import { updateTask } from "@/actions/tasks";
 import { useRouter } from "next/navigation";
 import { WeeklyBoard } from "./weekly-board";
+import { DayTaskListDialog } from "./day-task-list-dialog";
 
 
 const locales = {
@@ -43,6 +44,12 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     const [date, setDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // Day List Dialog State
+    const [isDayListOpen, setIsDayListOpen] = useState(false);
+    const [selectedDateForList, setSelectedDateForList] = useState<Date>(new Date());
+    const [selectedDateTasks, setSelectedDateTasks] = useState<any[]>([]);
+
     const [localEvents, setLocalEvents] = useState<any[]>([]);
     const [isMobile, setIsMobile] = useState(false);
     const [viewMode, setViewMode] = useState<'my' | 'all'>('my');
@@ -60,7 +67,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Initialize local events from props
+    // Initialize local events (Summary) from props
     useEffect(() => {
         let filteredTasks = tasks;
 
@@ -72,57 +79,82 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
             );
         }
 
-        const events = filteredTasks.map(task => ({
-            id: task.id,
-            title: task.title,
-            start: new Date(task.due_date),
-            end: endOfDay(new Date(task.due_date)),
+        // Group by date
+        const eventsMap: Record<string, { date: Date; counts: Record<string, number>; tasks: any[] }> = {};
+
+        filteredTasks.forEach(task => {
+            if (!task.due_date) return;
+            const dateStr = format(parse(task.due_date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd');
+
+            if (!eventsMap[dateStr]) {
+                eventsMap[dateStr] = {
+                    date: parse(task.due_date, 'yyyy-MM-dd', new Date()),
+                    counts: { in_progress: 0, pending: 0, completed: 0, cancelled: 0 },
+                    tasks: []
+                };
+            }
+
+            const status = task.status || 'in_progress';
+            if (eventsMap[dateStr].counts[status] !== undefined) {
+                eventsMap[dateStr].counts[status]++;
+            } else {
+                // Fallback for custom statuses if needed, or just map to closest
+                eventsMap[dateStr].counts['in_progress']++;
+            }
+            eventsMap[dateStr].tasks.push(task);
+        });
+
+        const events = Object.values(eventsMap).map(item => ({
+            start: item.date,
+            end: endOfDay(item.date),
             allDay: true,
-            resource: task,
+            resource: item, // Contains counts and tasks
         }));
+
         setLocalEvents(events);
     }, [tasks, viewMode, currentUserId]);
 
     const handleSelectEvent = useCallback((event: any) => {
-        setSelectedTask(event.resource);
-        setIsDialogOpen(true);
+        // Open Day List Dialog
+        setSelectedDateForList(event.resource.date);
+        setSelectedDateTasks(event.resource.tasks);
+        setIsDayListOpen(true);
     }, []);
+
+    const handleSelectSlot = useCallback((slotInfo: { start: Date }) => {
+        // Open Day List Dialog for empty slot too
+        // We need to find tasks for this date if any (though if it was empty, likely no tasks, but let's be safe)
+        // Actually if it's empty slot, tasks are empty.
+        // But wait, if we click on a day with events, react-big-calendar might trigger onSelectEvent instead.
+        // If we click on empty space in a day with events, it might trigger onSelectSlot.
+
+        const dateStr = format(slotInfo.start, 'yyyy-MM-dd');
+        const tasksForDay = tasks.filter(t => t.due_date === dateStr);
+
+        // Apply view filter
+        let filtered = tasksForDay;
+        if (viewMode === 'my') {
+            filtered = tasksForDay.filter(task =>
+                task.assignments?.some((a: any) => a.user_id === currentUserId) ||
+                task.assigned_to === currentUserId
+            );
+        }
+
+        setSelectedDateForList(slotInfo.start);
+        setSelectedDateTasks(filtered);
+        setIsDayListOpen(true);
+    }, [tasks, viewMode, currentUserId]);
 
     const onEventDrop = useCallback(
         async ({ event, start, end, isAllDay }: any) => {
-            const formattedDate = format(start, "yyyy年M月d日", { locale: ja });
-            const confirmed = window.confirm(`「${event.title}」を ${formattedDate} に移動しますか?`);
-
-            if (!confirmed) return;
-
-            const updatedEvent = { ...event, start, end, allDay: true };
-
-            // Optimistic update
-            setLocalEvents((prev) => {
-                const filtered = prev.filter((e) => e.id !== event.id);
-                return [...filtered, updatedEvent];
-            });
-
-            try {
-                const newDueDate = format(start, "yyyy-MM-dd");
-                const result = await updateTask(event.id, { due_date: newDueDate });
-
-                if (!result.success) {
-                    throw new Error("Failed to update task");
-                }
-
-                router.refresh();
-            } catch (error) {
-                console.error("DnD Update Error:", error);
-                // Revert on error
-                setLocalEvents((prev) => {
-                    const filtered = prev.filter((e) => e.id !== event.id);
-                    return [...filtered, event];
-                });
-                alert("タスクの移動に失敗しました。");
-            }
+            // Summary events cannot be dragged in this view logic usually, 
+            // but if we want to support dragging the *entire day's tasks*, that's complex.
+            // For now, let's disable dragging of summary events or handle it if needed.
+            // Given the requirement is "Summary View", dragging a summary bubble to move ALL tasks seems dangerous/unexpected.
+            // Let's disable dragging for summary view.
+            return;
         },
-        [router]
+        []
     );
 
     // Navigation handlers
@@ -153,73 +185,44 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     };
 
     const handleDrillDown = useCallback((drillDate: Date) => {
+        // When clicking date header, switch to board view
         setDate(drillDate);
         setView('board');
     }, []);
 
     const eventPropGetter = useCallback(
         (event: any, start: Date, end: Date, isSelected: boolean) => {
-            const statusColors: Record<string, string> = {
-                in_progress: "#3b82f6", // blue-500
-                pending: "#f59e0b",     // amber-500
-                completed: "#94a3b8",   // slate-400
-                cancelled: "#cbd5e1",   // slate-300
-            };
-
-            const status = event.resource.status || "in_progress";
-            const backgroundColor = statusColors[status] || "#3b82f6";
-
-            // Check if task is assigned to current user
-            const assignments = event.resource.assignments || [];
-            const isAssignedToMe = assignments.some((a: any) => a.user_id === currentUserId) || event.resource.assigned_to === currentUserId;
-
-            const style: React.CSSProperties = {
-                backgroundColor,
-                borderRadius: "6px",
-                opacity: 0.95,
-                color: "white",
-                border: "0px",
-                display: "block",
-                padding: "2px 4px",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-            };
-
-            if (isAssignedToMe) {
-                style.borderLeft = "3px solid #1e3a8a"; // blue-900
-                style.fontWeight = "600";
-            }
-
             return {
-                style,
+                style: {
+                    backgroundColor: 'transparent',
+                    padding: 0,
+                    border: 'none',
+                },
             };
         },
-        [currentUserId]
+        []
     );
 
     const components = {
         event: ({ event }: any) => {
-            const task = event.resource;
-            const assignments = task.assignments || [];
-            const assignee = task.assignee;
-
+            const counts = event.resource.counts;
             return (
-                <div className="flex items-center gap-1 overflow-hidden px-1 h-full w-full cursor-pointer">
-                    <div className="flex -space-x-1 overflow-hidden shrink-0">
-                        {assignments.length > 0 ? (
-                            assignments.map((assignment: any) => (
-                                <Avatar key={assignment.user_id} className="h-3 w-3 md:h-4 md:w-4 border border-white ring-1 ring-background">
-                                    <AvatarImage src={assignment.user?.avatar_url || ""} />
-                                    <AvatarFallback className="text-[4px] md:text-[6px]">{assignment.user?.name?.[0] || "?"}</AvatarFallback>
-                                </Avatar>
-                            ))
-                        ) : assignee ? (
-                            <Avatar className="h-3 w-3 md:h-4 md:w-4 border border-white">
-                                <AvatarImage src={assignee.avatar_url || ""} />
-                                <AvatarFallback className="text-[6px] md:text-[8px]">{assignee.name?.[0] || "?"}</AvatarFallback>
-                            </Avatar>
-                        ) : null}
-                    </div>
-                    <span className="truncate font-medium text-[10px] md:text-xs lg:text-sm leading-tight">{event.title}</span>
+                <div className="flex flex-wrap gap-1 justify-center items-center h-full w-full p-1 cursor-pointer hover:bg-slate-50 rounded-md transition-colors">
+                    {counts.in_progress > 0 && (
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold border border-blue-200" title="進行中">
+                            {counts.in_progress}
+                        </div>
+                    )}
+                    {counts.pending > 0 && (
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-600 text-xs font-bold border border-amber-200" title="未着手">
+                            {counts.pending}
+                        </div>
+                    )}
+                    {counts.completed > 0 && (
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs font-bold border border-slate-200" title="完了">
+                            {counts.completed}
+                        </div>
+                    )}
                 </div>
             );
         },
@@ -231,6 +234,22 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
             ),
         },
         toolbar: () => null,
+    };
+
+    const handleAddTask = () => {
+        // Open TaskDialog with pre-filled date
+        // We need to create a dummy task object
+        const newTask = {
+            title: "",
+            due_date: format(selectedDateForList, "yyyy-MM-dd"),
+            status: "pending",
+            priority: "medium",
+            assignments: [],
+            // Add other necessary fields
+        };
+        setSelectedTask(newTask);
+        setIsDayListOpen(false); // Close list dialog
+        setIsDialogOpen(true); // Open task dialog
     };
 
     return (
@@ -323,12 +342,12 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     date={date}
                     onNavigate={setDate}
                     onDrillDown={handleDrillDown}
-                    onSelectSlot={(slotInfo) => handleDrillDown(slotInfo.start)}
+                    onSelectSlot={handleSelectSlot}
                     selectable={true}
                     culture="ja"
                     onSelectEvent={handleSelectEvent}
                     onEventDrop={onEventDrop}
-                    draggableAccessor={() => !isMobile}
+                    draggableAccessor={() => false} // Disable dragging for summary
                     resizable={false}
                     eventPropGetter={eventPropGetter}
                     components={components}
@@ -350,6 +369,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                 />
             )}
 
+            {/* Task Detail Dialog */}
             {selectedTask && (
                 <TaskDialog
                     members={members}
@@ -359,6 +379,20 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     settings={settings}
                 />
             )}
+
+            {/* Day Task List Dialog */}
+            <DayTaskListDialog
+                isOpen={isDayListOpen}
+                onClose={() => setIsDayListOpen(false)}
+                date={selectedDateForList}
+                tasks={selectedDateTasks}
+                onTaskClick={(task) => {
+                    setSelectedTask(task);
+                    setIsDayListOpen(false);
+                    setIsDialogOpen(true);
+                }}
+                onAddTask={handleAddTask}
+            />
         </div>
     );
 }
