@@ -129,7 +129,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
                             // Initialize Custom Fields
                             let fields: TaskField[] = [];
-                            if (hierarchyTask.attributes?._fields) {
+                            if (hierarchyTask.attributes?._fields && Array.isArray(hierarchyTask.attributes._fields)) {
                                 fields = hierarchyTask.attributes._fields;
                             } else {
                                 // Fallback to team settings if not defined in task
