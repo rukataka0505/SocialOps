@@ -257,7 +257,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     };
 
     return (
-        <div className="h-full w-full bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+        <div className="h-full w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
             {/* Unified Header Toolbar */}
             <div className="flex items-center justify-between mb-4">
                 {/* Left: View Mode Toggle */}
@@ -305,8 +305,8 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     <button
                         onClick={() => setView('month')}
                         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'month'
-                                ? 'bg-white text-slate-900 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-900'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-900'
                             }`}
                     >
                         月 (Month)
@@ -314,8 +314,8 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     <button
                         onClick={() => setView('board')}
                         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'board'
-                                ? 'bg-white text-slate-900 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-900'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-900'
                             }`}
                     >
                         週 (Board)

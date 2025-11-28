@@ -47,7 +47,7 @@ export default async function DashboardPage() {
         <div className="flex flex-col min-h-full bg-slate-50 pb-10">
 
             {/* Main Content */}
-            <div className="flex flex-1 flex-col lg:flex-row">
+            <div className="flex flex-1 flex-col lg:flex-row max-w-[1600px] mx-auto w-full">
                 {/* Left Column: My Tasks + Calendar */}
                 <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50">
                     {/* Top: My Tasks */}
