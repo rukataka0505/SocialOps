@@ -67,7 +67,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Initialize local events (Summary) from props
+    // Initialize local events (Smart Stack) from props
     useEffect(() => {
         let filteredTasks = tasks;
 
@@ -80,7 +80,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         }
 
         // Group by date
-        const eventsMap: Record<string, { date: Date; counts: Record<string, number>; tasks: any[] }> = {};
+        const eventsMap: Record<string, { date: Date; tasks: any[] }> = {};
 
         filteredTasks.forEach(task => {
             if (!task.due_date) return;
@@ -89,17 +89,8 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
             if (!eventsMap[dateStr]) {
                 eventsMap[dateStr] = {
                     date: parse(task.due_date, 'yyyy-MM-dd', new Date()),
-                    counts: { in_progress: 0, pending: 0, completed: 0, cancelled: 0 },
                     tasks: []
                 };
-            }
-
-            const status = task.status || 'in_progress';
-            if (eventsMap[dateStr].counts[status] !== undefined) {
-                eventsMap[dateStr].counts[status]++;
-            } else {
-                // Fallback for custom statuses if needed, or just map to closest
-                eventsMap[dateStr].counts['in_progress']++;
             }
             eventsMap[dateStr].tasks.push(task);
         });
@@ -108,7 +99,10 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
             start: item.date,
             end: endOfDay(item.date),
             allDay: true,
-            resource: item, // Contains counts and tasks
+            resource: {
+                tasks: item.tasks,
+                count: item.tasks.length
+            },
         }));
 
         setLocalEvents(events);
@@ -116,18 +110,12 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
     const handleSelectEvent = useCallback((event: any) => {
         // Open Day List Dialog
-        setSelectedDateForList(event.resource.date);
+        setSelectedDateForList(event.resource.tasks[0] ? parse(event.resource.tasks[0].due_date, 'yyyy-MM-dd', new Date()) : event.start);
         setSelectedDateTasks(event.resource.tasks);
         setIsDayListOpen(true);
     }, []);
 
     const handleSelectSlot = useCallback((slotInfo: { start: Date }) => {
-        // Open Day List Dialog for empty slot too
-        // We need to find tasks for this date if any (though if it was empty, likely no tasks, but let's be safe)
-        // Actually if it's empty slot, tasks are empty.
-        // But wait, if we click on a day with events, react-big-calendar might trigger onSelectEvent instead.
-        // If we click on empty space in a day with events, it might trigger onSelectSlot.
-
         const dateStr = format(slotInfo.start, 'yyyy-MM-dd');
         const tasksForDay = tasks.filter(t => t.due_date === dateStr);
 
@@ -147,11 +135,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
     const onEventDrop = useCallback(
         async ({ event, start, end, isAllDay }: any) => {
-            // Summary events cannot be dragged in this view logic usually, 
-            // but if we want to support dragging the *entire day's tasks*, that's complex.
-            // For now, let's disable dragging of summary events or handle it if needed.
-            // Given the requirement is "Summary View", dragging a summary bubble to move ALL tasks seems dangerous/unexpected.
-            // Let's disable dragging for summary view.
+            // Disable dragging for smart stack view
             return;
         },
         []
@@ -185,9 +169,10 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     };
 
     const handleDrillDown = useCallback((drillDate: Date) => {
-        // When clicking date header, switch to board view
-        setDate(drillDate);
-        setView('board');
+        // Disable default drilldown, we want to open the dialog or just stay on month view unless tab is clicked
+        // But the requirement says "Clicking date cell... opens DayTaskListDialog" which is handled by onSelectSlot
+        // So we can just do nothing here or ensure it doesn't switch view automatically
+        return;
     }, []);
 
     const eventPropGetter = useCallback(
@@ -205,30 +190,52 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
     const components = {
         event: ({ event }: any) => {
-            const counts = event.resource.counts;
-            return (
-                <div className="flex flex-wrap gap-1 justify-center items-center h-full w-full p-1 cursor-pointer hover:bg-slate-50 rounded-md transition-colors">
-                    {counts.in_progress > 0 && (
-                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold border border-blue-200" title="進行中">
-                            {counts.in_progress}
+            const { tasks, count } = event.resource;
+            const MAX_VISIBLE = 3;
+
+            const statusColors: Record<string, string> = {
+                in_progress: "bg-blue-500",
+                pending: "bg-amber-500",
+                completed: "bg-slate-400",
+                cancelled: "bg-slate-300",
+            };
+
+            if (count <= MAX_VISIBLE) {
+                return (
+                    <div className="flex flex-col gap-1 w-full">
+                        {tasks.map((task: any) => (
+                            <div key={task.id} className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1 py-0.5 shadow-sm overflow-hidden">
+                                <div className={`w-1 h-3 rounded-full shrink-0 ${statusColors[task.status] || "bg-blue-500"}`} />
+                                <span className="text-[10px] text-slate-700 truncate font-medium leading-tight">
+                                    {task.title}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                );
+            } else {
+                const visibleTasks = tasks.slice(0, 2);
+                const remaining = count - 2;
+                return (
+                    <div className="flex flex-col gap-1 w-full">
+                        {visibleTasks.map((task: any) => (
+                            <div key={task.id} className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1 py-0.5 shadow-sm overflow-hidden">
+                                <div className={`w-1 h-3 rounded-full shrink-0 ${statusColors[task.status] || "bg-blue-500"}`} />
+                                <span className="text-[10px] text-slate-700 truncate font-medium leading-tight">
+                                    {task.title}
+                                </span>
+                            </div>
+                        ))}
+                        <div className="bg-slate-100 text-slate-600 text-[10px] font-bold text-center rounded py-0.5 border border-slate-200 hover:bg-slate-200 transition-colors">
+                            + 他 {remaining} 件
                         </div>
-                    )}
-                    {counts.pending > 0 && (
-                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-600 text-xs font-bold border border-amber-200" title="未着手">
-                            {counts.pending}
-                        </div>
-                    )}
-                    {counts.completed > 0 && (
-                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs font-bold border border-slate-200" title="完了">
-                            {counts.completed}
-                        </div>
-                    )}
-                </div>
-            );
+                    </div>
+                );
+            }
         },
         month: {
             dateHeader: ({ label }: any) => (
-                <span className="text-xs md:text-sm lg:text-base font-medium text-slate-700">
+                <span className="text-xs md:text-sm lg:text-base font-medium text-slate-700 block p-1">
                     {label}
                 </span>
             ),
@@ -237,19 +244,16 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     };
 
     const handleAddTask = () => {
-        // Open TaskDialog with pre-filled date
-        // We need to create a dummy task object
         const newTask = {
             title: "",
             due_date: format(selectedDateForList, "yyyy-MM-dd"),
             status: "pending",
             priority: "medium",
             assignments: [],
-            // Add other necessary fields
         };
         setSelectedTask(newTask);
-        setIsDayListOpen(false); // Close list dialog
-        setIsDialogOpen(true); // Open task dialog
+        setIsDayListOpen(false);
+        setIsDialogOpen(true);
     };
 
     return (
@@ -347,7 +351,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     culture="ja"
                     onSelectEvent={handleSelectEvent}
                     onEventDrop={onEventDrop}
-                    draggableAccessor={() => false} // Disable dragging for summary
+                    draggableAccessor={() => false} // Disable dragging for smart stack
                     resizable={false}
                     eventPropGetter={eventPropGetter}
                     components={components}
