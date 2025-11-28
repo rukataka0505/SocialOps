@@ -47,8 +47,8 @@ export function TaskUrlHandler() {
             task={task}
             open={isOpen}
             onOpenChange={handleOpenChange}
-            mode="edit"
-            settings={{}} // We might need to pass actual settings here if possible, or make TaskDialog robust enough
+            members={[]} // Will be fetched by TaskDialog itself
+            settings={{}} // Will be fetched by TaskDialog itself
         />
     );
 }
