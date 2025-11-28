@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 import { getCurrentTeamId } from "@/lib/team-utils";
+import { TeamCookieSyncer } from "@/components/dashboard/team-cookie-syncer";
 
 /**
  * Dashboard Layout
@@ -67,6 +68,7 @@ export default async function DashboardLayout({
             <main className="flex-1 overflow-y-auto bg-slate-50">
                 <div className="w-full max-w-[1440px] mx-auto p-4 md:p-6">
                     <TaskUrlHandler />
+                    <TeamCookieSyncer teamId={currentTeamId} />
                     {children}
                 </div>
             </main>

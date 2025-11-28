@@ -43,11 +43,16 @@ export async function getCurrentTeamId(supabase: SupabaseClient): Promise<string
 
     if (firstTeamMember) {
         // Set cookie for future requests
-        cookieStore.set(TEAM_COOKIE_NAME, firstTeamMember.team_id, {
-            path: '/',
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-        });
+        try {
+            cookieStore.set(TEAM_COOKIE_NAME, firstTeamMember.team_id, {
+                path: '/',
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+            });
+        } catch (e) {
+            // Ignore error if called from Server Component where cookies are read-only
+            // We will handle cookie persistence on the client side if needed
+        }
         return firstTeamMember.team_id;
     }
 
