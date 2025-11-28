@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getTeamMembers, getTeamSettings } from '@/actions/teams';
-import { GuestSection } from './guest-section';
+
 import { TeamProfileSection } from './team-profile-section';
 import { TaskSettings } from '@/components/settings/task-settings';
 import { redirect } from 'next/navigation';

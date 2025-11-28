@@ -271,3 +271,67 @@ export async function getTeamSettings() {
         return {};
     }
 }
+
+export async function removeMember(userId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        throw new Error('Unauthorized');
+    }
+
+    try {
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
+
+        // Verify current user permissions
+        const { data: currentUserMember } = await supabase
+            .from('team_members')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('team_id', teamId)
+            .single();
+
+        if (!currentUserMember) throw new Error('No team found');
+
+        const currentUserRole = (currentUserMember as any).role;
+        if (currentUserRole !== 'owner' && currentUserRole !== 'admin') {
+            throw new Error('Permission denied');
+        }
+
+        // Prevent removing yourself
+        if (userId === user.id) {
+            throw new Error('Cannot remove yourself');
+        }
+
+        // Get target member to ensure they belong to the same team
+        const { data: targetMember } = await supabase
+            .from('team_members')
+            .select('role')
+            .eq('user_id', userId)
+            .eq('team_id', teamId)
+            .single();
+
+        if (!targetMember) throw new Error('Member not found');
+
+        // Prevent removing owner
+        if ((targetMember as any).role === 'owner') {
+            throw new Error('Cannot remove owner');
+        }
+
+        // Delete member
+        const { error } = await supabase
+            .from('team_members')
+            .delete()
+            .eq('user_id', userId)
+            .eq('team_id', teamId);
+
+        if (error) throw error;
+
+        revalidatePath('/');
+        return { success: true };
+    } catch (error) {
+        console.error('Error removing member:', error);
+        throw error;
+    }
+}

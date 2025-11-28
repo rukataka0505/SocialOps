@@ -1,104 +1,81 @@
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { getTeamMembers } from '@/actions/teams';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MemberDetail } from "@/components/dashboard/member-detail";
-import { InviteMemberDialog } from "@/components/dashboard/invite-member-dialog";
+import { getGuests } from '@/actions/guests';
+import { getCurrentTeamId } from '@/lib/team-utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { InviteMemberDialog } from '@/components/team/invite-member-dialog';
+import { InviteGuestDialog } from '@/components/team/invite-guest-dialog';
+import { MemberList } from '@/components/team/member-list';
+import { GuestList } from '@/components/team/guest-list';
 import { redirect } from 'next/navigation';
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
 
 export default async function TeamMembersPage() {
     const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
         redirect('/login');
     }
 
-    // Get user's team
-    const { data: membershipData } = await supabase
-        .from('team_members')
-        .select('team_id, role')
-        .eq('user_id', user.id)
-        .single();
-
-    const membership = membershipData as { team_id: string; role: string } | null;
-
-    if (!membership) {
-        return <div>チームに所属していません。</div>;
+    const teamId = await getCurrentTeamId(supabase);
+    if (!teamId) {
+        redirect('/');
     }
 
-    // Check permission
-    if (membership.role !== 'admin' && membership.role !== 'owner') {
-        return <div>アクセス権限がありません。</div>;
-    }
+    // Fetch data
+    const members = await getTeamMembers(teamId);
+    const guests = await getGuests();
 
-    const members = await getTeamMembers(membership.team_id);
+    // Get current user's role
+    const currentUserMember = members.find((m: any) => m.user.id === user.id);
+    const currentUserRole = currentUserMember?.role || 'member';
 
     return (
-        <div className="max-w-5xl mx-auto p-6">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">メンバー管理</h1>
-                    <p className="text-slate-500 mt-1">チームメンバーの権限管理やタスク状況の確認ができます。</p>
-                </div>
-                <InviteMemberDialog teamId={membership.team_id} />
+        <div className="container mx-auto py-8 max-w-5xl space-y-8">
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight">メンバー管理</h2>
+                <p className="text-muted-foreground">
+                    チームのメンバーとゲストアクセスを管理します。
+                </p>
             </div>
 
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-slate-100">
-                                <th className="py-4 px-6 font-medium text-slate-500 text-sm">名前</th>
-                                <th className="py-4 px-6 font-medium text-slate-500 text-sm">メールアドレス</th>
-                                <th className="py-4 px-6 font-medium text-slate-500 text-sm">権限</th>
-                                <th className="py-4 px-6 font-medium text-slate-500 text-sm">参加日</th>
-                                <th className="py-4 px-6 font-medium text-slate-500 text-sm text-right">詳細</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {members.map((member) => (
-                                <tr key={member.user.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="py-4 px-6">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-9 w-9 border border-slate-100">
-                                                <AvatarImage src={member.user.avatar_url || ""} />
-                                                <AvatarFallback className="bg-slate-100 text-slate-500">
-                                                    {member.user.name?.[0] || "?"}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <span className="font-medium text-slate-900">{member.user.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="py-4 px-6 text-slate-600 text-sm">
-                                        {member.user.email}
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <Badge variant="outline" className="capitalize font-normal">
-                                            {member.role}
-                                        </Badge>
-                                    </td>
-                                    <td className="py-4 px-6 text-slate-500 text-sm">
-                                        {format(new Date(member.created_at), 'yyyy/MM/dd', { locale: ja })}
-                                    </td>
-                                    <td className="py-4 px-6 text-right">
-                                        <MemberDetail member={member} currentUserRole={membership.role}>
-                                            <Button variant="ghost" size="sm">
-                                                詳細を見る
-                                            </Button>
-                                        </MemberDetail>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <Tabs defaultValue="members" className="space-y-6">
+                <TabsList>
+                    <TabsTrigger value="members">チームメンバー</TabsTrigger>
+                    <TabsTrigger value="guests">ゲストアクセス</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="members" className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h3 className="text-lg font-medium">正規メンバー</h3>
+                            <p className="text-sm text-muted-foreground">
+                                アカウントを持つ正規のチームメンバーです。
+                            </p>
+                        </div>
+                        <InviteMemberDialog teamId={teamId} />
+                    </div>
+                    <MemberList
+                        members={members}
+                        currentUserId={user.id}
+                        currentUserRole={currentUserRole}
+                    />
+                </TabsContent>
+
+                <TabsContent value="guests" className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h3 className="text-lg font-medium">ゲストアクセス</h3>
+                            <p className="text-sm text-muted-foreground">
+                                URLのみでアクセス可能なゲストユーザーです。
+                            </p>
+                        </div>
+                        <InviteGuestDialog />
+                    </div>
+                    <GuestList guests={guests} />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
