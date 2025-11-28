@@ -18,6 +18,7 @@ export interface TaskField {
     type: 'text' | 'textarea' | 'number' | 'date' | 'select' | 'url';
     options?: string[];
     required?: boolean;
+    system?: boolean;
 }
 
 interface TaskFieldEditorProps {

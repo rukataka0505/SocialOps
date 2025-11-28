@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { updateTeamSettings } from "@/actions/teams";
 import { Loader2, Plus, Trash2, GripVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { SYSTEM_FIELDS } from "@/lib/constants";
 
 interface TaskSettingsProps {
     initialSettings: {
@@ -24,9 +25,10 @@ interface TaskSettingsProps {
 interface CustomFieldDefinition {
     id: string;
     label: string;
-    type: 'text' | 'url' | 'date' | 'select';
+    type: 'text' | 'textarea' | 'url' | 'date' | 'select' | 'user';
     options?: string[]; // For select type
     required?: boolean; // New: Cannot be deleted if true
+    system?: boolean; // New: System field flag
 }
 
 export function TaskSettings({ initialSettings }: TaskSettingsProps) {
@@ -35,11 +37,21 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
     );
 
     // Initialize fields: Use new keys if available, otherwise fallback to legacy or empty
+    // If empty, use SYSTEM_FIELDS
     const [regularFields, setRegularFields] = useState<CustomFieldDefinition[]>(
-        initialSettings.regular_task_fields || initialSettings.custom_field_definitions || []
+        (initialSettings.regular_task_fields && initialSettings.regular_task_fields.length > 0)
+            ? initialSettings.regular_task_fields
+            : (initialSettings.custom_field_definitions && initialSettings.custom_field_definitions.length > 0)
+                ? [...SYSTEM_FIELDS, ...initialSettings.custom_field_definitions] as CustomFieldDefinition[]
+                : [...SYSTEM_FIELDS] as CustomFieldDefinition[]
     );
+
     const [postFields, setPostFields] = useState<CustomFieldDefinition[]>(
-        initialSettings.post_task_fields || initialSettings.custom_field_definitions || []
+        (initialSettings.post_task_fields && initialSettings.post_task_fields.length > 0)
+            ? initialSettings.post_task_fields
+            : (initialSettings.custom_field_definitions && initialSettings.custom_field_definitions.length > 0)
+                ? [...SYSTEM_FIELDS.filter(f => f.id !== 'assigned_to'), ...initialSettings.custom_field_definitions] as CustomFieldDefinition[]
+                : [...SYSTEM_FIELDS.filter(f => f.id !== 'assigned_to')] as CustomFieldDefinition[]
     );
 
     const [isPending, startTransition] = useTransition();
@@ -119,7 +131,7 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
     ) => (
         <div className="space-y-6">
             {fields.map((field, index) => (
-                <div key={field.id} className="p-4 border rounded-lg space-y-4 bg-slate-50/50">
+                <div key={field.id} className={`p-4 border rounded-lg space-y-4 ${field.system ? 'bg-blue-50/50 border-blue-100' : 'bg-slate-50/50'}`}>
                     <div className="flex items-start justify-between gap-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
                             <div className="space-y-2">
@@ -134,6 +146,7 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                                 <Select
                                     value={field.type}
                                     onValueChange={(value: any) => manager.update(index, { type: value })}
+                                    disabled={field.system}
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
@@ -144,6 +157,7 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                                         <SelectItem value="url">URL</SelectItem>
                                         <SelectItem value="date">日付</SelectItem>
                                         <SelectItem value="select">選択肢</SelectItem>
+                                        {field.system && <SelectItem value="user">ユーザー選択</SelectItem>}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -153,6 +167,7 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                             size="icon"
                             onClick={() => manager.remove(index)}
                             className="text-muted-foreground hover:text-destructive mt-8"
+                            disabled={field.required}
                         >
                             <Trash2 className="h-4 w-4" />
                         </Button>
@@ -163,6 +178,7 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                             id={`required-${field.id}`}
                             checked={field.required}
                             onCheckedChange={(checked) => manager.update(index, { required: !!checked })}
+                            disabled={field.system} // System fields required status is fixed for now, or at least some are
                         />
                         <Label htmlFor={`required-${field.id}`} className="text-sm font-normal text-muted-foreground">
                             必須項目（タスク作成後に削除不可）
@@ -178,6 +194,7 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                                     options: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
                                 })}
                                 placeholder="例: Twitter, Instagram, TikTok"
+                                disabled={field.system}
                             />
                         </div>
                     )}

@@ -36,6 +36,7 @@ import { getClients } from "@/actions/clients";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { TaskFieldEditor, TaskField } from "./task-field-editor";
+import { SYSTEM_FIELDS } from "@/lib/constants";
 
 interface TeamMember {
     role: string;
@@ -127,16 +128,27 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             setComments(hierarchyTask.comments || []);
 
                             // Initialize Custom Fields
+                            let fields: TaskField[] = [];
                             if (hierarchyTask.attributes?._fields) {
-                                setCustomFields(hierarchyTask.attributes._fields);
+                                fields = hierarchyTask.attributes._fields;
                             } else {
                                 // Fallback to team settings if not defined in task
                                 const isPost = hierarchyTask.is_milestone;
-                                const defaultFields = isPost
+                                fields = isPost
                                     ? (settings?.post_task_fields || settings?.custom_field_definitions || [])
                                     : (settings?.regular_task_fields || settings?.custom_field_definitions || []);
-                                setCustomFields(defaultFields);
                             }
+
+                            // Ensure system fields exist (backward compatibility)
+                            const hasSystemFields = fields.some(f => f.system);
+                            if (!hasSystemFields) {
+                                const systemDefaults = hierarchyTask.is_milestone
+                                    ? SYSTEM_FIELDS.filter(f => f.id !== 'assigned_to')
+                                    : SYSTEM_FIELDS;
+                                fields = [...systemDefaults, ...fields] as TaskField[];
+                            }
+                            setCustomFields(fields);
+
                         } else {
                             // Fallback if fetch fails (shouldn't happen usually)
                             setCurrentTask(task);
@@ -151,10 +163,19 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
                         // Initialize Custom Fields for New Task
                         const isPost = task?.is_milestone === true;
-                        const defaultFields = isPost
+                        let fields = isPost
                             ? (settings?.post_task_fields || settings?.custom_field_definitions || [])
                             : (settings?.regular_task_fields || settings?.custom_field_definitions || []);
-                        setCustomFields(defaultFields);
+
+                        // Ensure system fields exist
+                        const hasSystemFields = fields.some(f => f.system);
+                        if (!hasSystemFields) {
+                            const systemDefaults = isPost
+                                ? SYSTEM_FIELDS.filter(f => f.id !== 'assigned_to')
+                                : SYSTEM_FIELDS;
+                            fields = [...systemDefaults, ...fields] as TaskField[];
+                        }
+                        setCustomFields(fields);
                     }
                 } finally {
                     setIsLoading(false);
@@ -429,106 +450,119 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             </Alert>
                                         )}
 
-                                        {/* Header Area: Title, Due Date, Assignee */}
+                                        {/* Header Area: System Fields */}
                                         <div className="grid gap-4 p-4 bg-slate-50 rounded-lg border">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="title" className="font-bold text-lg">タイトル</Label>
-                                                <Input
-                                                    id="title"
-                                                    name="title"
-                                                    defaultValue={currentTask?.title}
-                                                    placeholder="タスク名を入力"
-                                                    className="text-lg font-medium"
-                                                    required
-                                                />
-                                            </div>
-
-                                            {/* Client Selector (Hidden if client_id exists) */}
-                                            {currentTask?.client_id ? (
-                                                <input type="hidden" name="client_id" value={currentTask.client_id} />
-                                            ) : (
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="client_id">クライアント</Label>
-                                                    <select
-                                                        id="client_id"
-                                                        name="client_id"
-                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                    >
-                                                        <option value="">(選択なし)</option>
-                                                        {clients.map((client) => (
-                                                            <option key={client.id} value={client.id}>{client.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="due_date">期限</Label>
-                                                    <Input
-                                                        id="due_date"
-                                                        name="due_date"
-                                                        type="date"
-                                                        defaultValue={currentTask?.due_date?.split("T")[0]}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="grid gap-2">
-                                                    <Label htmlFor="workflow_status">ステータス</Label>
-                                                    <select
-                                                        id="workflow_status"
-                                                        name="workflow_status"
-                                                        defaultValue={currentTask?.workflow_status || workflowStatuses[0]}
-                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                    >
-                                                        {workflowStatuses.map((status) => (
-                                                            <option key={status} value={status}>{status}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            {/* Assignees - Hidden for Milestones */}
-                                            {!isMilestone && (
-                                                <div className="grid gap-2">
-                                                    <Label>担当者</Label>
-                                                    <div className="space-y-2">
-                                                        {assignees.map((assignee, index) => (
-                                                            <div key={index} className="flex gap-2 items-center">
+                                            {customFields.filter(f => f.system).map(field => {
+                                                switch (field.id) {
+                                                    case 'title':
+                                                        return (
+                                                            <div key={field.id} className="grid gap-2">
+                                                                <Label htmlFor="title" className="font-bold text-lg">{field.label}</Label>
+                                                                <Input
+                                                                    id="title"
+                                                                    name="title"
+                                                                    defaultValue={currentTask?.title}
+                                                                    placeholder="タスク名を入力"
+                                                                    className="text-lg font-medium"
+                                                                    required={field.required}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    case 'client_id':
+                                                        return currentTask?.client_id ? (
+                                                            <input key={field.id} type="hidden" name="client_id" value={currentTask.client_id} />
+                                                        ) : (
+                                                            <div key={field.id} className="grid gap-2">
+                                                                <Label htmlFor="client_id">{field.label}</Label>
                                                                 <select
-                                                                    value={assignee.userId}
-                                                                    onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
-                                                                    className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+                                                                    id="client_id"
+                                                                    name="client_id"
+                                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                                                 >
                                                                     <option value="">(選択なし)</option>
-                                                                    {members.map((member) => (
-                                                                        <option key={member.user.id} value={member.user.id}>
-                                                                            {member.user.name || member.user.email}
-                                                                        </option>
+                                                                    {clients.map((client) => (
+                                                                        <option key={client.id} value={client.id}>{client.name}</option>
                                                                     ))}
                                                                 </select>
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => removeAssignee(index)}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
                                                             </div>
-                                                        ))}
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={addAssignee}
-                                                            className="w-full"
-                                                        >
-                                                            <Plus className="mr-2 h-4 w-4" /> 担当者を追加
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            )}
+                                                        );
+                                                    case 'due_date':
+                                                        return (
+                                                            <div key={field.id} className="grid gap-2">
+                                                                <Label htmlFor="due_date">{field.label}</Label>
+                                                                <Input
+                                                                    id="due_date"
+                                                                    name="due_date"
+                                                                    type="date"
+                                                                    defaultValue={currentTask?.due_date?.split("T")[0]}
+                                                                    required={field.required}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    case 'workflow_status':
+                                                        return (
+                                                            <div key={field.id} className="grid gap-2">
+                                                                <Label htmlFor="workflow_status">{field.label}</Label>
+                                                                <select
+                                                                    id="workflow_status"
+                                                                    name="workflow_status"
+                                                                    defaultValue={currentTask?.workflow_status || workflowStatuses[0]}
+                                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                                                >
+                                                                    {workflowStatuses.map((status) => (
+                                                                        <option key={status} value={status}>{status}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        );
+                                                    case 'assigned_to':
+                                                        // Note: assigned_to logic in original was complex (multiple assignees).
+                                                        // The field 'assigned_to' in SYSTEM_FIELDS represents the "Assignee" section.
+                                                        // We keep the multiple assignee logic here.
+                                                        return (
+                                                            <div key={field.id} className="grid gap-2">
+                                                                <Label>{field.label}</Label>
+                                                                <div className="space-y-2">
+                                                                    {assignees.map((assignee, index) => (
+                                                                        <div key={index} className="flex gap-2 items-center">
+                                                                            <select
+                                                                                value={assignee.userId}
+                                                                                onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
+                                                                                className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+                                                                            >
+                                                                                <option value="">(選択なし)</option>
+                                                                                {members.map((member) => (
+                                                                                    <option key={member.user.id} value={member.user.id}>
+                                                                                        {member.user.name || member.user.email}
+                                                                                    </option>
+                                                                                ))}
+                                                                            </select>
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() => removeAssignee(index)}
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </div>
+                                                                    ))}
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={addAssignee}
+                                                                        className="w-full"
+                                                                    >
+                                                                        <Plus className="mr-2 h-4 w-4" /> 担当者を追加
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    default:
+                                                        return null;
+                                                }
+                                            })}
 
                                             {/* Hidden Fields */}
                                             <input type="hidden" name="status" value="in_progress" />
@@ -573,7 +607,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                 />
                                             </div>
                                             <div className="grid gap-4 p-4 bg-slate-50 rounded-lg border">
-                                                {customFields.map((field) => (
+                                                {customFields.filter(f => !f.system).map((field) => (
                                                     <div key={field.id} className="grid gap-2 relative group">
                                                         <div className="flex items-center justify-between">
                                                             <Label htmlFor={`custom_${field.id}`}>{field.label}</Label>
