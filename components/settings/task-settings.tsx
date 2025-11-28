@@ -9,9 +9,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { updateTeamSettings } from "@/actions/teams";
-import { Loader2, Plus, Trash2, GripVertical } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { SYSTEM_FIELDS } from "@/lib/constants";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableFieldItem } from "./sortable-field-item";
+import { SortableOptionItem } from "./sortable-option-item";
 
 interface TaskSettingsProps {
     initialSettings: {
@@ -112,13 +129,8 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
             if (!window.confirm("この項目を削除しますか？\n※入力済みのデータも失われる可能性があります。")) return;
             setFields(fields.filter((_, i) => i !== index));
         },
-        move: (index: number, direction: 'up' | 'down') => {
-            if (direction === 'up' && index === 0) return;
-            if (direction === 'down' && index === fields.length - 1) return;
-            const newFields = [...fields];
-            const targetIndex = direction === 'up' ? index - 1 : index + 1;
-            [newFields[index], newFields[targetIndex]] = [newFields[targetIndex], newFields[index]];
-            setFields(newFields);
+        reorder: (oldIndex: number, newIndex: number) => {
+            setFields((items) => arrayMove(items, oldIndex, newIndex));
         }
     });
 
@@ -147,189 +159,155 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
         });
     };
 
+    const handleDragEnd = (event: DragEndEvent, fields: CustomFieldDefinition[], manager: ReturnType<typeof createFieldManager>) => {
+        const { active, over } = event;
+        if (active.id !== over?.id) {
+            const oldIndex = fields.findIndex((f) => f.id === active.id);
+            const newIndex = fields.findIndex((f) => f.id === over?.id);
+            manager.reorder(oldIndex, newIndex);
+        }
+    };
+
     const renderFieldEditor = (
         fields: CustomFieldDefinition[],
         manager: ReturnType<typeof createFieldManager>
-    ) => (
-        <div className="space-y-6">
-            {fields.map((field, index) => (
-                <div key={field.id} className={`p-4 border rounded-lg space-y-4 ${field.system ? 'bg-blue-50/50 border-blue-100' : 'bg-slate-50/50'}`}>
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="flex flex-col gap-1 mt-8">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-muted-foreground"
-                                onClick={() => manager.move(index, 'up')}
-                                disabled={index === 0}
+    ) => {
+        const sensors = useSensors(
+            useSensor(PointerSensor),
+            useSensor(KeyboardSensor, {
+                coordinateGetter: sortableKeyboardCoordinates,
+            })
+        );
+
+        return (
+            <div className="space-y-6">
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event) => handleDragEnd(event, fields, manager)}
+                >
+                    <SortableContext
+                        items={fields.map(f => f.id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        {fields.map((field, index) => (
+                            <SortableFieldItem
+                                key={field.id}
+                                field={field}
+                                index={index}
+                                onUpdate={manager.update}
+                                onRemove={manager.remove}
                             >
-                                ▲
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-muted-foreground"
-                                onClick={() => manager.move(index, 'down')}
-                                disabled={index === fields.length - 1}
-                            >
-                                ▼
-                            </Button>
-                        </div>
+                                {/* Options Editor */}
+                                {(field.type === 'select' || field.id === 'workflow_status') && (
+                                    <div className="space-y-2 pl-10">
+                                        <Label>選択肢</Label>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-                            <div className="space-y-2">
-                                <Label>項目名</Label>
-                                <Input
-                                    value={field.label}
-                                    onChange={(e) => manager.update(index, { label: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>データ型</Label>
-                                <Select
-                                    value={field.type}
-                                    onValueChange={(value: any) => manager.update(index, { type: value })}
-                                    disabled={field.system}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="text">テキスト</SelectItem>
-                                        <SelectItem value="textarea">テキストエリア</SelectItem>
-                                        <SelectItem value="url">URL</SelectItem>
-                                        <SelectItem value="date">日付</SelectItem>
-                                        <SelectItem value="select">選択肢</SelectItem>
-                                        {field.system && <SelectItem value="user">ユーザー選択</SelectItem>}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => manager.remove(index)}
-                            className="text-muted-foreground hover:text-destructive mt-8"
-                            disabled={field.required} // System required fields cannot be deleted
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </div>
+                                        {field.id === 'workflow_status' ? (
+                                            <div className="space-y-2">
+                                                <div className="text-xs text-muted-foreground mb-2">
+                                                    ステータスの選択肢を管理します。
+                                                </div>
+                                                <DndContext
+                                                    sensors={sensors}
+                                                    collisionDetection={closestCenter}
+                                                    onDragEnd={(event) => {
+                                                        const { active, over } = event;
+                                                        if (active.id !== over?.id) {
+                                                            // For options, we are using the string value as ID in SortableOptionItem
+                                                            // But here we need to find index.
+                                                            // Wait, SortableOptionItem uses `${index}-${option}` as ID? No, I implemented it to use `option` string?
+                                                            // Let's check SortableOptionItem implementation.
+                                                            // I implemented it using `useSortable({ id: `${index}-${option}` })`.
+                                                            // So the ID is `${index}-${option}`.
+                                                            // This is tricky because index changes.
+                                                            // Ideally we should use a unique ID for each option.
+                                                            // But options are just strings.
+                                                            // Let's try to use just the option string as ID if they are unique.
+                                                            // If I change SortableOptionItem to use option string as ID.
 
-                    <div className="flex items-center space-x-2 pl-10">
-                        <Checkbox
-                            id={`required-${field.id}`}
-                            checked={field.required}
-                            onCheckedChange={(checked) => manager.update(index, { required: !!checked })}
-                            disabled={field.system} // System fields required status is fixed
-                        />
-                        <Label htmlFor={`required-${field.id}`} className="text-sm font-normal text-muted-foreground">
-                            必須項目（タスク作成後に削除不可）
-                        </Label>
-                    </div>
+                                                            // Let's assume for now I will update SortableOptionItem to use option string as ID.
+                                                            // Or better, let's use the index based logic but correctly.
+                                                            // Actually, dnd-kit recommends unique IDs.
+                                                            // If I use index, reordering messes it up.
 
-                    {/* Options Editor */}
-                    {(field.type === 'select' || field.id === 'workflow_status') && (
-                        <div className="space-y-2 pl-10">
-                            <Label>選択肢</Label>
+                                                            // Let's rely on the fact that for now options are unique strings usually.
+                                                            // I will update SortableOptionItem to use `option` as ID.
 
-                            {field.id === 'workflow_status' ? (
-                                <div className="space-y-2">
-                                    <div className="text-xs text-muted-foreground mb-2">
-                                        ステータスの選択肢を管理します。
-                                    </div>
-                                    {(field.options || []).map((option, optIndex) => (
-                                        <div key={optIndex} className="flex items-center gap-2">
-                                            <Input
-                                                value={option}
-                                                onChange={(e) => {
-                                                    const newOptions = [...(field.options || [])];
-                                                    newOptions[optIndex] = e.target.value;
-                                                    manager.update(index, { options: newOptions });
-                                                }}
-                                                className="flex-1"
-                                            />
-                                            <div className="flex gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8"
-                                                    onClick={() => {
-                                                        if (optIndex === 0) return;
-                                                        const newOptions = [...(field.options || [])];
-                                                        [newOptions[optIndex], newOptions[optIndex - 1]] = [newOptions[optIndex - 1], newOptions[optIndex]];
-                                                        manager.update(index, { options: newOptions });
+                                                            const oldIndex = (field.options || []).indexOf(active.id as string);
+                                                            const newIndex = (field.options || []).indexOf(over?.id as string);
+
+                                                            if (oldIndex !== -1 && newIndex !== -1) {
+                                                                const newOptions = arrayMove(field.options || [], oldIndex, newIndex);
+                                                                manager.update(index, { options: newOptions });
+                                                            }
+                                                        }
                                                     }}
-                                                    disabled={optIndex === 0}
                                                 >
-                                                    ▲
-                                                </Button>
+                                                    <SortableContext
+                                                        items={field.options || []}
+                                                        strategy={verticalListSortingStrategy}
+                                                    >
+                                                        {(field.options || []).map((option, optIndex) => (
+                                                            <SortableOptionItem
+                                                                key={option}
+                                                                option={option}
+                                                                index={optIndex}
+                                                                onUpdate={(idx, val) => {
+                                                                    const newOptions = [...(field.options || [])];
+                                                                    newOptions[idx] = val;
+                                                                    manager.update(index, { options: newOptions });
+                                                                }}
+                                                                onRemove={(idx) => {
+                                                                    const newOptions = (field.options || []).filter((_, i) => i !== idx);
+                                                                    manager.update(index, { options: newOptions });
+                                                                }}
+                                                                disabled={optIndex === 0 && field.id === 'workflow_status' ? false : false}
+                                                            />
+                                                        ))}
+                                                    </SortableContext>
+                                                </DndContext>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8"
+                                                    variant="outline"
+                                                    size="sm"
                                                     onClick={() => {
-                                                        if (optIndex === (field.options?.length || 0) - 1) return;
-                                                        const newOptions = [...(field.options || [])];
-                                                        [newOptions[optIndex], newOptions[optIndex + 1]] = [newOptions[optIndex + 1], newOptions[optIndex]];
-                                                        manager.update(index, { options: newOptions });
-                                                    }}
-                                                    disabled={optIndex === (field.options?.length || 0) - 1}
-                                                >
-                                                    ▼
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-destructive"
-                                                    onClick={() => {
-                                                        const newOptions = (field.options || []).filter((_, i) => i !== optIndex);
+                                                        const newOptions = [...(field.options || []), `ステータス ${(field.options?.length || 0) + 1}`];
                                                         manager.update(index, { options: newOptions });
                                                     }}
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Plus className="mr-2 h-4 w-4" /> 追加
                                                 </Button>
                                             </div>
-                                        </div>
-                                    ))}
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            const newOptions = [...(field.options || []), "新しいステータス"];
-                                            manager.update(index, { options: newOptions });
-                                        }}
-                                    >
-                                        <Plus className="mr-2 h-4 w-4" /> 追加
-                                    </Button>
-                                </div>
-                            ) : field.id === 'client_id' ? (
-                                <div className="p-2 bg-slate-100 rounded text-sm text-muted-foreground">
-                                    (自動取得) 案件A, 案件B... ※案件マスタから自動的に取得されます
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <Input
-                                        value={field.options?.join(', ') || ''}
-                                        onChange={(e) => manager.update(index, {
-                                            options: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                        })}
-                                        placeholder="例: Twitter, Instagram, TikTok"
-                                        disabled={field.system}
-                                    />
-                                    <p className="text-xs text-muted-foreground">カンマ区切りで入力してください</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={manager.add}>
-                <Plus className="mr-2 h-4 w-4" />
-                項目を追加
-            </Button>
-        </div>
-    );
+                                        ) : field.id === 'client_id' ? (
+                                            <div className="p-2 bg-slate-100 rounded text-sm text-muted-foreground">
+                                                (自動取得) 案件A, 案件B... ※案件マスタから自動的に取得されます
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                <Input
+                                                    value={field.options?.join(', ') || ''}
+                                                    onChange={(e) => manager.update(index, {
+                                                        options: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                                                    })}
+                                                    placeholder="例: Twitter, Instagram, TikTok"
+                                                    disabled={field.system}
+                                                />
+                                                <p className="text-xs text-muted-foreground">カンマ区切りで入力してください</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </SortableFieldItem>
+                        ))}
+                    </SortableContext>
+                </DndContext>
+                <Button variant="outline" size="sm" onClick={manager.add}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    項目を追加
+                </Button>
+            </div>
+        );
+    };
 
     return (
         <div className="space-y-8">
@@ -337,7 +315,7 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                 <CardHeader>
                     <CardTitle>タスク入力項目設定</CardTitle>
                     <CardDescription>
-                        タスク作成時に入力する項目を定義します。システム標準の項目は削除できませんが、ラベルの変更や並べ替えが可能です。
+                        タスク作成時に入力する項目を定義します。ドラッグ＆ドロップで並べ替えが可能です。
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

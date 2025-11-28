@@ -12,11 +12,16 @@ interface TeamPanelProps {
 export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
     return (
         <Card className="h-full border-none rounded-none shadow-none bg-white">
-            <CardHeader className="pb-4 pt-6 px-6">
+            <CardHeader className="pb-4 pt-6 px-6 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
                     <span className="w-1 h-4 bg-blue-500 rounded-full" />
                     Members
                 </CardTitle>
+                {(currentUserRole === 'admin' || currentUserRole === 'owner') && (
+                    <a href="/team/members" className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                        管理
+                    </a>
+                )}
             </CardHeader>
             <CardContent className="px-4">
                 <div className="space-y-1">
