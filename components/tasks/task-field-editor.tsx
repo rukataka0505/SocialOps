@@ -15,8 +15,9 @@ import { Trash2, Settings2 } from "lucide-react";
 export interface TaskField {
     id: string;
     label: string;
-    type: 'text' | 'number' | 'date' | 'select' | 'url';
+    type: 'text' | 'textarea' | 'number' | 'date' | 'select' | 'url';
     options?: string[];
+    required?: boolean;
 }
 
 interface TaskFieldEditorProps {
@@ -39,7 +40,8 @@ export function TaskFieldEditor({ field, onSave, onDelete, trigger }: TaskFieldE
             id: field?.id || crypto.randomUUID(),
             label,
             type,
-            options: type === 'select' ? options.split(",").map(s => s.trim()).filter(Boolean) : undefined
+            options: type === 'select' ? options.split(",").map(s => s.trim()).filter(Boolean) : undefined,
+            required: field?.required // Preserve required flag
         };
 
         onSave(newField);
@@ -88,6 +90,7 @@ export function TaskFieldEditor({ field, onSave, onDelete, trigger }: TaskFieldE
                                 className="col-span-2 flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <option value="text">テキスト</option>
+                                <option value="textarea">テキストエリア</option>
                                 <option value="number">数値</option>
                                 <option value="date">日付</option>
                                 <option value="select">選択肢</option>

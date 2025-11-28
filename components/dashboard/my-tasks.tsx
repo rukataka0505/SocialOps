@@ -36,9 +36,10 @@ interface MyTasksProps {
     tasks: Task[];
     members: any[];
     currentUserId: string;
+    settings?: any;
 }
 
-export function MyTasks({ tasks, members, currentUserId }: MyTasksProps) {
+export function MyTasks({ tasks, members, currentUserId, settings }: MyTasksProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState<string | null>(null);
 
@@ -160,6 +161,7 @@ export function MyTasks({ tasks, members, currentUserId }: MyTasksProps) {
                         詳細
                     </button>
                 }
+                settings={settings}
             />
         </div>
     );

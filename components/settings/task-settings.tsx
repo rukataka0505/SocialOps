@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { updateTeamSettings } from "@/actions/teams";
 import { Loader2, Plus, Trash2, GripVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -13,7 +15,9 @@ import { useRouter } from "next/navigation";
 interface TaskSettingsProps {
     initialSettings: {
         workflow_statuses?: string[];
-        custom_field_definitions?: CustomFieldDefinition[];
+        custom_field_definitions?: CustomFieldDefinition[]; // Legacy support
+        regular_task_fields?: CustomFieldDefinition[];
+        post_task_fields?: CustomFieldDefinition[];
     };
 }
 
@@ -22,15 +26,22 @@ interface CustomFieldDefinition {
     label: string;
     type: 'text' | 'url' | 'date' | 'select';
     options?: string[]; // For select type
+    required?: boolean; // New: Cannot be deleted if true
 }
 
 export function TaskSettings({ initialSettings }: TaskSettingsProps) {
     const [statuses, setStatuses] = useState<string[]>(
         initialSettings.workflow_statuses || ['未着手', '進行中', '確認待ち', '完了']
     );
-    const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>(
-        initialSettings.custom_field_definitions || []
+
+    // Initialize fields: Use new keys if available, otherwise fallback to legacy or empty
+    const [regularFields, setRegularFields] = useState<CustomFieldDefinition[]>(
+        initialSettings.regular_task_fields || initialSettings.custom_field_definitions || []
     );
+    const [postFields, setPostFields] = useState<CustomFieldDefinition[]>(
+        initialSettings.post_task_fields || initialSettings.custom_field_definitions || []
+    );
+
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
 
@@ -59,37 +70,125 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
         setStatuses(newStatuses);
     };
 
-    // Custom Field Management
-    const addCustomField = () => {
-        const newField: CustomFieldDefinition = {
-            id: crypto.randomUUID(),
-            label: "新しい項目",
-            type: "text",
-        };
-        setCustomFields([...customFields, newField]);
-    };
+    // Custom Field Management Helper
+    const createFieldManager = (
+        fields: CustomFieldDefinition[],
+        setFields: React.Dispatch<React.SetStateAction<CustomFieldDefinition[]>>
+    ) => ({
+        add: () => {
+            const newField: CustomFieldDefinition = {
+                id: crypto.randomUUID(),
+                label: "新しい項目",
+                type: "text",
+                required: false,
+            };
+            setFields([...fields, newField]);
+        },
+        update: (index: number, field: Partial<CustomFieldDefinition>) => {
+            const newFields = [...fields];
+            newFields[index] = { ...newFields[index], ...field };
+            setFields(newFields);
+        },
+        remove: (index: number) => {
+            setFields(fields.filter((_, i) => i !== index));
+        }
+    });
 
-    const updateCustomField = (index: number, field: Partial<CustomFieldDefinition>) => {
-        const newFields = [...customFields];
-        newFields[index] = { ...newFields[index], ...field };
-        setCustomFields(newFields);
-    };
-
-    const removeCustomField = (index: number) => {
-        setCustomFields(customFields.filter((_, i) => i !== index));
-    };
+    const regularManager = createFieldManager(regularFields, setRegularFields);
+    const postManager = createFieldManager(postFields, setPostFields);
 
     const handleSave = () => {
         startTransition(async () => {
             const settings = {
                 ...initialSettings,
                 workflow_statuses: statuses,
-                custom_field_definitions: customFields,
+                regular_task_fields: regularFields,
+                post_task_fields: postFields,
+                // Keep legacy field updated with regular fields as fallback/sync if needed, 
+                // or just leave it as is. For now, let's sync it to regularFields to be safe for older clients.
+                custom_field_definitions: regularFields,
             };
             await updateTeamSettings(settings);
             router.refresh();
         });
     };
+
+    const renderFieldEditor = (
+        fields: CustomFieldDefinition[],
+        manager: ReturnType<typeof createFieldManager>
+    ) => (
+        <div className="space-y-6">
+            {fields.map((field, index) => (
+                <div key={field.id} className="p-4 border rounded-lg space-y-4 bg-slate-50/50">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                            <div className="space-y-2">
+                                <Label>項目名</Label>
+                                <Input
+                                    value={field.label}
+                                    onChange={(e) => manager.update(index, { label: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>データ型</Label>
+                                <Select
+                                    value={field.type}
+                                    onValueChange={(value: any) => manager.update(index, { type: value })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="text">テキスト</SelectItem>
+                                        <SelectItem value="textarea">テキストエリア</SelectItem>
+                                        <SelectItem value="url">URL</SelectItem>
+                                        <SelectItem value="date">日付</SelectItem>
+                                        <SelectItem value="select">選択肢</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => manager.remove(index)}
+                            className="text-muted-foreground hover:text-destructive mt-8"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id={`required-${field.id}`}
+                            checked={field.required}
+                            onCheckedChange={(checked) => manager.update(index, { required: !!checked })}
+                        />
+                        <Label htmlFor={`required-${field.id}`} className="text-sm font-normal text-muted-foreground">
+                            必須項目（タスク作成後に削除不可）
+                        </Label>
+                    </div>
+
+                    {field.type === 'select' && (
+                        <div className="space-y-2">
+                            <Label>選択肢 (カンマ区切り)</Label>
+                            <Input
+                                value={field.options?.join(', ') || ''}
+                                onChange={(e) => manager.update(index, {
+                                    options: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                                })}
+                                placeholder="例: Twitter, Instagram, TikTok"
+                            />
+                        </div>
+                    )}
+                </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={manager.add}>
+                <Plus className="mr-2 h-4 w-4" />
+                項目を追加
+            </Button>
+        </div>
+    );
 
     return (
         <div className="space-y-8">
@@ -152,64 +251,25 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                         タスクに追加情報を入力するためのカスタムフィールドを定義します。
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    {customFields.map((field, index) => (
-                        <div key={field.id} className="p-4 border rounded-lg space-y-4 bg-slate-50/50">
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="grid grid-cols-2 gap-4 flex-1">
-                                    <div className="space-y-2">
-                                        <Label>項目名</Label>
-                                        <Input
-                                            value={field.label}
-                                            onChange={(e) => updateCustomField(index, { label: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>データ型</Label>
-                                        <Select
-                                            value={field.type}
-                                            onValueChange={(value: any) => updateCustomField(index, { type: value })}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="text">テキスト</SelectItem>
-                                                <SelectItem value="url">URL</SelectItem>
-                                                <SelectItem value="date">日付</SelectItem>
-                                                <SelectItem value="select">選択肢</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removeCustomField(index)}
-                                    className="text-muted-foreground hover:text-destructive mt-8"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                <CardContent>
+                    <Tabs defaultValue="regular" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 mb-4">
+                            <TabsTrigger value="regular">通常タスク (Regular)</TabsTrigger>
+                            <TabsTrigger value="post">投稿タスク (Post)</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="regular">
+                            <div className="mb-4 text-sm text-muted-foreground">
+                                通常のタスク（ToDoなど）で使用されるデフォルトの入力項目です。
                             </div>
-
-                            {field.type === 'select' && (
-                                <div className="space-y-2">
-                                    <Label>選択肢 (カンマ区切り)</Label>
-                                    <Input
-                                        value={field.options?.join(', ') || ''}
-                                        onChange={(e) => updateCustomField(index, {
-                                            options: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                        })}
-                                        placeholder="例: Twitter, Instagram, TikTok"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={addCustomField}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        項目を追加
-                    </Button>
+                            {renderFieldEditor(regularFields, regularManager)}
+                        </TabsContent>
+                        <TabsContent value="post">
+                            <div className="mb-4 text-sm text-muted-foreground">
+                                投稿タスク（案件タスク）で使用されるデフォルトの入力項目です。
+                            </div>
+                            {renderFieldEditor(postFields, postManager)}
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
 

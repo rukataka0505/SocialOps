@@ -34,9 +34,10 @@ interface CalendarBoardProps {
     tasks: any[];
     members: any[];
     currentUserId: string;
+    settings?: any;
 }
 
-export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardProps) {
+export function CalendarBoard({ tasks, members, currentUserId, settings }: CalendarBoardProps) {
     const [view, setView] = useState<View>(Views.MONTH);
     const [date, setDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<any>(null);
@@ -330,6 +331,7 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                     task={selectedTask}
                     open={isDialogOpen}
                     onOpenChange={setIsDialogOpen}
+                    settings={settings}
                 />
             )}
         </div>

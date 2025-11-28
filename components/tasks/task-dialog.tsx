@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { createTask, updateTask, deleteTask, getSubtasks, toggleTaskStatus, getTaskComments, addComment, submitDeliverable, getTaskWithHierarchy } from "@/actions/tasks";
-import { Loader2, Plus, Trash2, CheckSquare, Link as LinkIcon, Paperclip, Send, ExternalLink, Edit2, User, UserPlus, Calendar } from "lucide-react";
+import { Loader2, Plus, Trash2, CheckSquare, Link as LinkIcon, Paperclip, Send, ExternalLink, Edit2, User, UserPlus, Calendar, Settings2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,6 +35,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getClients } from "@/actions/clients";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { TaskFieldEditor, TaskField } from "./task-field-editor";
 
 interface TeamMember {
     role: string;
@@ -54,12 +55,9 @@ interface TaskDialogProps {
     trigger?: React.ReactNode;
     settings?: {
         workflow_statuses?: string[];
-        custom_field_definitions?: {
-            id: string;
-            label: string;
-            type: 'text' | 'url' | 'date' | 'select';
-            options?: string[];
-        }[];
+        custom_field_definitions?: TaskField[]; // Legacy
+        regular_task_fields?: TaskField[];
+        post_task_fields?: TaskField[];
     };
 }
 
@@ -77,6 +75,9 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     const [clients, setClients] = useState<any[]>([]);
     const [assignees, setAssignees] = useState<{ userId: string; role: string }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Custom Fields State
+    const [customFields, setCustomFields] = useState<TaskField[]>([]);
 
     // Subtask state
     const [subtaskTitle, setSubtaskTitle] = useState("");
@@ -124,9 +125,22 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             // Set subtasks and comments from the fetched parent task
                             setSubtasks(hierarchyTask.subtasks || []);
                             setComments(hierarchyTask.comments || []);
+
+                            // Initialize Custom Fields
+                            if (hierarchyTask.attributes?._fields) {
+                                setCustomFields(hierarchyTask.attributes._fields);
+                            } else {
+                                // Fallback to team settings if not defined in task
+                                const isPost = hierarchyTask.is_milestone;
+                                const defaultFields = isPost
+                                    ? (settings?.post_task_fields || settings?.custom_field_definitions || [])
+                                    : (settings?.regular_task_fields || settings?.custom_field_definitions || []);
+                                setCustomFields(defaultFields);
+                            }
                         } else {
                             // Fallback if fetch fails (shouldn't happen usually)
                             setCurrentTask(task);
+                            setCustomFields(settings?.custom_field_definitions || []);
                         }
                     } else {
                         // New task creation
@@ -134,6 +148,13 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         setAssignees([]);
                         setSubtasks([]);
                         setComments([]);
+
+                        // Initialize Custom Fields for New Task
+                        const isPost = task?.is_milestone === true;
+                        const defaultFields = isPost
+                            ? (settings?.post_task_fields || settings?.custom_field_definitions || [])
+                            : (settings?.regular_task_fields || settings?.custom_field_definitions || []);
+                        setCustomFields(defaultFields);
                     }
                 } finally {
                     setIsLoading(false);
@@ -143,7 +164,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
             // Reset state when closed
             setCurrentTask(task);
         }
-    }, [open, task]);
+    }, [open, task, settings]);
 
     // Scroll to bottom of comments when they change
     useEffect(() => {
@@ -166,11 +187,27 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         setAssignees(newAssignees);
     };
 
+    // Custom Field Handlers
+    const handleAddCustomField = (field: TaskField) => {
+        setCustomFields([...customFields, field]);
+    };
+
+    const handleUpdateCustomField = (field: TaskField) => {
+        setCustomFields(customFields.map(f => f.id === field.id ? field : f));
+    };
+
+    const handleDeleteCustomField = (id: string) => {
+        setCustomFields(customFields.filter(f => f.id !== id));
+    };
+
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setError(null);
 
         const formData = new FormData(event.currentTarget);
+
+        // Append _fields definition
+        formData.append('_fields', JSON.stringify(customFields));
 
         startTransition(async () => {
             try {
@@ -196,11 +233,19 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         }
                     });
 
+                    // Ensure attributes exists and add _fields
+                    if (!data.attributes) data.attributes = {};
+                    data.attributes._fields = customFields;
+
                     data.assignees = assignees.filter(a => a.userId);
                     result = await updateTask(currentTask.id, data);
                 } else {
                     const formDataWithAssignees = new FormData(event.currentTarget);
                     formDataWithAssignees.set('assignees', JSON.stringify(assignees.filter(a => a.userId)));
+                    // _fields is already appended to formDataWithAssignees because we appended to event.currentTarget which is the form? 
+                    // No, new FormData(event.currentTarget) creates a snapshot. We need to append to the one we are sending.
+                    formDataWithAssignees.set('_fields', JSON.stringify(customFields));
+
                     result = await createTask(null, formDataWithAssignees);
                 }
 
@@ -342,7 +387,6 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     }
 
     const workflowStatuses = settings?.workflow_statuses || ['未着手', '進行中', '確認待ち', '完了'];
-    const customFieldDefinitions = settings?.custom_field_definitions || [];
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -511,6 +555,76 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                     <span>作成日: {format(new Date(currentTask.created_at), "yyyy/MM/dd HH:mm", { locale: ja })}</span>
                                                 </div>
                                             )}
+                                        </div>
+
+                                        {/* Custom Fields Section */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-semibold flex items-center gap-2">
+                                                    <Settings2 className="h-4 w-4" /> カスタム項目
+                                                </h3>
+                                                <TaskFieldEditor
+                                                    onSave={handleAddCustomField}
+                                                    trigger={
+                                                        <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground">
+                                                            <Plus className="h-3 w-3 mr-1" /> 項目を追加
+                                                        </Button>
+                                                    }
+                                                />
+                                            </div>
+                                            <div className="grid gap-4 p-4 bg-slate-50 rounded-lg border">
+                                                {customFields.map((field) => (
+                                                    <div key={field.id} className="grid gap-2 relative group">
+                                                        <div className="flex items-center justify-between">
+                                                            <Label htmlFor={`custom_${field.id}`}>{field.label}</Label>
+                                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <TaskFieldEditor
+                                                                    field={field}
+                                                                    onSave={handleUpdateCustomField}
+                                                                    onDelete={field.required ? undefined : handleDeleteCustomField} // Prevent deletion if required
+                                                                    trigger={
+                                                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6">
+                                                                            <Edit2 className="h-3 w-3" />
+                                                                        </Button>
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        {field.type === 'select' ? (
+                                                            <select
+                                                                id={`custom_${field.id}`}
+                                                                name={`custom_${field.id}`}
+                                                                defaultValue={currentTask?.attributes?.[field.id] || ""}
+                                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                                            >
+                                                                <option value="">選択してください</option>
+                                                                {field.options?.map((opt) => (
+                                                                    <option key={opt} value={opt}>{opt}</option>
+                                                                ))}
+                                                            </select>
+                                                        ) : field.type === 'textarea' ? ( // Added textarea support
+                                                            <Textarea
+                                                                id={`custom_${field.id}`}
+                                                                name={`custom_${field.id}`}
+                                                                defaultValue={currentTask?.attributes?.[field.id] || ""}
+                                                                className="min-h-[80px]"
+                                                            />
+                                                        ) : (
+                                                            <Input
+                                                                id={`custom_${field.id}`}
+                                                                name={`custom_${field.id}`}
+                                                                type={field.type === 'url' ? 'url' : field.type === 'date' ? 'date' : 'text'}
+                                                                defaultValue={currentTask?.attributes?.[field.id] || ""}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                {customFields.length === 0 && (
+                                                    <div className="text-center text-sm text-muted-foreground py-4 border border-dashed rounded-lg">
+                                                        カスタム項目はありません
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Subtasks Section (Only in Edit Mode) */}
@@ -798,25 +912,23 @@ function SubtaskSubmissionForm({ initialUrl, onSubmit }: { initialUrl?: string, 
     const [url, setUrl] = useState(initialUrl || "");
 
     return (
-        <div className="grid gap-2">
-            <Label>{initialUrl ? "提出URLを編集" : "提出URLを入力"}</Label>
-            <div className="flex flex-col gap-2">
+        <div className="grid gap-4">
+            <div className="space-y-2">
+                <h4 className="font-medium leading-none">提出URL</h4>
+                <p className="text-sm text-muted-foreground">
+                    成果物のURLを入力してください。
+                </p>
+            </div>
+            <div className="grid gap-2">
                 <Input
+                    id="url"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://..."
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            onSubmit(url);
-                        }
-                    }}
+                    className="h-8"
                 />
-                {url && (
-                    <Button onClick={() => onSubmit(url)} size="sm" className="w-full">
-                        保存
-                    </Button>
-                )}
             </div>
+            <Button size="sm" onClick={() => onSubmit(url)}>保存</Button>
         </div>
     );
 }

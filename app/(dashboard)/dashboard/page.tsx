@@ -1,5 +1,5 @@
 import { getTasks, getMemberTasks } from "@/actions/tasks";
-import { getTeamMembers } from "@/actions/teams";
+import { getTeamMembers, getTeamSettings } from "@/actions/teams";
 import { CalendarBoard } from "@/components/dashboard/calendar-board";
 import { TeamPanel } from "@/components/dashboard/team-panel";
 import { MyTasks } from "@/components/dashboard/my-tasks";
@@ -28,6 +28,7 @@ export default async function DashboardPage() {
     const currentUserRole = teamMember?.role;
     const teamName = teamMember?.team?.name || 'Team';
     const members = teamId ? await getTeamMembers(teamId) : [];
+    const settings = teamId ? await getTeamSettings() : {};
 
     // Fetch tasks for the current month (for Calendar)
     const now = new Date();
@@ -51,12 +52,12 @@ export default async function DashboardPage() {
                 <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50">
                     {/* Top: My Tasks */}
                     <section className="h-64 px-6 py-4 border-b border-slate-100 bg-white/50 shrink-0">
-                        <MyTasks tasks={myTasks} members={members} currentUserId={user.id} />
+                        <MyTasks tasks={myTasks} members={members} currentUserId={user.id} settings={settings} />
                     </section>
 
                     {/* Center: Calendar */}
                     <section className="flex-1 p-6 overflow-hidden">
-                        <CalendarBoard tasks={tasks} members={members} currentUserId={user.id} />
+                        <CalendarBoard tasks={tasks} members={members} currentUserId={user.id} settings={settings} />
                     </section>
                 </main>
 
