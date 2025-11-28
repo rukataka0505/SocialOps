@@ -138,6 +138,12 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
   - ソフトデリート対応
   - **案件コックピットUI**（クライアント選択の自動化、サブタスク担当者の必須化）
 
+- **通知システム**
+  - ヘッダーのベルアイコンによるリアルタイム通知
+  - 「自分に関係のあるタスク」のみを通知（担当割り当て、コメント、提出）
+  - 未読管理と一括既読化
+  - 通知クリックで該当タスクへディープリンク遷移
+
 - **チーム設定**
   - ワークフローステータスのカスタマイズ
   - カスタム入力項目の定義（テキスト、URL、日付、選択肢）
@@ -166,7 +172,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - `task_assignments` - タスク担当者（複数割り当て対応）
 - `guest_users` - ゲストユーザー情報
 - `projects` - プロジェクト（将来の拡張用）
-- `notifications` - 通知（将来の拡張用）
+- `notifications` - 通知（ユーザー別、リアルタイム更新対応）
 - `system_logs` - システムログ
 
 すべてのテーブルで `deleted_at` によるソフトデリートを実装。
@@ -192,7 +198,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - [x] Custom Fields (Per-Task & Team-Defined)
 - [x] Web App Architecture (Persistent Layout)
 - [x] Team Settings (Workflow Statuses & Custom Fields)
-- [ ] Notifications
+- [x] Notifications (Real-time, Deep Linking)
 - [ ] Filter & Highlight
 - [ ] Analytics Dashboard
 

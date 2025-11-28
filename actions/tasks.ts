@@ -230,6 +230,40 @@ export async function createTask(prevState: any, formData: FormData) {
             }
         }
 
+        // Notify new assignees
+        if (assignees.length > 0) {
+            const { createNotification } = await import("./notifications");
+            const assigneeIds = assignees.map(a => a.userId).filter(id => id !== user.id);
+
+            if (assigneeIds.length > 0) {
+                await createNotification(
+                    assigneeIds,
+                    "assignment",
+                    `タスクが割り当てられました: ${title}`,
+                    `あなたに新しいタスク「${title}」が割り当てられました。`,
+                    `/dashboard?taskId=${task.parent_id || task.id}`,
+                    user.id
+                );
+            }
+        }
+
+        // Notify new assignees
+        if (assignees.length > 0) {
+            const { createNotification } = await import("./notifications");
+            const assigneeIds = assignees.map(a => a.userId).filter(id => id !== user.id);
+
+            if (assigneeIds.length > 0) {
+                await createNotification(
+                    assigneeIds,
+                    "assignment",
+                    `タスクが割り当てられました: ${title}`,
+                    `あなたに新しいタスク「${title}」が割り当てられました。`,
+                    `/dashboard?taskId=${task.parent_id || task.id}`,
+                    user.id
+                );
+            }
+        }
+
         revalidatePath("/");
         return { success: true };
     } catch (error) {
@@ -408,6 +442,56 @@ export async function updateTask(taskId: string, data: any) {
                         .insert(assignments);
 
                     if (assignError) throw assignError;
+                }
+            }
+        }
+
+        // Notify new assignees (only if assignments changed)
+        if (assignees && assignees.length > 0) {
+            const { createNotification } = await import("./notifications");
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (user) {
+                // We only notify users who are newly assigned. 
+                // Since we deleted and re-inserted, we might notify existing users again if we are not careful.
+                // For simplicity in this phase, we notify all current assignees except the actor.
+                // A better approach would be to diff, but "re-assignment" notification is also acceptable.
+
+                const assigneeIds = assignees
+                    .map((a: any) => a.userId)
+                    .filter((id: string) => id !== user.id);
+
+                if (assigneeIds.length > 0) {
+                    // Fetch task title if not in update data
+                    let taskTitle = updateData.title;
+                    if (!taskTitle) {
+                        const { data: t } = await (supabase as any).from("tasks").select("title, parent_id, id").eq("id", taskId).single();
+                        taskTitle = t?.title;
+                        // Also ensure we have the correct link ID
+                        if (t) {
+                            await createNotification(
+                                assigneeIds,
+                                "assignment",
+                                `タスクが割り当てられました: ${taskTitle}`,
+                                `タスク「${taskTitle}」の担当者に設定されました。`,
+                                `/dashboard?taskId=${t.parent_id || t.id}`,
+                                user.id
+                            );
+                        }
+                    } else {
+                        // If we have title in updateData, we still need parent_id for the link
+                        const { data: t } = await (supabase as any).from("tasks").select("parent_id, id").eq("id", taskId).single();
+                        if (t) {
+                            await createNotification(
+                                assigneeIds,
+                                "assignment",
+                                `タスクが割り当てられました: ${taskTitle}`,
+                                `タスク「${taskTitle}」の担当者に設定されました。`,
+                                `/dashboard?taskId=${t.parent_id || t.id}`,
+                                user.id
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -607,6 +691,39 @@ export async function addComment(taskId: string, content: string) {
 
         if (error) throw error;
 
+        // Notify subscribers
+        // We do this asynchronously to not block the UI response if possible, 
+        // but since this is a server action, we just await it.
+        // 1. Get subscribers
+        const { getTaskSubscribers, createNotification } = await import("./notifications");
+        const subscribers = await getTaskSubscribers(taskId, user.id);
+
+        // 2. Create notification
+        if (subscribers.length > 0) {
+            // Get task title for the notification
+            const { data: task } = await (supabase as any)
+                .from("tasks")
+                .select("title, parent_id, id")
+                .eq("id", taskId)
+                .single();
+
+            if (task) {
+                // Determine the ID to link to (parent if it exists, or self)
+                // Actually, the spec says: URL: `/dashboard?taskId={親タスクID}`
+                // So we need to find the top-level parent ID.
+                const linkId = task.parent_id || task.id;
+
+                await createNotification(
+                    subscribers,
+                    "comment",
+                    `${user.user_metadata?.name || 'ユーザー'}がコメントしました`,
+                    content,
+                    `/dashboard?taskId=${linkId}`,
+                    user.id
+                );
+            }
+        }
+
         revalidatePath("/");
         return { success: true };
     } catch (error) {
@@ -646,6 +763,29 @@ export async function submitDeliverable(taskId: string, url: string) {
             .eq("team_id", teamId);
 
         if (error) throw error;
+
+        if (error) throw error;
+
+        // Notify subscribers about submission
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { getTaskSubscribers, createNotification } = await import("./notifications");
+            const subscribers = await getTaskSubscribers(taskId, user.id);
+
+            if (subscribers.length > 0) {
+                const { data: t } = await (supabase as any).from("tasks").select("title, parent_id, id").eq("id", taskId).single();
+                if (t) {
+                    await createNotification(
+                        subscribers,
+                        "submission",
+                        `${user.user_metadata?.name || 'ユーザー'}が提出物をアップロードしました`,
+                        `タスク「${t.title}」に提出物がアップロードされました。`,
+                        `/dashboard?taskId=${t.parent_id || t.id}`,
+                        user.id
+                    );
+                }
+            }
+        }
 
         revalidatePath("/");
         return { success: true };

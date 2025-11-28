@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { logout } from "@/actions/auth";
 import { User } from "@supabase/supabase-js";
 
+import { NotificationBell } from "@/components/dashboard/notification-bell";
+
 interface HeaderProps {
     user: User;
     userName: string;
@@ -76,6 +78,7 @@ export function Header({ user, userName, teamName, members, settings }: HeaderPr
                     </UserProfileDialog>
                 </div>
 
+                <NotificationBell userId={user.id} />
                 <TaskDialog members={members} settings={settings} />
 
                 <form action={logout}>
