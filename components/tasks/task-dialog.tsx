@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { createTask, updateTask, deleteTask, getSubtasks, toggleTaskStatus, getTaskComments, addComment, submitDeliverable, getTaskWithHierarchy } from "@/actions/tasks";
-import { Loader2, Plus, Trash2, CheckSquare, Link as LinkIcon, Paperclip, Send, ExternalLink, Edit2, User, UserPlus, Calendar, Settings2 } from "lucide-react";
+import { Loader2, Plus, Trash2, CheckSquare, Link as LinkIcon, Paperclip, Send, ExternalLink, Edit2, User, UserPlus, Calendar, Settings2, ChevronRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -411,281 +411,149 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     </DialogTrigger>
                 )
             )}
-            <DialogContent className={`sm:max-w-[900px] ${isEditMode ? 'h-[80vh]' : 'max-h-[90vh]'} flex flex-col`}>
-                <DialogHeader>
-                    <div className="flex items-center justify-between">
-                        <DialogTitle>{isEditMode ? "タスク詳細" : "タスク追加"}</DialogTitle>
-                    </div>
-                    <DialogDescription>
-                        {isEditMode ? "タスクの進捗管理とコミュニケーションを行います。" : "新しいタスクを作成します。"}
-                    </DialogDescription>
-                </DialogHeader>
-
+            <DialogContent className={`sm:max-w-[1000px] ${isEditMode ? 'h-[90vh]' : 'max-h-[90vh]'} flex flex-col p-0 gap-0`}>
                 {isLoading ? (
                     <div className="flex justify-center py-8 flex-1 items-center">
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                 ) : (
-                    <div className="flex-1 overflow-y-auto">
-                        <form id="task-form" key={currentTask?.id} onSubmit={handleSubmit} className="h-full flex flex-col lg:flex-row gap-6">
-                            {/* Left Column: Task Info & Subtasks */}
-                            <div className="flex-1 flex flex-col gap-4">
-                                <ScrollArea className="flex-1 pr-4">
-                                    <div className="space-y-6 p-1">
-                                        {error && (
-                                            <Alert variant="destructive">
-                                                <AlertDescription>{error}</AlertDescription>
-                                            </Alert>
-                                        )}
+                    <form id="task-form" key={currentTask?.id} onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+                        {/* 1. Sticky Header Block */}
+                        <div className="flex-none p-6 border-b bg-white z-10">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 space-y-2">
+                                    {/* Title & Status */}
+                                    <div className="flex items-center gap-3">
+                                        <Input
+                                            id="title"
+                                            name="title"
+                                            defaultValue={currentTask?.title}
+                                            placeholder="タスク名を入力"
+                                            className="text-2xl font-bold border-none shadow-none px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/50"
+                                            required
+                                        />
+                                        <select
+                                            id="workflow_status"
+                                            name="workflow_status"
+                                            defaultValue={currentTask?.workflow_status || workflowStatuses[0]}
+                                            className="h-8 rounded-full border border-input bg-background px-3 text-xs font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        >
+                                            {workflowStatuses.map((status) => (
+                                                <option key={status} value={status}>{status}</option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                        {/* Header Area: System Fields */}
-                                        <div className="grid gap-4 p-4 bg-slate-50 rounded-lg border">
-                                            {customFields.filter(f => f.system).map(field => {
-                                                switch (field.id) {
-                                                    case 'title':
-                                                        return (
-                                                            <div key={field.id} className="grid gap-2">
-                                                                <Label htmlFor="title" className="font-bold text-lg">{field.label}</Label>
-                                                                <Input
-                                                                    id="title"
-                                                                    name="title"
-                                                                    defaultValue={currentTask?.title}
-                                                                    placeholder="タスク名を入力"
-                                                                    className="text-lg font-medium"
-                                                                    required={field.required}
-                                                                />
-                                                            </div>
-                                                        );
-                                                    case 'client_id':
-                                                        return currentTask?.client_id ? (
-                                                            <input key={field.id} type="hidden" name="client_id" value={currentTask.client_id} />
-                                                        ) : (
-                                                            <div key={field.id} className="grid gap-2">
-                                                                <Label htmlFor="client_id">{field.label}</Label>
-                                                                <select
-                                                                    id="client_id"
-                                                                    name="client_id"
-                                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                                >
-                                                                    <option value="">(選択なし)</option>
-                                                                    {clients.map((client) => (
-                                                                        <option key={client.id} value={client.id}>{client.name}</option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-                                                        );
-                                                    case 'due_date':
-                                                        return (
-                                                            <div key={field.id} className="grid gap-2">
-                                                                <Label htmlFor="due_date">{field.label}</Label>
-                                                                <Input
-                                                                    id="due_date"
-                                                                    name="due_date"
-                                                                    type="date"
-                                                                    defaultValue={currentTask?.due_date?.split("T")[0]}
-                                                                    required={field.required}
-                                                                />
-                                                            </div>
-                                                        );
-                                                    case 'workflow_status':
-                                                        return (
-                                                            <div key={field.id} className="grid gap-2">
-                                                                <Label htmlFor="workflow_status">{field.label}</Label>
-                                                                <select
-                                                                    id="workflow_status"
-                                                                    name="workflow_status"
-                                                                    defaultValue={currentTask?.workflow_status || workflowStatuses[0]}
-                                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                                >
-                                                                    {workflowStatuses.map((status) => (
-                                                                        <option key={status} value={status}>{status}</option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-                                                        );
-                                                    case 'assigned_to':
-                                                        // Note: assigned_to logic in original was complex (multiple assignees).
-                                                        // The field 'assigned_to' in SYSTEM_FIELDS represents the "Assignee" section.
-                                                        // We keep the multiple assignee logic here.
-                                                        return (
-                                                            <div key={field.id} className="grid gap-2">
-                                                                <Label>{currentTask?.is_milestone ? "投稿管理担当者" : field.label}</Label>
-                                                                <div className="space-y-2">
-                                                                    {assignees.map((assignee, index) => (
-                                                                        <div key={index} className="flex gap-2 items-center">
-                                                                            <select
-                                                                                value={assignee.userId}
-                                                                                onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
-                                                                                className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                                                                            >
-                                                                                <option value="">(選択なし)</option>
-                                                                                {members.map((member) => (
-                                                                                    <option key={member.user.id} value={member.user.id}>
-                                                                                        {member.user.name || member.user.email}
-                                                                                    </option>
-                                                                                ))}
-                                                                            </select>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={() => removeAssignee(index)}
-                                                                            >
-                                                                                <Trash2 className="h-4 w-4" />
-                                                                            </Button>
-                                                                        </div>
-                                                                    ))}
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={addAssignee}
-                                                                        className="w-full"
-                                                                    >
-                                                                        <Plus className="mr-2 h-4 w-4" /> 担当者を追加
-                                                                    </Button>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    default:
-                                                        return null;
-                                                }
-                                            })}
-
-                                            {/* Hidden Fields */}
-                                            <input type="hidden" name="status" value="in_progress" />
-                                            {currentTask?.is_milestone && <input type="hidden" name="is_milestone" value="true" />}
-
-                                            {/* Progress & Metadata */}
-                                            {isEditMode && subtasks.length > 0 && (
-                                                <div className="mt-2 space-y-2">
-                                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                                        <span>進捗状況</span>
-                                                        <span>{Math.round((subtasks.filter(s => s.status === 'completed').length / subtasks.length) * 100)}%</span>
-                                                    </div>
-                                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-blue-500 transition-all duration-500"
-                                                            style={{ width: `${(subtasks.filter(s => s.status === 'completed').length / subtasks.length) * 100}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {isEditMode && currentTask?.created_at && (
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 pt-2 border-t border-dashed">
-                                                    <Calendar className="h-3 w-3" />
-                                                    <span>作成日: {format(new Date(currentTask.created_at), "yyyy/MM/dd HH:mm", { locale: ja })}</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Custom Fields Section */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="font-semibold flex items-center gap-2">
-                                                    <Settings2 className="h-4 w-4" /> カスタム項目
-                                                </h3>
-                                                <TaskFieldEditor
-                                                    onSave={handleAddCustomField}
-                                                    trigger={
-                                                        <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground">
-                                                            <Plus className="h-3 w-3 mr-1" /> 項目を追加
-                                                        </Button>
-                                                    }
+                                    {/* Progress Bar */}
+                                    {isEditMode && subtasks.length > 0 && (
+                                        <div className="flex items-center gap-3 max-w-md">
+                                            <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-blue-500 transition-all duration-500"
+                                                    style={{ width: `${(subtasks.filter(s => s.status === 'completed').length / subtasks.length) * 100}%` }}
                                                 />
                                             </div>
-                                            <div className="grid gap-4 p-4 bg-slate-50 rounded-lg border">
-                                                {customFields.filter(f => !f.system).map((field) => (
-                                                    <div key={field.id} className="grid gap-2 relative group">
-                                                        <div className="flex items-center justify-between">
-                                                            <Label htmlFor={`custom_${field.id}`}>{field.label}</Label>
-                                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <TaskFieldEditor
-                                                                    field={field}
-                                                                    onSave={handleUpdateCustomField}
-                                                                    onDelete={field.required ? undefined : handleDeleteCustomField} // Prevent deletion if required
-                                                                    trigger={
-                                                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6">
-                                                                            <Edit2 className="h-3 w-3" />
-                                                                        </Button>
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        {field.type === 'select' ? (
-                                                            <select
-                                                                id={`custom_${field.id}`}
-                                                                name={`custom_${field.id}`}
-                                                                defaultValue={currentTask?.attributes?.[field.id] || ""}
-                                                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                            >
-                                                                <option value="">選択してください</option>
-                                                                {field.options?.map((opt) => (
-                                                                    <option key={opt} value={opt}>{opt}</option>
-                                                                ))}
-                                                            </select>
-                                                        ) : field.type === 'textarea' ? ( // Added textarea support
-                                                            <Textarea
-                                                                id={`custom_${field.id}`}
-                                                                name={`custom_${field.id}`}
-                                                                defaultValue={currentTask?.attributes?.[field.id] || ""}
-                                                                className="min-h-[80px]"
-                                                            />
-                                                        ) : (
-                                                            <Input
-                                                                id={`custom_${field.id}`}
-                                                                name={`custom_${field.id}`}
-                                                                type={field.type === 'url' ? 'url' : field.type === 'date' ? 'date' : 'text'}
-                                                                defaultValue={currentTask?.attributes?.[field.id] || ""}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                {customFields.length === 0 && (
-                                                    <div className="text-center text-sm text-muted-foreground py-4 border border-dashed rounded-lg">
-                                                        カスタム項目はありません
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <span className="text-xs text-muted-foreground font-medium">
+                                                {Math.round((subtasks.filter(s => s.status === 'completed').length / subtasks.length) * 100)}%
+                                            </span>
                                         </div>
+                                    )}
+                                </div>
 
-                                        {/* Subtasks Section (Only in Edit Mode) */}
-                                        {isEditMode && (
-                                            <div className="space-y-4">
-                                                <h3 className="font-semibold flex items-center gap-2">
-                                                    <CheckSquare className="h-4 w-4" /> 制作プロセス
+                                {/* Close/Save Actions */}
+                                <div className="flex items-center gap-2">
+                                    {isEditMode && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={handleDelete}
+                                            disabled={isPending}
+                                            className="text-muted-foreground hover:text-destructive"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        disabled={isPending}
+                                        onClick={(e) => {
+                                            const form = document.getElementById('task-form') as HTMLFormElement;
+                                            if (form) form.requestSubmit();
+                                        }}
+                                    >
+                                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        {isEditMode ? "保存" : "作成"}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Main Content Area */}
+                        <div className="flex-1 flex overflow-hidden">
+                            {/* 2. Left Column: Subtasks & Details (Scrollable) */}
+                            <div className="flex-1 overflow-y-auto bg-slate-50/50">
+                                <div className="p-6 space-y-8 max-w-3xl mx-auto">
+                                    {error && (
+                                        <Alert variant="destructive">
+                                            <AlertDescription>{error}</AlertDescription>
+                                        </Alert>
+                                    )}
+
+                                    {/* A. Production Process (Subtasks) - Priority 1 */}
+                                    {isEditMode ? (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-lg font-bold flex items-center gap-2 text-slate-800">
+                                                    <CheckSquare className="h-5 w-5 text-blue-500" />
+                                                    制作プロセス
                                                 </h3>
-                                                <div className="space-y-2">
+                                                <span className="text-xs text-muted-foreground bg-slate-100 px-2 py-1 rounded-full">
+                                                    {subtasks.filter(s => s.status === 'completed').length} / {subtasks.length} 完了
+                                                </span>
+                                            </div>
 
+                                            <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                                                <div className="divide-y">
                                                     {subtasks.map((subtask) => (
                                                         <div
                                                             key={subtask.id}
-                                                            className={`grid grid-cols-[auto_1fr_auto_auto] gap-3 items-center p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors group ${subtask.status === 'completed' ? 'opacity-60 bg-slate-50' : ''}`}
+                                                            className={`grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center p-4 hover:bg-slate-50/50 transition-colors group ${subtask.status === 'completed' ? 'bg-slate-50/80' : ''}`}
                                                         >
                                                             <Checkbox
                                                                 checked={subtask.status === 'completed'}
                                                                 onCheckedChange={() => handleToggleSubtask(subtask.id, subtask.status)}
+                                                                className="h-5 w-5"
                                                             />
                                                             <div className="min-w-0">
-                                                                <div className={`text-sm font-medium truncate ${subtask.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                                                                <div className={`font-medium truncate ${subtask.status === 'completed' ? 'line-through text-muted-foreground' : 'text-slate-700'}`}>
                                                                     {subtask.title}
                                                                 </div>
-                                                                <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                                                                    <span>{subtask.due_date ? format(new Date(subtask.due_date), "MM/dd", { locale: ja }) : '-'}</span>
+                                                                <div className="text-xs text-muted-foreground flex items-center gap-3 mt-1.5">
+                                                                    <span className="flex items-center gap-1">
+                                                                        <Calendar className="h-3 w-3" />
+                                                                        {subtask.due_date ? format(new Date(subtask.due_date), "MM/dd", { locale: ja }) : '-'}
+                                                                    </span>
+                                                                    {subtask.assignments?.[0]?.user && (
+                                                                        <span className="flex items-center gap-1">
+                                                                            <User className="h-3 w-3" />
+                                                                            {subtask.assignments[0].user.name}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </div>
 
-                                                            {/* Assignee Selector (Avatar Dropdown) */}
+                                                            {/* Assignee */}
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
                                                                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                                                                         {subtask.assignments?.[0]?.user ? (
-                                                                            <Avatar className="h-7 w-7">
+                                                                            <Avatar className="h-7 w-7 border-2 border-white shadow-sm">
                                                                                 <AvatarImage src={subtask.assignments[0].user.avatar_url || ""} />
                                                                                 <AvatarFallback>{subtask.assignments[0].user.name?.[0] || "?"}</AvatarFallback>
                                                                             </Avatar>
                                                                         ) : (
-                                                                            <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                                                            <UserPlus className="h-4 w-4 text-muted-foreground/50 hover:text-muted-foreground" />
                                                                         )}
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
@@ -715,8 +583,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
 
-                                                            {/* Submission UI */}
-                                                            <div className="flex items-center gap-2">
+                                                            {/* Actions */}
+                                                            <div className="flex items-center gap-1">
                                                                 {subtask.attributes?.submission_url ? (
                                                                     <div className="flex items-center gap-1">
                                                                         <Button
@@ -745,8 +613,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                                 ) : (
                                                                     <Popover>
                                                                         <PopoverTrigger asChild>
-                                                                            <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1">
-                                                                                <LinkIcon className="h-3 w-3" /> 提出
+                                                                            <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground/50 hover:text-muted-foreground">
+                                                                                <LinkIcon className="h-4 w-4" />
                                                                             </Button>
                                                                         </PopoverTrigger>
                                                                         <PopoverContent className="w-80">
@@ -760,187 +628,320 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                         </div>
                                                     ))}
 
-                                                    {/* Inline Add Subtask */}
-                                                    <div className="flex items-center gap-2 p-2 border border-dashed rounded-lg bg-slate-50/50">
-                                                        <Input
-                                                            placeholder="新しい作業を追加..."
-                                                            value={subtaskTitle}
-                                                            onChange={(e) => setSubtaskTitle(e.target.value)}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                                                                    e.preventDefault();
-                                                                    handleAddSubtask();
-                                                                }
-                                                            }}
-                                                            className="flex-1 border-0 bg-transparent focus-visible:ring-0 px-2 h-8"
-                                                        />
-                                                        <Input
-                                                            type="date"
-                                                            value={subtaskDueDate}
-                                                            onChange={(e) => setSubtaskDueDate(e.target.value)}
-                                                            className="w-[130px] border-0 bg-transparent focus-visible:ring-0 h-8"
-                                                        />
-
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground">
-                                                                    {subtaskAssignee ? (
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Avatar className="h-5 w-5">
-                                                                                <AvatarImage src={members.find(m => m.user.id === subtaskAssignee)?.user.avatar_url || ""} />
-                                                                                <AvatarFallback>{members.find(m => m.user.id === subtaskAssignee)?.user.name?.[0] || "?"}</AvatarFallback>
-                                                                            </Avatar>
-                                                                            <span className="text-xs">{members.find(m => m.user.id === subtaskAssignee)?.user.name}</span>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="flex items-center gap-1">
-                                                                            <UserPlus className="h-4 w-4" />
-                                                                            <span className="text-xs">担当者</span>
-                                                                        </div>
-                                                                    )}
+                                                    {/* Add Subtask Row */}
+                                                    <div className="p-3 bg-slate-50/50">
+                                                        <div className="flex items-center gap-3">
+                                                            <Input
+                                                                placeholder="新しい作業を追加..."
+                                                                value={subtaskTitle}
+                                                                onChange={(e) => setSubtaskTitle(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                                                        e.preventDefault();
+                                                                        handleAddSubtask();
+                                                                    }
+                                                                }}
+                                                                className="flex-1 border-0 bg-transparent focus-visible:ring-0 px-2 h-9 shadow-none"
+                                                            />
+                                                            <div className="flex items-center gap-2">
+                                                                <Input
+                                                                    type="date"
+                                                                    value={subtaskDueDate}
+                                                                    onChange={(e) => setSubtaskDueDate(e.target.value)}
+                                                                    className="w-[130px] border-0 bg-transparent focus-visible:ring-0 h-9 shadow-none text-sm text-muted-foreground"
+                                                                />
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button variant="ghost" size="sm" className="h-9 px-2 text-muted-foreground hover:text-foreground">
+                                                                            {subtaskAssignee ? (
+                                                                                <Avatar className="h-6 w-6">
+                                                                                    <AvatarImage src={members.find(m => m.user.id === subtaskAssignee)?.user.avatar_url || ""} />
+                                                                                    <AvatarFallback>{members.find(m => m.user.id === subtaskAssignee)?.user.name?.[0] || "?"}</AvatarFallback>
+                                                                                </Avatar>
+                                                                            ) : (
+                                                                                <UserPlus className="h-4 w-4" />
+                                                                            )}
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end">
+                                                                        {members.map((member) => (
+                                                                            <DropdownMenuItem
+                                                                                key={member.user.id}
+                                                                                onClick={() => setSubtaskAssignee(member.user.id)}
+                                                                            >
+                                                                                <div className="flex items-center gap-2 w-full">
+                                                                                    <Avatar className="h-6 w-6">
+                                                                                        <AvatarImage src={member.user.avatar_url || ""} />
+                                                                                        <AvatarFallback>{member.user.name?.[0] || "?"}</AvatarFallback>
+                                                                                    </Avatar>
+                                                                                    <span>{member.user.name || member.user.email}</span>
+                                                                                </div>
+                                                                            </DropdownMenuItem>
+                                                                        ))}
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={handleAddSubtask}
+                                                                    disabled={isPending || !subtaskTitle || !subtaskDueDate || !subtaskAssignee}
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-full"
+                                                                >
+                                                                    <Plus className="h-4 w-4" />
                                                                 </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                {members.map((member) => (
-                                                                    <DropdownMenuItem
-                                                                        key={member.user.id}
-                                                                        onClick={() => setSubtaskAssignee(member.user.id)}
-                                                                    >
-                                                                        <div className="flex items-center gap-2 w-full">
-                                                                            <Avatar className="h-6 w-6">
-                                                                                <AvatarImage src={member.user.avatar_url || ""} />
-                                                                                <AvatarFallback>{member.user.name?.[0] || "?"}</AvatarFallback>
-                                                                            </Avatar>
-                                                                            <span>{member.user.name || member.user.email}</span>
-                                                                        </div>
-                                                                    </DropdownMenuItem>
-                                                                ))}
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-
-                                                        <Button
-                                                            type="button"
-                                                            onClick={handleAddSubtask}
-                                                            disabled={isPending || !subtaskTitle || !subtaskDueDate || !subtaskAssignee}
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className="h-8 w-8 p-0"
-                                                        >
-                                                            <Plus className="h-4 w-4" />
-                                                        </Button>
+                                                            </div>
+                                                        </div>
                                                     </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-8 text-center border-2 border-dashed rounded-xl text-muted-foreground bg-slate-50/50">
+                                            <CheckSquare className="h-8 w-8 mx-auto mb-3 text-slate-300" />
+                                            <p>タスクを作成すると、制作プロセス（サブタスク）を追加できるようになります。</p>
+                                        </div>
+                                    )}
+
+                                    {/* B. Details & Custom Fields (Collapsible) */}
+                                    <div className="space-y-4 pt-4 border-t">
+                                        <details className="group">
+                                            <summary className="flex items-center gap-2 cursor-pointer font-semibold text-slate-700 list-none select-none">
+                                                <div className="h-6 w-6 rounded-md bg-slate-100 flex items-center justify-center group-open:bg-slate-200 transition-colors">
+                                                    <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+                                                </div>
+                                                詳細情報・カスタム項目
+                                            </summary>
+                                            <div className="pt-6 space-y-6 pl-2">
+                                                {/* Custom Fields */}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="text-sm font-medium text-muted-foreground">カスタム項目</h4>
+                                                        <TaskFieldEditor
+                                                            onSave={handleAddCustomField}
+                                                            trigger={
+                                                                <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground">
+                                                                    <Plus className="h-3 w-3 mr-1" /> 項目を追加
+                                                                </Button>
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        {customFields.filter(f => !f.system).map((field) => (
+                                                            <div key={field.id} className="grid gap-2 relative group">
+                                                                <div className="flex items-center justify-between">
+                                                                    <Label htmlFor={`custom_${field.id}`} className="text-xs text-muted-foreground">{field.label}</Label>
+                                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                        <TaskFieldEditor
+                                                                            field={field}
+                                                                            onSave={handleUpdateCustomField}
+                                                                            onDelete={field.required ? undefined : handleDeleteCustomField}
+                                                                            trigger={
+                                                                                <Button type="button" variant="ghost" size="icon" className="h-5 w-5">
+                                                                                    <Edit2 className="h-3 w-3" />
+                                                                                </Button>
+                                                                            }
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                {field.type === 'select' ? (
+                                                                    <select
+                                                                        id={`custom_${field.id}`}
+                                                                        name={`custom_${field.id}`}
+                                                                        defaultValue={currentTask?.attributes?.[field.id] || ""}
+                                                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                                                    >
+                                                                        <option value="">選択してください</option>
+                                                                        {field.options?.map((opt) => (
+                                                                            <option key={opt} value={opt}>{opt}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                ) : field.type === 'textarea' ? (
+                                                                    <Textarea
+                                                                        id={`custom_${field.id}`}
+                                                                        name={`custom_${field.id}`}
+                                                                        defaultValue={currentTask?.attributes?.[field.id] || ""}
+                                                                        className="min-h-[80px]"
+                                                                    />
+                                                                ) : (
+                                                                    <Input
+                                                                        id={`custom_${field.id}`}
+                                                                        name={`custom_${field.id}`}
+                                                                        type={field.type === 'url' ? 'url' : field.type === 'date' ? 'date' : 'text'}
+                                                                        defaultValue={currentTask?.attributes?.[field.id] || ""}
+                                                                        className="h-9"
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Right Column: Metadata & Comments */}
+                            <div className="w-[320px] flex-none border-l bg-white flex flex-col h-full">
+                                <ScrollArea className="flex-1">
+                                    <div className="p-4 space-y-6">
+                                        {/* Metadata Section */}
+                                        <div className="space-y-4">
+                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">基本情報</h4>
+
+                                            {/* Client */}
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-muted-foreground">クライアント</Label>
+                                                {currentTask?.client_id ? (
+                                                    <div className="text-sm font-medium">
+                                                        <input type="hidden" name="client_id" value={currentTask.client_id} />
+                                                        {clients.find(c => c.id === currentTask.client_id)?.name || "Unknown Client"}
+                                                    </div>
+                                                ) : (
+                                                    <select
+                                                        name="client_id"
+                                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                                                    >
+                                                        <option value="">(選択なし)</option>
+                                                        {clients.map((client) => (
+                                                            <option key={client.id} value={client.id}>{client.name}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                            </div>
+
+                                            {/* Due Date */}
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-muted-foreground">期限</Label>
+                                                <Input
+                                                    name="due_date"
+                                                    type="date"
+                                                    defaultValue={currentTask?.due_date?.split("T")[0]}
+                                                    className="h-9"
+                                                    required
+                                                />
+                                            </div>
+
+                                            {/* Assignees */}
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-muted-foreground">{currentTask?.is_milestone ? "投稿管理担当者" : "担当者"}</Label>
+                                                <div className="space-y-2">
+                                                    {assignees.map((assignee, index) => (
+                                                        <div key={index} className="flex gap-2 items-center">
+                                                            <select
+                                                                value={assignee.userId}
+                                                                onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
+                                                                className="flex-1 h-8 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                                                            >
+                                                                <option value="">(選択なし)</option>
+                                                                {members.map((member) => (
+                                                                    <option key={member.user.id} value={member.user.id}>
+                                                                        {member.user.name || member.user.email}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => removeAssignee(index)}
+                                                                className="h-8 w-8"
+                                                            >
+                                                                <Trash2 className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={addAssignee}
+                                                        className="w-full h-8 text-xs"
+                                                    >
+                                                        <Plus className="mr-2 h-3 w-3" /> 担当者を追加
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {/* Hidden Fields */}
+                                            <input type="hidden" name="status" value="in_progress" />
+                                            {currentTask?.is_milestone && <input type="hidden" name="is_milestone" value="true" />}
+                                        </div>
+
+                                        {/* Comments Section */}
+                                        {isEditMode && (
+                                            <div className="pt-6 border-t space-y-4">
+                                                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                                                    コメント
+                                                    <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">{comments.length}</span>
+                                                </h4>
+
+                                                <div className="space-y-4">
+                                                    {comments.map((comment) => (
+                                                        <div key={comment.id} className="flex gap-3">
+                                                            <Avatar className="h-6 w-6 mt-1">
+                                                                <AvatarImage src={comment.user?.avatar_url || ""} />
+                                                                <AvatarFallback>{comment.user?.name?.[0] || "?"}</AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs font-medium">{comment.user?.name || "Unknown"}</span>
+                                                                    <span className="text-[10px] text-muted-foreground">
+                                                                        {format(new Date(comment.created_at), "MM/dd HH:mm", { locale: ja })}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-xs mt-1 bg-slate-50 p-2 rounded-lg text-slate-700 whitespace-pre-wrap">
+                                                                    {comment.content}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <div ref={commentsEndRef} />
+                                                    {comments.length === 0 && (
+                                                        <div className="text-center text-xs text-muted-foreground py-4">
+                                                            コメントはまだありません
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 </ScrollArea>
 
-                                {/* Footer Actions */}
-                                <div className="border-t pt-4 flex justify-between items-center">
-                                    {isEditMode ? (
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={handleDelete}
-                                            disabled={isPending}
-                                        >
-                                            <Trash2 className="mr-2 h-4 w-4" /> 削除
-                                        </Button>
-                                    ) : <div></div>}
-                                    <Button
-                                        type="button"
-                                        disabled={isPending}
-                                        onClick={(e) => {
-                                            const confirmed = window.confirm(
-                                                isEditMode
-                                                    ? "タスクの変更を保存してよろしいですか？"
-                                                    : "新しいタスクを作成してよろしいですか？"
-                                            );
-                                            if (confirmed) {
-                                                const form = document.getElementById('task-form') as HTMLFormElement;
-                                                if (form) {
-                                                    form.requestSubmit();
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        {isEditMode ? "保存" : "作成"}
-                                    </Button>
-                                </div>
-                            </div >
-
-                            {/* Right Column: Comments (Only in Edit Mode) */}
-                            {
-                                isEditMode && (
-                                    <div className="w-full lg:w-[350px] flex flex-col border-l pl-0 lg:pl-6 h-full">
-                                        <h3 className="font-semibold mb-4 flex items-center gap-2">
-                                            コメント ({comments.length})
-                                        </h3>
-                                        <ScrollArea className="flex-1 pr-4 -mr-4 mb-4">
-                                            <div className="space-y-4 pr-4">
-                                                {comments.map((comment) => (
-                                                    <div key={comment.id} className="flex gap-3">
-                                                        <Avatar className="h-8 w-8 mt-1">
-                                                            <AvatarImage src={comment.user?.avatar_url || ""} />
-                                                            <AvatarFallback>{comment.user?.name?.[0] || "?"}</AvatarFallback>
-                                                        </Avatar>
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-sm font-medium">{comment.user?.name || "Unknown"}</span>
-                                                                <span className="text-xs text-muted-foreground">
-                                                                    {format(new Date(comment.created_at), "MM/dd HH:mm", { locale: ja })}
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-sm mt-1 bg-slate-50 p-2 rounded-lg text-slate-700 whitespace-pre-wrap">
-                                                                {comment.content}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                <div ref={commentsEndRef} />
-                                                {comments.length === 0 && (
-                                                    <div className="text-center text-sm text-muted-foreground py-8">
-                                                        コメントはまだありません
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </ScrollArea>
-                                        <div className="mt-auto">
-                                            <div className="relative">
-                                                <Textarea
-                                                    placeholder="コメントを入力..."
-                                                    value={newComment}
-                                                    onChange={(e) => setNewComment(e.target.value)}
-                                                    className="min-h-[80px] pr-10 resize-none"
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                                                            handleAddComment();
-                                                        }
-                                                    }}
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    size="icon"
-                                                    className="absolute bottom-2 right-2 h-8 w-8"
-                                                    onClick={handleAddComment}
-                                                    disabled={!newComment.trim() || isPending}
-                                                >
-                                                    <Send className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground mt-1 text-right">
-                                                Ctrl + Enter で送信
-                                            </p>
+                                {/* Comment Input (Fixed at bottom of right column) */}
+                                {isEditMode && (
+                                    <div className="p-3 border-t bg-white">
+                                        <div className="relative">
+                                            <Textarea
+                                                placeholder="コメントを入力..."
+                                                value={newComment}
+                                                onChange={(e) => setNewComment(e.target.value)}
+                                                className="min-h-[80px] pr-10 resize-none text-sm"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                                        handleAddComment();
+                                                    }
+                                                }}
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="icon"
+                                                className="absolute bottom-2 right-2 h-7 w-7"
+                                                onClick={handleAddComment}
+                                                disabled={!newComment.trim() || isPending}
+                                            >
+                                                <Send className="h-3 w-3" />
+                                            </Button>
                                         </div>
+                                        <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                                            Ctrl + Enter で送信
+                                        </p>
                                     </div>
-                                )
-                            }
-                        </form >
-                    </div >
-                )
-                }
+                                )}
+                            </div>
+                        </div>
+                    </form >
+                )}
             </DialogContent >
         </Dialog >
     );
