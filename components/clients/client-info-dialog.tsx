@@ -28,7 +28,6 @@ export function ClientInfoDialog({ client, settings, trigger }: ClientInfoDialog
         { id: 'name', label: '案件名', type: 'text', required: true, system: true },
         { id: 'email', label: 'メールアドレス', type: 'text', system: true },
         { id: 'phone', label: '電話番号', type: 'text', system: true },
-        { id: 'spreadsheet_url', label: '管理シートURL', type: 'url', system: true },
         { id: 'notes', label: 'メモ', type: 'textarea', system: true },
     ];
 

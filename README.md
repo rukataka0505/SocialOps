@@ -23,9 +23,8 @@
 
 ### ✅ Phase 1-3: Foundation (Completed)
 
-- **DB Flexibility:** `tasks.attributes`, `clients.spreadsheet_url` 実装済み。
+- **DB Flexibility:** `tasks.attributes` 実装済み。
 - **Team Identity:** 招待URLによるメンバー追加機能。
-- **Auto-Assign:** ルーチン設定時に担当者を指定し、タスク生成時に自動割り当て。
 - **Guest User System:** アカウント不要のゲストユーザー管理機能。
 
 ### ✅ Phase 4: Calendar + Member Console Dashboard (Completed)
@@ -106,17 +105,10 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 
 - **クライアント管理**
   - クライアント情報の CRUD
-  - スプレッドシートURL の管理（外部シートへのハブ機能）
   - アカウント情報（credentials）とリソースリンク（resources）の管理
   - 案件コックピット（進行表のみのシンプルUI）
   - 案件設定一覧（テーブル形式での管理）
   - ソフトデリート対応
-
-- **ルーチン & タスク自動生成**
-  - 曜日・時刻指定のルーチン設定
-  - ルーチンからのタスク自動生成（週次）
-  - デフォルト担当者の自動割り当て
-  - 重複防止（UNIQUE制約による冪等性）
 
 - **カレンダー型ダッシュボード**
   - `react-big-calendar` による月次ビュー
@@ -172,7 +164,6 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - `team_members` - チームメンバー（ロール管理）
 - `team_invitations` - チーム招待URL
 - `clients` - クライアント情報（`credentials`, `resources` JSONB で拡張情報を保存）
-- `routines` - ルーチン設定
 - `tasks` - タスク（`attributes` JSONB でカスタムフィールド対応、`workflow_status`, `parent_id`, `is_milestone`, `is_private` で階層構造とワークフロー管理）
 - `task_assignments` - タスク担当者（複数割り当て対応）
 - `guest_users` - ゲストユーザー情報
@@ -190,8 +181,6 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - [x] Client Cockpit (Tabs: Overview, Schedule, Tasks)
 - [x] Credentials & Resources Management
 - [x] Monthly List Schedule (Vertical Format)
-- [x] Routine & Task Auto-Generation
-- [x] Auto-Assign Logic
 - [x] Calendar & Member List View
 - [x] Personal Dashboard Filtering
 - [x] Task Detail Dialog & Edit
@@ -302,16 +291,13 @@ SocialOps/
 │   │   └── user-profile-dialog.tsx  # プロフィール編集ダイアログ
 │   ├── clients/
 │   │   ├── client-dialog.tsx        # クライアント作成・編集ダイアログ
-│   │   ├── client-overview.tsx      # クライアント概要タブ
+│   │   ├── client-settings-view.tsx # クライアント設定ビュー
 │   │   ├── client-actions.tsx       # クライアントアクション
 │   │   └── monthly-list-schedule.tsx # 月次進行表
 │   ├── tasks/
 │   │   ├── task-dialog.tsx          # タスク作成・編集ダイアログ
 │   │   ├── task-detail-dialog.tsx   # タスク詳細ダイアログ
 │   │   └── task-field-editor.tsx    # カスタムフィールドエディター
-│   ├── routines/
-│   │   ├── routine-dialog.tsx       # ルーチン設定ダイアログ
-│   │   └── routine-list.tsx         # ルーチン一覧
 │   ├── settings/
 │   │   └── task-settings.tsx        # ワークフロー設定
 │   ├── lp/                          # ランディングページコンポーネント
@@ -322,7 +308,6 @@ SocialOps/
 │   ├── guest-auth.ts                # ゲスト認証
 │   ├── guests.ts                    # ゲストユーザー管理
 │   ├── onboarding.ts                # オンボーディング
-│   ├── routines.ts                  # ルーチン管理
 │   ├── tasks.ts                     # タスク管理
 │   ├── teams.ts                     # チーム管理
 │   └── user.ts                      # ユーザープロフィール

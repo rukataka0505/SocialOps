@@ -41,19 +41,7 @@ export default async function ClientLayout({
                     </span>
                     <ClientInfoDialog client={client} settings={settings} />
                 </div>
-                {client.spreadsheet_url && (
-                    <Button variant="outline" size="sm" asChild>
-                        <a
-                            href={client.spreadsheet_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="gap-2"
-                        >
-                            <Image src="/file.svg" alt="Sheet" width={16} height={16} />
-                            管理シートを開く
-                        </a>
-                    </Button>
-                )}
+
             </div>
 
 
