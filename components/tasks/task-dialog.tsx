@@ -19,9 +19,15 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { createTask, updateTask, deleteTask, getSubtasks, toggleTaskStatus, getTaskComments, addComment, submitDeliverable, getTaskWithHierarchy } from "@/actions/tasks";
-import { Loader2, Plus, Trash2, CheckSquare, Link as LinkIcon, Paperclip, Send, ExternalLink, Edit2, User } from "lucide-react";
+import { Loader2, Plus, Trash2, CheckSquare, Link as LinkIcon, Paperclip, Send, ExternalLink, Edit2, User, UserPlus, Calendar } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -483,6 +489,28 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             {/* Hidden Fields */}
                                             <input type="hidden" name="status" value="in_progress" />
                                             {currentTask?.is_milestone && <input type="hidden" name="is_milestone" value="true" />}
+
+                                            {/* Progress & Metadata */}
+                                            {isEditMode && subtasks.length > 0 && (
+                                                <div className="mt-2 space-y-2">
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>進捗状況</span>
+                                                        <span>{Math.round((subtasks.filter(s => s.status === 'completed').length / subtasks.length) * 100)}%</span>
+                                                    </div>
+                                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-blue-500 transition-all duration-500"
+                                                            style={{ width: `${(subtasks.filter(s => s.status === 'completed').length / subtasks.length) * 100}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {isEditMode && currentTask?.created_at && (
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 pt-2 border-t border-dashed">
+                                                    <Calendar className="h-3 w-3" />
+                                                    <span>作成日: {format(new Date(currentTask.created_at), "yyyy/MM/dd HH:mm", { locale: ja })}</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Subtasks Section (Only in Edit Mode) */}
@@ -492,13 +520,17 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                     <CheckSquare className="h-4 w-4" /> 制作プロセス
                                                 </h3>
                                                 <div className="space-y-2">
+
                                                     {subtasks.map((subtask) => (
-                                                        <div key={subtask.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors group">
+                                                        <div
+                                                            key={subtask.id}
+                                                            className={`grid grid-cols-[auto_1fr_auto_auto] gap-3 items-center p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors group ${subtask.status === 'completed' ? 'opacity-60 bg-slate-50' : ''}`}
+                                                        >
                                                             <Checkbox
                                                                 checked={subtask.status === 'completed'}
                                                                 onCheckedChange={() => handleToggleSubtask(subtask.id, subtask.status)}
                                                             />
-                                                            <div className="flex-1 min-w-0">
+                                                            <div className="min-w-0">
                                                                 <div className={`text-sm font-medium truncate ${subtask.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
                                                                     {subtask.title}
                                                                 </div>
@@ -507,22 +539,45 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                                 </div>
                                                             </div>
 
-                                                            {/* Assignee Dropdown */}
-                                                            <div className="w-[120px]">
-                                                                <select
-                                                                    value={subtask.assignments?.[0]?.user_id || ""}
-                                                                    onChange={(e) => handleUpdateSubtaskAssignee(subtask.id, e.target.value)}
-                                                                    className="w-full h-7 text-xs rounded border border-input bg-background px-1"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                >
-                                                                    <option value="">担当なし</option>
+                                                            {/* Assignee Selector (Avatar Dropdown) */}
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                                                        {subtask.assignments?.[0]?.user ? (
+                                                                            <Avatar className="h-7 w-7">
+                                                                                <AvatarImage src={subtask.assignments[0].user.avatar_url || ""} />
+                                                                                <AvatarFallback>{subtask.assignments[0].user.name?.[0] || "?"}</AvatarFallback>
+                                                                            </Avatar>
+                                                                        ) : (
+                                                                            <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                                                        )}
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuItem onClick={() => handleUpdateSubtaskAssignee(subtask.id, "")}>
+                                                                        <div className="flex items-center gap-2 w-full">
+                                                                            <div className="h-6 w-6 rounded-full border border-dashed flex items-center justify-center">
+                                                                                <User className="h-3 w-3 text-muted-foreground" />
+                                                                            </div>
+                                                                            <span>担当なし</span>
+                                                                        </div>
+                                                                    </DropdownMenuItem>
                                                                     {members.map((member) => (
-                                                                        <option key={member.user.id} value={member.user.id}>
-                                                                            {member.user.name || member.user.email}
-                                                                        </option>
+                                                                        <DropdownMenuItem
+                                                                            key={member.user.id}
+                                                                            onClick={() => handleUpdateSubtaskAssignee(subtask.id, member.user.id)}
+                                                                        >
+                                                                            <div className="flex items-center gap-2 w-full">
+                                                                                <Avatar className="h-6 w-6">
+                                                                                    <AvatarImage src={member.user.avatar_url || ""} />
+                                                                                    <AvatarFallback>{member.user.name?.[0] || "?"}</AvatarFallback>
+                                                                                </Avatar>
+                                                                                <span>{member.user.name || member.user.email}</span>
+                                                                            </div>
+                                                                        </DropdownMenuItem>
                                                                     ))}
-                                                                </select>
-                                                            </div>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
 
                                                             {/* Submission UI */}
                                                             <div className="flex items-center gap-2">
