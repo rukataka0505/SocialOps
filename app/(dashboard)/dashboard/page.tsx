@@ -56,7 +56,7 @@ export default async function DashboardPage() {
                     </section>
 
                     {/* Center: Calendar */}
-                    <section className="flex-1 p-6 min-h-[600px]">
+                    <section className="flex-1 p-6 min-h-[800px]">
                         <CalendarBoard tasks={tasks} members={members} currentUserId={user.id} settings={settings} />
                     </section>
                 </main>
