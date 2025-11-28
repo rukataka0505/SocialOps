@@ -131,6 +131,8 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
   - チーム設定に応じた動的ステータス選択
   - 親子タスク構造（`parent_id`、`is_milestone`）
   - サブタスク管理
+  - 提出物管理（URL提出・編集）
+  - タスクコメント機能（チャット形式）
   - 優先度・ステータス管理
   - ソフトデリート対応
 
@@ -182,6 +184,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - [x] Task Detail Dialog & Edit
 - [x] Dynamic Task Dialog (Team Settings Integration)
 - [x] Subtask Management
+- [x] Task Comments & Submission
 - [x] Member Detail Console
 - [x] Drag & Drop (Date Reschedule)
 - [x] Custom Fields (Per-Task & Team-Defined)

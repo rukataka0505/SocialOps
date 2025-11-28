@@ -489,3 +489,97 @@ export async function getSubtasks(parentId: string) {
         return [];
     }
 }
+
+export async function getTaskComments(taskId: string) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        const { data: comments, error } = await (supabase as any)
+            .from("task_comments")
+            .select(`
+                *,
+                user:users(
+                    id,
+                    name,
+                    avatar_url
+                )
+            `)
+            .eq("task_id", taskId)
+            .order("created_at", { ascending: true });
+
+        if (error) throw error;
+
+        return comments || [];
+    } catch (error) {
+        console.error("Error fetching task comments:", error);
+        return [];
+    }
+}
+
+export async function addComment(taskId: string, content: string) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) throw new Error("Unauthorized");
+
+        const { error } = await (supabase as any)
+            .from("task_comments")
+            .insert({
+                task_id: taskId,
+                user_id: user.id,
+                content: content
+            });
+
+        if (error) throw error;
+
+        revalidatePath("/");
+        return { success: true };
+    } catch (error) {
+        console.error("Error adding comment:", error);
+        return { success: false, error };
+    }
+}
+
+export async function submitDeliverable(taskId: string, url: string) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        // First get current attributes
+        const { data: task, error: fetchError } = await (supabase as any)
+            .from("tasks")
+            .select("attributes")
+            .eq("id", taskId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const currentAttributes = task.attributes || {};
+        const newAttributes = {
+            ...currentAttributes,
+            submission_url: url
+        };
+
+        const { error } = await (supabase as any)
+            .from("tasks")
+            .update({
+                attributes: newAttributes,
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", taskId)
+            .eq("team_id", teamId);
+
+        if (error) throw error;
+
+        revalidatePath("/");
+        return { success: true };
+    } catch (error) {
+        console.error("Error submitting deliverable:", error);
+        return { success: false, error };
+    }
+}
