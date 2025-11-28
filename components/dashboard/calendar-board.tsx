@@ -49,6 +49,7 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [localEvents, setLocalEvents] = useState<any[]>([]);
     const [isMobile, setIsMobile] = useState(false);
+    const [viewMode, setViewMode] = useState<'my' | 'all'>('my');
     const router = useRouter();
 
     // Detect mobile device
@@ -65,7 +66,17 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
 
     // Initialize local events from props
     useEffect(() => {
-        const events = tasks.map(task => ({
+        let filteredTasks = tasks;
+
+        // Filter by view mode
+        if (viewMode === 'my') {
+            filteredTasks = tasks.filter(task =>
+                task.assignments?.some((a: any) => a.user_id === currentUserId) ||
+                task.assigned_to === currentUserId
+            );
+        }
+
+        const events = filteredTasks.map(task => ({
             id: task.id,
             title: task.title,
             start: new Date(task.due_date),
@@ -74,7 +85,7 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
             resource: task,
         }));
         setLocalEvents(events);
-    }, [tasks]);
+    }, [tasks, viewMode, currentUserId]);
 
     const handleSelectEvent = useCallback((event: any) => {
         setSelectedTask(event.resource);
@@ -210,6 +221,28 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
 
     return (
         <div className="h-full w-full bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2 mb-4">
+                <button
+                    onClick={() => setViewMode('my')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'my'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                >
+                    📅 自分のタスク
+                </button>
+                <button
+                    onClick={() => setViewMode('all')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'all'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                >
+                    👥 チーム全体
+                </button>
+            </div>
+
             <DnDCalendar
                 localizer={localizer}
                 events={localEvents}

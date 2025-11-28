@@ -281,6 +281,9 @@ export async function updateTask(taskId: string, data: any) {
             Object.entries(taskData).filter(([_, v]) => v !== undefined)
         );
 
+        // Debug: Log before UUID processing
+        console.log('updateData before UUID processing:', JSON.stringify(updateData, null, 2));
+
         // Handle all UUID fields - convert empty strings to null to avoid UUID errors
         const uuidFields = ['client_id', 'project_id', 'routine_id', 'assigned_to', 'parent_id'];
         uuidFields.forEach(field => {
@@ -289,16 +292,37 @@ export async function updateTask(taskId: string, data: any) {
             }
         });
 
+        // Also check attributes object for UUID fields
+        if (updateData.attributes && typeof updateData.attributes === 'object') {
+            Object.keys(updateData.attributes).forEach(key => {
+                const value = updateData.attributes[key];
+                if (value === "" || value === "undefined" || value === null) {
+                    delete updateData.attributes[key];
+                }
+            });
+        }
+
+        // Debug: Log after UUID processing
+        console.log('updateData after UUID processing:', JSON.stringify(updateData, null, 2));
+
+        const finalUpdatePayload = {
+            ...updateData,
+            updated_at: new Date().toISOString(),
+        };
+
+        // Debug: Log the final payload being sent to Supabase
+        console.log('Final payload to Supabase:', JSON.stringify(finalUpdatePayload, null, 2));
+
         const { error } = await (supabase as any)
             .from("tasks")
-            .update({
-                ...updateData,
-                updated_at: new Date().toISOString(),
-            })
+            .update(finalUpdatePayload)
             .eq("id", taskId)
             .eq("team_id", teamId);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase update error:', error);
+            throw error;
+        }
 
         // Update assignments if provided
         if (assignees) {

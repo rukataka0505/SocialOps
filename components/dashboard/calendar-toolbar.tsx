@@ -41,7 +41,7 @@ export function CalendarToolbar(props: ToolbarProps) {
     };
 
     return (
-        <div className="flex items-center justify-between mb-4 px-2">
+        <div className="relative flex items-center justify-center mb-4 px-2">
             <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={goToToday}>
                     今日
@@ -59,7 +59,7 @@ export function CalendarToolbar(props: ToolbarProps) {
                 </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="absolute right-2 flex items-center gap-2">
                 <Select value={view} onValueChange={handleViewChange}>
                     <SelectTrigger className="h-8 w-[100px]">
                         <SelectValue placeholder="表示切替" />

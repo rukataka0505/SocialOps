@@ -33,11 +33,7 @@ export default async function DashboardPage() {
     const now = new Date();
     const start = startOfMonth(now);
     const end = endOfMonth(now);
-    const allTasks = await getTasks(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd'));
-    // Filter tasks for the current user
-    const tasks = allTasks.filter((task: any) =>
-        task.assignments?.some((a: any) => a.user_id === user.id)
-    );
+    const tasks = await getTasks(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd'));
 
     // Fetch tasks for the current user (for My Tasks)
     const myTasks = await getMemberTasks(user.id);

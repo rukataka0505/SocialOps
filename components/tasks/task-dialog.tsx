@@ -125,17 +125,33 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                 let result;
                 if (isEditMode) {
                     const data: any = {};
+                    const uuidFields = ['client_id', 'project_id', 'routine_id', 'assigned_to', 'parent_id'];
+
                     formData.forEach((value, key) => {
+                        // Skip undefined or null values
+                        if (value === undefined || value === null) return;
+
+                        // Convert empty strings and "undefined" strings to null for UUID fields
+                        let processedValue: FormDataEntryValue | null = value;
+                        if (uuidFields.includes(key)) {
+                            if (value === '' || value === 'undefined') {
+                                processedValue = null;
+                            }
+                        }
+
                         if (key.startsWith('custom_')) {
                             if (!data.attributes) data.attributes = {};
-                            data.attributes[key.replace('custom_', '')] = value;
+                            data.attributes[key.replace('custom_', '')] = processedValue;
                         } else {
-                            data[key] = value;
+                            data[key] = processedValue;
                         }
                     });
 
                     // Include assignees
                     data.assignees = assignees.filter(a => a.userId);
+
+                    // Debug: Log the data being sent
+                    console.log('Data being sent to updateTask:', JSON.stringify(data, null, 2));
 
                     result = await updateTask(task.id, data);
                 } else {
