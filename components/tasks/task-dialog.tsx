@@ -134,18 +134,12 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             } else {
                                 // Fallback to team settings if not defined in task
                                 const isPost = hierarchyTask.is_milestone;
-                                fields = isPost
+                                const customFields = isPost
                                     ? (settings?.post_task_fields || settings?.custom_field_definitions || [])
                                     : (settings?.regular_task_fields || settings?.custom_field_definitions || []);
-                            }
 
-                            // Ensure system fields exist (backward compatibility)
-                            const hasSystemFields = fields.some(f => f.system);
-                            if (!hasSystemFields) {
-                                const systemDefaults = hierarchyTask.is_milestone
-                                    ? SYSTEM_FIELDS.filter(f => f.id !== 'assigned_to')
-                                    : SYSTEM_FIELDS;
-                                fields = [...systemDefaults, ...fields] as TaskField[];
+                                // Always include system fields, then add custom fields
+                                fields = [...SYSTEM_FIELDS, ...customFields.filter((f: any) => !f.system)] as TaskField[];
                             }
                             setCustomFields(fields);
 
@@ -163,18 +157,12 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
                         // Initialize Custom Fields for New Task
                         const isPost = task?.is_milestone === true;
-                        let fields = isPost
+                        const customFields = isPost
                             ? (settings?.post_task_fields || settings?.custom_field_definitions || [])
                             : (settings?.regular_task_fields || settings?.custom_field_definitions || []);
 
-                        // Ensure system fields exist
-                        const hasSystemFields = fields.some(f => f.system);
-                        if (!hasSystemFields) {
-                            const systemDefaults = isPost
-                                ? SYSTEM_FIELDS.filter(f => f.id !== 'assigned_to')
-                                : SYSTEM_FIELDS;
-                            fields = [...systemDefaults, ...fields] as TaskField[];
-                        }
+                        // Always include system fields, then add custom fields
+                        const fields = [...SYSTEM_FIELDS, ...customFields.filter((f: any) => !f.system)] as TaskField[];
                         setCustomFields(fields);
                     }
                 } finally {
@@ -423,7 +411,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     </DialogTrigger>
                 )
             )}
-            <DialogContent className={`sm:max-w-[900px] ${isEditMode ? 'h-[80vh]' : 'max-h-[90vh]'} overflow-hidden flex flex-col`}>
+            <DialogContent className={`sm:max-w-[900px] ${isEditMode ? 'h-[80vh]' : 'max-h-[90vh]'} flex flex-col`}>
                 <DialogHeader>
                     <div className="flex items-center justify-between">
                         <DialogTitle>{isEditMode ? "タスク詳細" : "タスク追加"}</DialogTitle>
@@ -438,10 +426,10 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                 ) : (
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto">
                         <form id="task-form" key={currentTask?.id} onSubmit={handleSubmit} className="h-full flex flex-col lg:flex-row gap-6">
                             {/* Left Column: Task Info & Subtasks */}
-                            <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                            <div className="flex-1 flex flex-col gap-4">
                                 <ScrollArea className="flex-1 pr-4">
                                     <div className="space-y-6 p-1">
                                         {error && (
@@ -521,7 +509,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                         // We keep the multiple assignee logic here.
                                                         return (
                                                             <div key={field.id} className="grid gap-2">
-                                                                <Label>{field.label}</Label>
+                                                                <Label>{currentTask?.is_milestone ? "投稿管理担当者" : field.label}</Label>
                                                                 <div className="space-y-2">
                                                                     {assignees.map((assignee, index) => (
                                                                         <div key={index} className="flex gap-2 items-center">

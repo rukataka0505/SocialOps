@@ -332,11 +332,21 @@ export async function updateTask(taskId: string, data: any) {
             }
         });
 
+        // Handle _fields - it should be inside attributes, not a top-level field
+        if (updateData._fields) {
+            if (!updateData.attributes) {
+                updateData.attributes = {};
+            }
+            updateData.attributes._fields = updateData._fields;
+            delete updateData._fields;
+        }
+
         // Also check attributes object for UUID fields
         if (updateData.attributes && typeof updateData.attributes === 'object') {
             Object.keys(updateData.attributes).forEach(key => {
                 const value = updateData.attributes[key];
-                if (value === "" || value === "undefined" || value === null) {
+                // Don't delete _fields
+                if (key !== '_fields' && (value === "" || value === "undefined" || value === null)) {
                     delete updateData.attributes[key];
                 }
             });
