@@ -440,7 +440,32 @@ export async function getMemberTasks(userId: string) {
             .from("tasks")
             .select(`
                 *,
-                assignments:task_assignments!inner(user_id)
+                assignments:task_assignments!inner(user_id),
+                client:clients(
+                    id,
+                    name,
+                    spreadsheet_url
+                ),
+                subtasks:tasks(
+                    *,
+                    assignments:task_assignments(
+                        user_id,
+                        role,
+                        user:users(
+                            id,
+                            name,
+                            avatar_url
+                        )
+                    )
+                ),
+                comments:task_comments(
+                    *,
+                    user:users(
+                        id,
+                        name,
+                        avatar_url
+                    )
+                )
             `)
             .eq("team_id", teamId)
             .eq("assignments.user_id", userId)
@@ -472,6 +497,26 @@ export async function getClientMilestones(clientId: string, start: Date, end: Da
                 assignments:task_assignments(
                     user_id,
                     role,
+                    user:users(
+                        id,
+                        name,
+                        avatar_url
+                    )
+                ),
+                subtasks:tasks(
+                    *,
+                    assignments:task_assignments(
+                        user_id,
+                        role,
+                        user:users(
+                            id,
+                            name,
+                            avatar_url
+                        )
+                    )
+                ),
+                comments:task_comments(
+                    *,
                     user:users(
                         id,
                         name,

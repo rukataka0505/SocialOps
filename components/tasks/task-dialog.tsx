@@ -218,9 +218,11 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         });
     }
 
-    // Subtask Handlers
     async function handleAddSubtask() {
-        if (!subtaskTitle || !subtaskDueDate) return;
+        if (!subtaskTitle || !subtaskDueDate || !subtaskAssignee) {
+            setError("サブタスクの追加には、タイトル・期限・担当者が必須です");
+            return;
+        }
 
         startTransition(async () => {
             const formData = new FormData();
@@ -381,6 +383,25 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                     required
                                                 />
                                             </div>
+
+                                            {/* Client Selector (Hidden if client_id exists) */}
+                                            {task?.client_id ? (
+                                                <input type="hidden" name="client_id" value={task.client_id} />
+                                            ) : (
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="client_id">クライアント</Label>
+                                                    <select
+                                                        id="client_id"
+                                                        name="client_id"
+                                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                                    >
+                                                        <option value="">(選択なし)</option>
+                                                        {clients.map((client) => (
+                                                            <option key={client.id} value={client.id}>{client.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="due_date">期限</Label>
@@ -451,7 +472,6 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
                                             {/* Hidden Fields */}
                                             <input type="hidden" name="status" value="in_progress" />
-                                            {task?.client_id && <input type="hidden" name="client_id" value={task.client_id} />}
                                             {task?.is_milestone && <input type="hidden" name="is_milestone" value="true" />}
                                         </div>
 
@@ -574,7 +594,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                         <Button
                                                             type="button"
                                                             onClick={handleAddSubtask}
-                                                            disabled={isPending || !subtaskTitle || !subtaskDueDate}
+                                                            disabled={isPending || !subtaskTitle || !subtaskDueDate || !subtaskAssignee}
                                                             size="sm"
                                                             variant="ghost"
                                                             className="h-8 w-8 p-0"
