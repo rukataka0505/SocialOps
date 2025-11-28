@@ -12,7 +12,6 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TaskDialog } from "@/components/tasks/task-dialog";
-import { TaskDetailDialog } from "@/components/tasks/task-detail-dialog";
 import { updateTask } from "@/actions/tasks";
 import { useRouter } from "next/navigation";
 
@@ -42,7 +41,6 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
     const [date, setDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [localEvents, setLocalEvents] = useState<any[]>([]);
     const [isMobile, setIsMobile] = useState(false);
     const [viewMode, setViewMode] = useState<'my' | 'all'>('my');
@@ -85,11 +83,6 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
 
     const handleSelectEvent = useCallback((event: any) => {
         setSelectedTask(event.resource);
-        setIsDetailOpen(true);
-    }, []);
-
-    const handleEdit = useCallback(() => {
-        setIsDetailOpen(false);
         setIsDialogOpen(true);
     }, []);
 
@@ -332,21 +325,12 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
             />
 
             {selectedTask && (
-                <>
-                    <TaskDetailDialog
-                        task={selectedTask}
-                        open={isDetailOpen}
-                        onOpenChange={setIsDetailOpen}
-                        onEdit={handleEdit}
-                        members={members}
-                    />
-                    <TaskDialog
-                        members={members}
-                        task={selectedTask}
-                        open={isDialogOpen}
-                        onOpenChange={setIsDialogOpen}
-                    />
-                </>
+                <TaskDialog
+                    members={members}
+                    task={selectedTask}
+                    open={isDialogOpen}
+                    onOpenChange={setIsDialogOpen}
+                />
             )}
         </div>
     );
