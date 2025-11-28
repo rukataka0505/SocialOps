@@ -83,6 +83,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     const commentsEndRef = useRef<HTMLDivElement>(null);
 
     const isEditMode = !!(task && task.id);
+    const isMilestone = task?.is_milestone === true;
 
     // Fetch data when dialog opens
     useEffect(() => {
@@ -107,13 +108,18 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             setAssignees([]);
                         }
 
-                        // Fetch subtasks and comments if in edit mode
-                        if (isEditMode) {
-                            const [fetchedSubtasks, fetchedComments] = await Promise.all([
-                                getSubtasks(task.id),
-                                getTaskComments(task.id)
-                            ]);
+                        // Use eager loaded data if available, otherwise fetch
+                        if (task.subtasks) {
+                            setSubtasks(task.subtasks);
+                        } else if (isEditMode) {
+                            const fetchedSubtasks = await getSubtasks(task.id);
                             setSubtasks(fetchedSubtasks);
+                        }
+
+                        if (task.comments) {
+                            setComments(task.comments);
+                        } else if (isEditMode) {
+                            const fetchedComments = await getTaskComments(task.id);
                             setComments(fetchedComments);
                         }
                     }
@@ -260,6 +266,34 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
         }
     }
 
+    async function handleUpdateSubtaskAssignee(subtaskId: string, userId: string) {
+        startTransition(async () => {
+            // Optimistic update
+            setSubtasks(subtasks.map(t => {
+                if (t.id === subtaskId) {
+                    const user = members.find(m => m.user.id === userId)?.user;
+                    return {
+                        ...t,
+                        assignments: userId ? [{ user_id: userId, user }] : []
+                    };
+                }
+                return t;
+            }));
+
+            const result = await updateTask(subtaskId, {
+                assignees: userId ? [{ userId, role: '' }] : []
+            });
+
+            if (!result.success) {
+                setError("担当者の更新に失敗しました");
+                const fetchedSubtasks = await getSubtasks(task.id);
+                setSubtasks(fetchedSubtasks);
+            } else {
+                router.refresh();
+            }
+        });
+    }
+
     async function handleSubmitUrl(subtaskId: string, url: string) {
         startTransition(async () => {
             const result = await submitDeliverable(subtaskId, url);
@@ -373,45 +407,47 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                 </div>
                                             </div>
 
-                                            {/* Assignees */}
-                                            <div className="grid gap-2">
-                                                <Label>担当者</Label>
-                                                <div className="space-y-2">
-                                                    {assignees.map((assignee, index) => (
-                                                        <div key={index} className="flex gap-2 items-center">
-                                                            <select
-                                                                value={assignee.userId}
-                                                                onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
-                                                                className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                                                            >
-                                                                <option value="">(選択なし)</option>
-                                                                {members.map((member) => (
-                                                                    <option key={member.user.id} value={member.user.id}>
-                                                                        {member.user.name || member.user.email}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => removeAssignee(index)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    ))}
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={addAssignee}
-                                                        className="w-full"
-                                                    >
-                                                        <Plus className="mr-2 h-4 w-4" /> 担当者を追加
-                                                    </Button>
+                                            {/* Assignees - Hidden for Milestones */}
+                                            {!isMilestone && (
+                                                <div className="grid gap-2">
+                                                    <Label>担当者</Label>
+                                                    <div className="space-y-2">
+                                                        {assignees.map((assignee, index) => (
+                                                            <div key={index} className="flex gap-2 items-center">
+                                                                <select
+                                                                    value={assignee.userId}
+                                                                    onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
+                                                                    className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+                                                                >
+                                                                    <option value="">(選択なし)</option>
+                                                                    {members.map((member) => (
+                                                                        <option key={member.user.id} value={member.user.id}>
+                                                                            {member.user.name || member.user.email}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => removeAssignee(index)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        ))}
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={addAssignee}
+                                                            className="w-full"
+                                                        >
+                                                            <Plus className="mr-2 h-4 w-4" /> 担当者を追加
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* Hidden Fields */}
                                             <input type="hidden" name="status" value="in_progress" />
@@ -438,13 +474,24 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                                 </div>
                                                                 <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
                                                                     <span>{subtask.due_date ? format(new Date(subtask.due_date), "MM/dd", { locale: ja }) : '-'}</span>
-                                                                    {subtask.assignments?.[0]?.user && (
-                                                                        <span className="flex items-center gap-1">
-                                                                            <User className="h-3 w-3" />
-                                                                            {subtask.assignments[0].user.name}
-                                                                        </span>
-                                                                    )}
                                                                 </div>
+                                                            </div>
+
+                                                            {/* Assignee Dropdown */}
+                                                            <div className="w-[120px]">
+                                                                <select
+                                                                    value={subtask.assignments?.[0]?.user_id || ""}
+                                                                    onChange={(e) => handleUpdateSubtaskAssignee(subtask.id, e.target.value)}
+                                                                    className="w-full h-7 text-xs rounded border border-input bg-background px-1"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <option value="">担当なし</option>
+                                                                    {members.map((member) => (
+                                                                        <option key={member.user.id} value={member.user.id}>
+                                                                            {member.user.name || member.user.email}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
                                                             </div>
 
                                                             {/* Submission UI */}
@@ -467,19 +514,10 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                                                 </Button>
                                                                             </PopoverTrigger>
                                                                             <PopoverContent className="w-80">
-                                                                                <div className="grid gap-2">
-                                                                                    <Label>提出URLを編集</Label>
-                                                                                    <div className="flex gap-2">
-                                                                                        <Input
-                                                                                            defaultValue={subtask.attributes.submission_url}
-                                                                                            onKeyDown={(e) => {
-                                                                                                if (e.key === 'Enter') {
-                                                                                                    handleSubmitUrl(subtask.id, e.currentTarget.value);
-                                                                                                }
-                                                                                            }}
-                                                                                        />
-                                                                                    </div>
-                                                                                </div>
+                                                                                <SubtaskSubmissionForm
+                                                                                    initialUrl={subtask.attributes.submission_url}
+                                                                                    onSubmit={(url) => handleSubmitUrl(subtask.id, url)}
+                                                                                />
                                                                             </PopoverContent>
                                                                         </Popover>
                                                                     </div>
@@ -491,19 +529,9 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                                             </Button>
                                                                         </PopoverTrigger>
                                                                         <PopoverContent className="w-80">
-                                                                            <div className="grid gap-2">
-                                                                                <Label>提出URLを入力</Label>
-                                                                                <div className="flex gap-2">
-                                                                                    <Input
-                                                                                        placeholder="https://..."
-                                                                                        onKeyDown={(e) => {
-                                                                                            if (e.key === 'Enter') {
-                                                                                                handleSubmitUrl(subtask.id, e.currentTarget.value);
-                                                                                            }
-                                                                                        }}
-                                                                                    />
-                                                                                </div>
-                                                                            </div>
+                                                                            <SubtaskSubmissionForm
+                                                                                onSubmit={(url) => handleSubmitUrl(subtask.id, url)}
+                                                                            />
                                                                         </PopoverContent>
                                                                     </Popover>
                                                                 )}
@@ -531,6 +559,18 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                             onChange={(e) => setSubtaskDueDate(e.target.value)}
                                                             className="w-[130px] border-0 bg-transparent focus-visible:ring-0 h-8"
                                                         />
+                                                        <select
+                                                            value={subtaskAssignee}
+                                                            onChange={(e) => setSubtaskAssignee(e.target.value)}
+                                                            className="w-[120px] h-8 text-sm border-0 bg-transparent focus:ring-0 cursor-pointer"
+                                                        >
+                                                            <option value="">担当者</option>
+                                                            {members.map((member) => (
+                                                                <option key={member.user.id} value={member.user.id}>
+                                                                    {member.user.name || member.user.email}
+                                                                </option>
+                                                            ))}
+                                                        </select>
                                                         <Button
                                                             type="button"
                                                             onClick={handleAddSubtask}
@@ -637,5 +677,32 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                 )}
             </DialogContent>
         </Dialog>
+    );
+}
+
+function SubtaskSubmissionForm({ initialUrl, onSubmit }: { initialUrl?: string, onSubmit: (url: string) => void }) {
+    const [url, setUrl] = useState(initialUrl || "");
+
+    return (
+        <div className="grid gap-2">
+            <Label>{initialUrl ? "提出URLを編集" : "提出URLを入力"}</Label>
+            <div className="flex flex-col gap-2">
+                <Input
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://..."
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            onSubmit(url);
+                        }
+                    }}
+                />
+                {url && (
+                    <Button onClick={() => onSubmit(url)} size="sm" className="w-full">
+                        保存
+                    </Button>
+                )}
+            </div>
+        </div>
     );
 }

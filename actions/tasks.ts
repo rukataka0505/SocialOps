@@ -51,6 +51,26 @@ export async function getTodayTasks() {
                         name,
                         avatar_url
                     )
+                ),
+                subtasks:tasks(
+                    *,
+                    assignments:task_assignments(
+                        user_id,
+                        role,
+                        user:users(
+                            id,
+                            name,
+                            avatar_url
+                        )
+                    )
+                ),
+                comments:task_comments(
+                    *,
+                    user:users(
+                        id,
+                        name,
+                        avatar_url
+                    )
                 )
             `)
             .eq("team_id", teamId)
@@ -236,6 +256,26 @@ export async function getTasks(start: string, end: string) {
                 assignments:task_assignments(
                     user_id,
                     role,
+                    user:users(
+                        id,
+                        name,
+                        avatar_url
+                    )
+                ),
+                subtasks:tasks(
+                    *,
+                    assignments:task_assignments(
+                        user_id,
+                        role,
+                        user:users(
+                            id,
+                            name,
+                            avatar_url
+                        )
+                    )
+                ),
+                comments:task_comments(
+                    *,
                     user:users(
                         id,
                         name,
