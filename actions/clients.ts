@@ -46,6 +46,24 @@ export async function getClients() {
     }
 }
 
+export async function getClient(clientId: string) {
+    const supabase = await createSupabaseClient();
+
+    try {
+        const { data: client, error } = await (supabase as any)
+            .from("clients")
+            .select("*")
+            .eq("id", clientId)
+            .single();
+
+        if (error) throw error;
+        return client;
+    } catch (error) {
+        console.error("Error fetching client:", error);
+        return null;
+    }
+}
+
 export async function createClient(prevState: ClientState | null, formData: FormData): Promise<ClientState> {
     const supabase = await createSupabaseClient();
 
