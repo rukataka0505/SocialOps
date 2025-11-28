@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Calendar, dateFnsLocalizer, View, Views } from "react-big-calendar";
-import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parse, startOfWeek, getDay, endOfDay } from "date-fns";
 import { ja } from "date-fns/locale";
+import { Calendar, dateFnsLocalizer, Views, View } from "react-big-calendar";
+import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,7 +22,6 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { TaskTooltip } from "@/components/tasks/task-tooltip";
-import { CalendarToolbar } from "./calendar-toolbar";
 
 const locales = {
     "ja": ja,
@@ -134,6 +136,38 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
         [router]
     );
 
+    // Navigation handlers
+    const goToBack = () => {
+        const newDate = new Date(date);
+        if (view === 'month') newDate.setMonth(newDate.getMonth() - 1);
+        else if (view === 'week') newDate.setDate(newDate.getDate() - 7);
+        else newDate.setDate(newDate.getDate() - 1);
+        setDate(newDate);
+    };
+
+    const goToNext = () => {
+        const newDate = new Date(date);
+        if (view === 'month') newDate.setMonth(newDate.getMonth() + 1);
+        else if (view === 'week') newDate.setDate(newDate.getDate() + 7);
+        else newDate.setDate(newDate.getDate() + 1);
+        setDate(newDate);
+    };
+
+    const goToToday = () => {
+        setDate(new Date());
+    };
+
+    const getLabel = () => {
+        if (view === 'month') {
+            return format(date, "yyyy年 M月", { locale: ja });
+        }
+        if (view === 'day') {
+            return format(date, "yyyy年 M月 d日 (E)", { locale: ja });
+        }
+        const start = startOfWeek(date, { locale: ja });
+        return `${format(start, "M月d日", { locale: ja })}〜`;
+    };
+
     const eventPropGetter = useCallback(
         (event: any, start: Date, end: Date, isSelected: boolean) => {
             const statusColors: Record<string, string> = {
@@ -216,31 +250,66 @@ export function CalendarBoard({ tasks, members, currentUserId }: CalendarBoardPr
                 </span>
             ),
         },
-        toolbar: CalendarToolbar,
+        toolbar: () => null,
     };
 
     return (
         <div className="h-full w-full bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
-            {/* View Mode Toggle */}
-            <div className="flex items-center gap-2 mb-4">
-                <button
-                    onClick={() => setViewMode('my')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'my'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                >
-                    📅 自分のタスク
-                </button>
-                <button
-                    onClick={() => setViewMode('all')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'all'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                >
-                    👥 チーム全体
-                </button>
+            {/* Unified Header Toolbar */}
+            <div className="flex items-center justify-between mb-4">
+                {/* Left: View Mode Toggle */}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setViewMode('my')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'my'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                    >
+                        📅 自分のタスク
+                    </button>
+                    <button
+                        onClick={() => setViewMode('all')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'all'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                    >
+                        👥 チーム全体
+                    </button>
+                </div>
+
+                {/* Center: Date Navigation */}
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={goToToday}>
+                        今日
+                    </Button>
+                    <div className="flex items-center bg-slate-50 rounded-md border border-slate-200 p-0.5">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToBack}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-bold px-3 min-w-[120px] text-center">
+                            {getLabel()}
+                        </span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToNext}>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Right: View Switcher */}
+                <div className="flex items-center gap-2">
+                    <Select value={view} onValueChange={(v: any) => setView(v)}>
+                        <SelectTrigger className="h-8 w-[100px]">
+                            <SelectValue placeholder="表示切替" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="month">月</SelectItem>
+                            <SelectItem value="week">週</SelectItem>
+                            <SelectItem value="day">日</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <DnDCalendar
