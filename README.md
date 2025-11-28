@@ -60,7 +60,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 
 - **Separation of Concerns (Ops vs Management):**
   - **投稿管理 (Ops):** `/ops` からアクセス。余計な設定項目を排除し、カレンダー（進行表）のみを表示。
-  - **案件設定 (Management):** `/management` からアクセス。テーブル形式の一覧から設定画面へ遷移。
+  - **案件設定 (Management):** `/management` からアクセス。リボン（カード）形式の一覧から直感的に設定・編集が可能。
 
 - **Client Cockpit (案件コックピット):**
   - **進行表 (Schedule):** 月次の縦並びリスト形式で投稿予定を管理。日付ごとに親タスクを表示し、空の日には「+」ボタンで即座にタスク追加可能。
@@ -107,7 +107,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
   - クライアント情報の CRUD
   - アカウント情報（credentials）とリソースリンク（resources）の管理
   - 案件コックピット（進行表のみのシンプルUI）
-  - 案件設定一覧（テーブル形式での管理）
+  - 案件設定一覧（リボン形式での管理）
   - ソフトデリート対応
 
 - **カレンダー型ダッシュボード**
@@ -269,7 +269,7 @@ SocialOps/
 │   │   ├── layout.tsx               # 共通レイアウト（Header含む）
 │   │   ├── dashboard/page.tsx       # ダッシュボード（カレンダー + タスクリスト）
 │   │   ├── ops/page.tsx             # 投稿管理（案件一覧カード表示）
-│   │   ├── management/page.tsx      # 案件設定（案件一覧テーブル + 追加）
+│   │   ├── management/page.tsx      # 案件設定（案件一覧リボン + 追加）
 │   │   ├── clients/
 │   │   │   └── [id]/page.tsx        # クライアント詳細（案件コックピット）
 │   │   └── settings/
@@ -291,8 +291,6 @@ SocialOps/
 │   │   └── user-profile-dialog.tsx  # プロフィール編集ダイアログ
 │   ├── clients/
 │   │   ├── client-dialog.tsx        # クライアント作成・編集ダイアログ
-│   │   ├── client-settings-view.tsx # クライアント設定ビュー
-│   │   ├── client-actions.tsx       # クライアントアクション
 │   │   └── monthly-list-schedule.tsx # 月次進行表
 │   ├── tasks/
 │   │   ├── task-dialog.tsx          # タスク作成・編集ダイアログ
