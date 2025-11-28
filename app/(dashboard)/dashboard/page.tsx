@@ -15,20 +15,26 @@ export default async function DashboardPage() {
         redirect('/login');
     }
 
-    // Get team_id and role
-    const { data } = await supabase
+    // Get current team ID
+    const { getCurrentTeamId } = await import("@/lib/team-utils");
+    const teamId = await getCurrentTeamId(supabase);
+
+    if (!teamId) {
+        redirect("/onboarding/create-team");
+    }
+
+    // Get team details and role for the current team
+    const { data: teamMember } = await supabase
         .from("team_members")
         .select("team_id, role, team:teams(name)")
         .eq("user_id", user.id)
+        .eq("team_id", teamId)
         .single();
 
-    const teamMember = data as { team_id: string; role: 'owner' | 'admin' | 'member'; team: { name: string } } | null;
-
-    const teamId = teamMember?.team_id;
-    const currentUserRole = teamMember?.role;
+    const currentUserRole = teamMember?.role || undefined;
     const teamName = teamMember?.team?.name || 'Team';
-    const members = teamId ? await getTeamMembers(teamId) : [];
-    const settings = teamId ? await getTeamSettings() : {};
+    const members = await getTeamMembers(teamId);
+    const settings = await getTeamSettings();
 
     // Fetch tasks for the current month (for Calendar)
     const now = new Date();
