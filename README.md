@@ -112,6 +112,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 
 - **カレンダー型ダッシュボード**
   - `react-big-calendar` による月次ビュー
+  - **週次カンバンボード**（曜日別リスト表示、ドラッグ&ドロップ対応）
   - タスクのドラッグ&ドロップによる日付変更
   - 担当者アイコン表示
   - ステータス別の色分け
@@ -189,6 +190,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - [x] Task Comments & Submission
 - [x] Member Detail Console
 - [x] Drag & Drop (Date Reschedule)
+- [x] Weekly Kanban Board
 - [x] Custom Fields (Per-Task & Team-Defined)
 - [x] Web App Architecture (Persistent Layout)
 - [x] Team Settings (Workflow Statuses & Custom Fields)

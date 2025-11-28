@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { updateTask } from "@/actions/tasks";
 import { useRouter } from "next/navigation";
+import { WeeklyBoard } from "./weekly-board";
 
 
 const locales = {
@@ -291,39 +292,52 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                 </div>
             </div>
 
-            <DnDCalendar
-                localizer={localizer}
-                events={localEvents}
-                startAccessor={(event: any) => event.start}
-                endAccessor={(event: any) => event.end}
-                style={{ height: "100%" }}
-                views={['month', 'week', 'day']}
-                view={view}
-                date={date}
-                onView={setView}
-                onNavigate={setDate}
-                culture="ja"
-                onSelectEvent={handleSelectEvent}
-                onEventDrop={onEventDrop}
-                draggableAccessor={() => !isMobile}
-                resizable={false}
-                eventPropGetter={eventPropGetter}
-                components={components}
-                messages={{
-                    next: "次へ",
-                    previous: "前へ",
-                    today: "今日",
-                    month: "月",
-                    week: "週",
-                    day: "日",
-                    agenda: "予定",
-                    date: "日付",
-                    time: "時間",
-                    event: "イベント",
-                    noEventsInRange: "この期間にイベントはありません。",
-                }}
-                className="modern-calendar"
-            />
+            {view === 'week' ? (
+                <div className="flex-1 overflow-hidden min-h-0">
+                    <WeeklyBoard
+                        tasks={tasks}
+                        currentDate={date}
+                        onTaskClick={(task) => {
+                            setSelectedTask(task);
+                            setIsDialogOpen(true);
+                        }}
+                    />
+                </div>
+            ) : (
+                <DnDCalendar
+                    localizer={localizer}
+                    events={localEvents}
+                    startAccessor={(event: any) => event.start}
+                    endAccessor={(event: any) => event.end}
+                    style={{ height: "100%" }}
+                    views={['month', 'week', 'day']}
+                    view={view}
+                    date={date}
+                    onView={setView}
+                    onNavigate={setDate}
+                    culture="ja"
+                    onSelectEvent={handleSelectEvent}
+                    onEventDrop={onEventDrop}
+                    draggableAccessor={() => !isMobile}
+                    resizable={false}
+                    eventPropGetter={eventPropGetter}
+                    components={components}
+                    messages={{
+                        next: "次へ",
+                        previous: "前へ",
+                        today: "今日",
+                        month: "月",
+                        week: "週",
+                        day: "日",
+                        agenda: "予定",
+                        date: "日付",
+                        time: "時間",
+                        event: "イベント",
+                        noEventsInRange: "この期間にイベントはありません。",
+                    }}
+                    className="modern-calendar"
+                />
+            )}
 
             {selectedTask && (
                 <TaskDialog
