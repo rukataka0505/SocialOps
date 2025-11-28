@@ -11,9 +11,10 @@ import { useRouter } from "next/navigation";
 
 interface ClientOverviewProps {
     client: any;
+    settings?: any;
 }
 
-export function ClientOverview({ client }: ClientOverviewProps) {
+export function ClientOverview({ client, settings }: ClientOverviewProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [credentials, setCredentials] = useState<any[]>(client.credentials || []);
     const [resources, setResources] = useState<any[]>(client.resources || []);
@@ -27,10 +28,29 @@ export function ClientOverview({ client }: ClientOverviewProps) {
         setVisiblePasswords(prev => ({ ...prev, [index]: !prev[index] }));
     };
 
+    // Get client fields from settings or use defaults
+    const clientFields = settings?.client_fields || [
+        { id: 'name', label: '案件名', type: 'text', required: true, system: true },
+        { id: 'email', label: 'メールアドレス', type: 'text', system: true },
+        { id: 'phone', label: '電話番号', type: 'text', system: true },
+        { id: 'spreadsheet_url', label: '管理シートURL', type: 'url', system: true },
+        { id: 'notes', label: 'メモ', type: 'textarea', system: true },
+    ];
+
     const handleSave = () => {
         startTransition(async () => {
             const formData = new FormData();
-            formData.append("name", client.name); // Required
+
+            // Add all system fields
+            clientFields.forEach((field: any) => {
+                if (field.system) {
+                    const value = client[field.id];
+                    if (value !== null && value !== undefined) {
+                        formData.append(field.id, value);
+                    }
+                }
+            });
+
             formData.append("credentials", JSON.stringify(credentials));
             formData.append("resources", JSON.stringify(resources));
 
@@ -67,18 +87,33 @@ export function ClientOverview({ client }: ClientOverviewProps) {
                 </CardHeader>
                 <CardContent>
                     <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <dt className="text-muted-foreground">メールアドレス</dt>
-                            <dd className="font-medium">{client.email || "-"}</dd>
-                        </div>
-                        <div>
-                            <dt className="text-muted-foreground">電話番号</dt>
-                            <dd className="font-medium">{client.phone || "-"}</dd>
-                        </div>
-                        <div className="col-span-2">
-                            <dt className="text-muted-foreground">メモ</dt>
-                            <dd className="whitespace-pre-wrap bg-gray-50 p-2 rounded mt-1">{client.notes || "-"}</dd>
-                        </div>
+                        {clientFields.map((field: any) => {
+                            const value = client[field.id];
+                            if (!value && !field.required) return null;
+
+                            return (
+                                <div key={field.id} className={field.type === 'textarea' ? 'col-span-2' : ''}>
+                                    <dt className="text-muted-foreground">{field.label}</dt>
+                                    {field.type === 'url' && value ? (
+                                        <dd className="font-medium">
+                                            <a
+                                                href={value}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary hover:underline flex items-center gap-1"
+                                            >
+                                                {field.label}
+                                                <ExternalLink className="h-3 w-3" />
+                                            </a>
+                                        </dd>
+                                    ) : field.type === 'textarea' ? (
+                                        <dd className="whitespace-pre-wrap bg-gray-50 p-2 rounded mt-1">{value || "-"}</dd>
+                                    ) : (
+                                        <dd className="font-medium">{value || "-"}</dd>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </dl>
                 </CardContent>
             </Card>

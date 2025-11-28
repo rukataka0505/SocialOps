@@ -21,6 +21,7 @@ interface ClientInfoDialogProps {
 export function ClientInfoDialog({ client, settings, trigger }: ClientInfoDialogProps) {
     const attributes = client.attributes || {};
     const credentials = client.credentials || [];
+    const resources = client.resources || [];
 
     // Get client fields from settings or use defaults
     const clientFields = settings?.client_fields || [
@@ -69,12 +70,15 @@ export function ClientInfoDialog({ client, settings, trigger }: ClientInfoDialog
                                     <div key={field.id} className="space-y-1">
                                         <div className="text-sm text-muted-foreground">{field.label}</div>
                                         {field.type === 'url' ? (
-                                            <Button variant="outline" className="w-full justify-start" asChild>
-                                                <a href={value} target="_blank" rel="noopener noreferrer">
-                                                    <ExternalLink className="mr-2 h-4 w-4" />
-                                                    リンクを開く
-                                                </a>
-                                            </Button>
+                                            <a
+                                                href={value}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="font-medium text-primary hover:underline flex items-center gap-1"
+                                            >
+                                                {field.label || "(タイトルなし)"}
+                                                <ExternalLink className="h-3 w-3" />
+                                            </a>
                                         ) : (
                                             <div className="font-medium break-all whitespace-pre-wrap p-2 bg-muted/50 rounded-md text-sm">
                                                 {value}
@@ -86,6 +90,27 @@ export function ClientInfoDialog({ client, settings, trigger }: ClientInfoDialog
                         </div>
                     </div>
 
+                    {/* Resources */}
+                    {resources.length > 0 && (
+                        <div className="space-y-4">
+                            <h3 className="font-semibold border-b pb-2">リソースリンク</h3>
+                            <div className="grid gap-2">
+                                {resources.map((res: any, index: number) => (
+                                    <a
+                                        key={index}
+                                        href={res.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-medium text-primary hover:underline flex items-center gap-1 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                                    >
+                                        {res.title || "(タイトルなし)"}
+                                        <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Credentials */}
                     {credentials.length > 0 && (
                         <div className="space-y-4">
@@ -96,14 +121,14 @@ export function ClientInfoDialog({ client, settings, trigger }: ClientInfoDialog
                                         <div className="font-medium mb-2">{cred.service || "サービス名なし"}</div>
                                         <div className="grid grid-cols-[auto,1fr,auto] gap-2 items-center text-sm">
                                             <span className="text-muted-foreground">ID:</span>
-                                            <code className="bg-background px-2 py-1 rounded border">{cred.username}</code>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(cred.username, "ID")}>
+                                            <code className="bg-background px-2 py-1 rounded border">{cred.id || "-"}</code>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(cred.id || "", "ID")}>
                                                 <Copy className="h-3 w-3" />
                                             </Button>
 
                                             <span className="text-muted-foreground">PW:</span>
                                             <code className="bg-background px-2 py-1 rounded border">••••••••</code>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(cred.password, "パスワード")}>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(cred.password || "", "パスワード")}>
                                                 <Copy className="h-3 w-3" />
                                             </Button>
                                         </div>
