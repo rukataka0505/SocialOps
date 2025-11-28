@@ -68,7 +68,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     const [subtaskDueDate, setSubtaskDueDate] = useState("");
     const [subtasks, setSubtasks] = useState<any[]>([]); // This would ideally be fetched
 
-    const isEditMode = !!task;
+    const isEditMode = !!task?.id;
 
     useEffect(() => {
         if (open) {
