@@ -84,17 +84,20 @@ export function ClientRibbonList({ clients, settings }: ClientRibbonListProps) {
                                 {/* Display some attributes as badges if available */}
                                 {client.attributes && Object.keys(client.attributes).length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                        {Object.entries(client.attributes).slice(0, 3).map(([key, value]) => {
-                                            // Find label from settings if possible
-                                            const field = settings?.client_fields?.find((f: any) => f.id === key);
-                                            const label = field?.label || key;
-                                            if (!value) return null;
-                                            return (
-                                                <Badge key={key} variant="secondary" className="text-xs font-normal">
-                                                    {label}: {String(value)}
-                                                </Badge>
-                                            );
-                                        })}
+                                        {Object.entries(client.attributes)
+                                            .filter(([key]) => key !== '_fields')
+                                            .slice(0, 3)
+                                            .map(([key, value]) => {
+                                                // Find label from settings if possible
+                                                const field = settings?.client_fields?.find((f: any) => f.id === key);
+                                                const label = field?.label || key;
+                                                if (!value) return null;
+                                                return (
+                                                    <Badge key={key} variant="secondary" className="text-xs font-normal">
+                                                        {label}: {String(value)}
+                                                    </Badge>
+                                                );
+                                            })}
                                         {Object.keys(client.attributes).length > 3 && (
                                             <Badge variant="outline" className="text-xs font-normal">
                                                 +{Object.keys(client.attributes).length - 3}
@@ -120,7 +123,11 @@ export function ClientRibbonList({ clients, settings }: ClientRibbonListProps) {
                     resources: (selectedClient.resources || []) as any[]
                 } : undefined}
                 open={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
+                onOpenChange={(open) => {
+                    setIsDialogOpen(open);
+                    if (!open) setSelectedClient(null);
+                }}
+                trigger={<span className="hidden" />}
                 settings={settings}
             />
         </div>
