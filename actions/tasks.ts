@@ -440,31 +440,16 @@ export async function getMemberTasks(userId: string) {
             .from("tasks")
             .select(`
                 *,
-                assignments:task_assignments!inner(user_id),
-                client:clients(
-                    id,
-                    name,
-                    spreadsheet_url
-                ),
+                client:clients(id, name, spreadsheet_url),
+                assignments:task_assignments!inner(user_id, role, user:users(id, name, avatar_url)),
                 subtasks:tasks(
                     *,
-                    assignments:task_assignments(
-                        user_id,
-                        role,
-                        user:users(
-                            id,
-                            name,
-                            avatar_url
-                        )
-                    )
+                    assignments:task_assignments(user_id, role, user:users(id, name, avatar_url)),
+                    attributes
                 ),
                 comments:task_comments(
                     *,
-                    user:users(
-                        id,
-                        name,
-                        avatar_url
-                    )
+                    user:users(id, name, avatar_url)
                 )
             `)
             .eq("team_id", teamId)
@@ -494,34 +479,16 @@ export async function getClientMilestones(clientId: string, start: Date, end: Da
             .from("tasks")
             .select(`
                 *,
-                assignments:task_assignments(
-                    user_id,
-                    role,
-                    user:users(
-                        id,
-                        name,
-                        avatar_url
-                    )
-                ),
+                client:clients(id, name, spreadsheet_url),
+                assignments:task_assignments(user_id, role, user:users(id, name, avatar_url)),
                 subtasks:tasks(
                     *,
-                    assignments:task_assignments(
-                        user_id,
-                        role,
-                        user:users(
-                            id,
-                            name,
-                            avatar_url
-                        )
-                    )
+                    assignments:task_assignments(user_id, role, user:users(id, name, avatar_url)),
+                    attributes
                 ),
                 comments:task_comments(
                     *,
-                    user:users(
-                        id,
-                        name,
-                        avatar_url
-                    )
+                    user:users(id, name, avatar_url)
                 )
             `)
             .eq("team_id", teamId)
