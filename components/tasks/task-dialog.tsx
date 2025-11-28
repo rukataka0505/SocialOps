@@ -644,18 +644,44 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                                             onChange={(e) => setSubtaskDueDate(e.target.value)}
                                                             className="w-[130px] border-0 bg-transparent focus-visible:ring-0 h-8"
                                                         />
-                                                        <select
-                                                            value={subtaskAssignee}
-                                                            onChange={(e) => setSubtaskAssignee(e.target.value)}
-                                                            className="w-[120px] h-8 text-sm border-0 bg-transparent focus:ring-0 cursor-pointer"
-                                                        >
-                                                            <option value="">担当者</option>
-                                                            {members.map((member) => (
-                                                                <option key={member.user.id} value={member.user.id}>
-                                                                    {member.user.name || member.user.email}
-                                                                </option>
-                                                            ))}
-                                                        </select>
+
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground">
+                                                                    {subtaskAssignee ? (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Avatar className="h-5 w-5">
+                                                                                <AvatarImage src={members.find(m => m.user.id === subtaskAssignee)?.user.avatar_url || ""} />
+                                                                                <AvatarFallback>{members.find(m => m.user.id === subtaskAssignee)?.user.name?.[0] || "?"}</AvatarFallback>
+                                                                            </Avatar>
+                                                                            <span className="text-xs">{members.find(m => m.user.id === subtaskAssignee)?.user.name}</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex items-center gap-1">
+                                                                            <UserPlus className="h-4 w-4" />
+                                                                            <span className="text-xs">担当者</span>
+                                                                        </div>
+                                                                    )}
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                {members.map((member) => (
+                                                                    <DropdownMenuItem
+                                                                        key={member.user.id}
+                                                                        onClick={() => setSubtaskAssignee(member.user.id)}
+                                                                    >
+                                                                        <div className="flex items-center gap-2 w-full">
+                                                                            <Avatar className="h-6 w-6">
+                                                                                <AvatarImage src={member.user.avatar_url || ""} />
+                                                                                <AvatarFallback>{member.user.name?.[0] || "?"}</AvatarFallback>
+                                                                            </Avatar>
+                                                                            <span>{member.user.name || member.user.email}</span>
+                                                                        </div>
+                                                                    </DropdownMenuItem>
+                                                                ))}
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+
                                                         <Button
                                                             type="button"
                                                             onClick={handleAddSubtask}
