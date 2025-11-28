@@ -4,11 +4,12 @@ import { useState, useEffect, useTransition } from "react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSaturday, isSunday, getDay } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Loader2, Calendar as CalendarIcon, User } from "lucide-react";
 import { getClientMilestones } from "@/actions/tasks";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 interface MonthlyListScheduleProps {
@@ -65,18 +66,12 @@ export function MonthlyListSchedule({ clientId, members, settings }: MonthlyList
         return "text-gray-900";
     };
 
-    const statusMap: Record<string, { label: string, color: string }> = {
-        'in_progress': { label: '進行中', color: 'bg-blue-100 text-blue-800' },
-        'pending': { label: '確認待ち', color: 'bg-yellow-100 text-yellow-800' },
-        'completed': { label: '完了', color: 'bg-green-100 text-green-800' },
-        'not_started': { label: '未着手', color: 'bg-gray-100 text-gray-800' },
+    const statusMap: Record<string, { label: string, color: string, borderColor: string }> = {
+        'in_progress': { label: '進行中', color: 'bg-blue-50 text-blue-700', borderColor: 'border-blue-200' },
+        'pending': { label: '確認待ち', color: 'bg-yellow-50 text-yellow-700', borderColor: 'border-yellow-200' },
+        'completed': { label: '完了', color: 'bg-green-50 text-green-700', borderColor: 'border-green-200' },
+        'not_started': { label: '未着手', color: 'bg-gray-50 text-gray-700', borderColor: 'border-gray-200' },
     };
-
-    // Custom statuses from settings
-    if (settings?.workflow_statuses) {
-        // This is a simplified mapping, ideally we'd match exact strings or have a color map
-        // For now, we'll just use the default map or a generic one
-    }
 
     return (
         <div className="space-y-4">
@@ -100,10 +95,9 @@ export function MonthlyListSchedule({ clientId, members, settings }: MonthlyList
             </div>
 
             <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                <div className="grid grid-cols-[80px_1fr_100px_80px] bg-gray-100 border-b text-sm font-medium text-gray-500 py-2 px-4">
+                <div className="grid grid-cols-[80px_1fr_80px] bg-gray-100 border-b text-sm font-medium text-gray-500 py-2 px-4">
                     <div>日付</div>
                     <div>投稿予定 (親タスク)</div>
-                    <div>ステータス</div>
                     <div className="text-right">操作</div>
                 </div>
                 <ScrollArea className="h-[600px]">
@@ -115,46 +109,82 @@ export function MonthlyListSchedule({ clientId, members, settings }: MonthlyList
                             const formattedDate = format(date, "d日 (E)", { locale: ja });
 
                             return (
-                                <div key={date.toISOString()} className={cn("grid grid-cols-[80px_1fr_100px_80px] items-center py-3 px-4 transition-colors", dayColor)}>
-                                    <div className={cn("text-sm font-medium", dayLabelColor)}>
+                                <div key={date.toISOString()} className={cn("grid grid-cols-[80px_1fr_80px] items-start py-3 px-4 transition-colors min-h-[80px]", dayColor)}>
+                                    <div className={cn("text-sm font-medium pt-2", dayLabelColor)}>
                                         {formattedDate}
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 pr-4">
                                         {dayTasks.length > 0 ? (
-                                            dayTasks.map(task => (
-                                                <div key={task.id} className="flex items-center gap-2">
+                                            dayTasks.map(task => {
+                                                const status = task.workflow_status || task.status;
+                                                const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-50 text-gray-700', borderColor: 'border-gray-200' };
+
+                                                // Find assignee (first one for display)
+                                                const assignee = task.assignments?.[0]?.user;
+
+                                                return (
                                                     <TaskDialog
+                                                        key={task.id}
                                                         members={members}
                                                         settings={settings}
                                                         task={task}
-                                                        trigger={
-                                                            <button className="text-left hover:underline font-medium text-sm truncate max-w-[300px]">
-                                                                {task.title}
-                                                            </button>
-                                                        }
                                                         onOpenChange={(open) => !open && fetchMilestones()}
+                                                        trigger={
+                                                            <div className={cn(
+                                                                "group flex items-center justify-between p-3 rounded-md border cursor-pointer transition-all hover:shadow-md",
+                                                                "bg-white hover:border-blue-300",
+                                                                statusInfo.borderColor
+                                                            )}>
+                                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                                    <Badge variant="outline" className={cn("shrink-0", statusInfo.color, "border-0")}>
+                                                                        {statusInfo.label}
+                                                                    </Badge>
+                                                                    <span className="font-medium text-sm truncate text-gray-900 group-hover:text-blue-700 transition-colors">
+                                                                        {task.title}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-4 shrink-0 text-xs text-gray-500">
+                                                                    {/* Due Date (Time if available, or just icon) */}
+                                                                    <div className="flex items-center gap-1">
+                                                                        <CalendarIcon className="h-3.5 w-3.5" />
+                                                                        <span>{format(new Date(task.due_date), "MM/dd", { locale: ja })}</span>
+                                                                    </div>
+
+                                                                    {/* Assignee Avatar */}
+                                                                    {assignee ? (
+                                                                        <div className="flex items-center gap-1.5" title={assignee.name}>
+                                                                            <Avatar className="h-6 w-6 border">
+                                                                                <AvatarImage src={assignee.avatar_url || ""} />
+                                                                                <AvatarFallback className="text-[10px]">{assignee.name?.[0] || "?"}</AvatarFallback>
+                                                                            </Avatar>
+                                                                            <span className="hidden sm:inline-block max-w-[80px] truncate">
+                                                                                {assignee.name}
+                                                                            </span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex items-center gap-1 text-gray-400">
+                                                                            <div className="h-6 w-6 rounded-full border border-dashed flex items-center justify-center">
+                                                                                <User className="h-3 w-3" />
+                                                                            </div>
+                                                                            <span className="hidden sm:inline-block">未定</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        }
                                                     />
-                                                </div>
-                                            ))
+                                                );
+                                            })
                                         ) : (
-                                            <span className="text-xs text-gray-400">-</span>
+                                            <div className="h-full flex items-center">
+                                                <span className="text-xs text-gray-400">-</span>
+                                            </div>
                                         )}
                                     </div>
 
-                                    <div>
-                                        {dayTasks.map(task => {
-                                            const status = task.workflow_status || task.status;
-                                            const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800' };
-                                            return (
-                                                <Badge key={task.id} variant="outline" className={cn("mb-1 block w-fit", statusInfo.color)}>
-                                                    {statusInfo.label}
-                                                </Badge>
-                                            );
-                                        })}
-                                    </div>
-
-                                    <div className="text-right">
+                                    <div className="text-right pt-1">
                                         <TaskDialog
                                             members={members}
                                             settings={settings}
