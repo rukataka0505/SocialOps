@@ -50,7 +50,7 @@ export default async function DashboardLayout({
     const userName = user?.user_metadata.name || user?.user_metadata.full_name || user?.email || 'ゲスト';
 
     return (
-        <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+        <div className="flex flex-col min-h-screen bg-slate-50">
             <Header
                 user={user}
                 userName={userName}
@@ -58,7 +58,7 @@ export default async function DashboardLayout({
                 members={members}
                 settings={settings}
             />
-            <main className="flex-1 overflow-y-auto relative">
+            <main className="flex-1 relative">
                 {children}
             </main>
         </div>

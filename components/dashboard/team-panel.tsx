@@ -2,7 +2,9 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { MemberDetail } from "@/components/dashboard/member-detail";
+import Link from "next/link";
 
 interface TeamPanelProps {
     members: any[];
@@ -18,9 +20,9 @@ export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
                     Members
                 </CardTitle>
                 {(currentUserRole === 'admin' || currentUserRole === 'owner') && (
-                    <a href="/team/members" className="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                        管理
-                    </a>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href="/team/members">メンバー管理</Link>
+                    </Button>
                 )}
             </CardHeader>
             <CardContent className="px-4">

@@ -44,25 +44,25 @@ export default async function DashboardPage() {
     const userName = user?.user_metadata.name || user?.user_metadata.full_name || user?.email || 'ゲスト';
 
     return (
-        <div className="flex flex-col h-full bg-slate-50">
+        <div className="flex flex-col min-h-full bg-slate-50 pb-10">
 
             {/* Main Content */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 flex-col lg:flex-row">
                 {/* Left Column: My Tasks + Calendar */}
                 <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50">
                     {/* Top: My Tasks */}
-                    <section className="h-64 px-6 py-4 border-b border-slate-100 bg-white/50 shrink-0">
+                    <section className="px-6 py-4 border-b border-slate-100 bg-white/50">
                         <MyTasks tasks={myTasks} members={members} currentUserId={user.id} settings={settings} />
                     </section>
 
                     {/* Center: Calendar */}
-                    <section className="flex-1 p-6 overflow-hidden">
+                    <section className="flex-1 p-6 min-h-[600px]">
                         <CalendarBoard tasks={tasks} members={members} currentUserId={user.id} settings={settings} />
                     </section>
                 </main>
 
                 {/* Right: Team Panel */}
-                <aside className="w-80 border-l border-slate-100 bg-white overflow-y-auto shadow-sm z-10">
+                <aside className="w-full lg:w-80 border-l border-slate-100 bg-white shadow-sm z-10">
                     <TeamPanel members={members} currentUserRole={currentUserRole} />
                 </aside>
             </div>

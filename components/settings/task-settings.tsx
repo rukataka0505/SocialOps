@@ -27,8 +27,8 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { OptionInput } from "./option-input";
 import { SortableFieldItem } from "./sortable-field-item";
-import { SortableOptionItem } from "./sortable-option-item";
 
 interface TaskSettingsProps {
     initialSettings: {
@@ -206,77 +206,13 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                                         {field.id === 'workflow_status' ? (
                                             <div className="space-y-2">
                                                 <div className="text-xs text-muted-foreground mb-2">
-                                                    ステータスの選択肢を管理します。
+                                                    ステータスの選択肢をカンマ区切りで入力してください。
                                                 </div>
-                                                <DndContext
-                                                    sensors={sensors}
-                                                    collisionDetection={closestCenter}
-                                                    onDragEnd={(event) => {
-                                                        const { active, over } = event;
-                                                        if (active.id !== over?.id) {
-                                                            // For options, we are using the string value as ID in SortableOptionItem
-                                                            // But here we need to find index.
-                                                            // Wait, SortableOptionItem uses `${index}-${option}` as ID? No, I implemented it to use `option` string?
-                                                            // Let's check SortableOptionItem implementation.
-                                                            // I implemented it using `useSortable({ id: `${index}-${option}` })`.
-                                                            // So the ID is `${index}-${option}`.
-                                                            // This is tricky because index changes.
-                                                            // Ideally we should use a unique ID for each option.
-                                                            // But options are just strings.
-                                                            // Let's try to use just the option string as ID if they are unique.
-                                                            // If I change SortableOptionItem to use option string as ID.
-
-                                                            // Let's assume for now I will update SortableOptionItem to use option string as ID.
-                                                            // Or better, let's use the index based logic but correctly.
-                                                            // Actually, dnd-kit recommends unique IDs.
-                                                            // If I use index, reordering messes it up.
-
-                                                            // Let's rely on the fact that for now options are unique strings usually.
-                                                            // I will update SortableOptionItem to use `option` as ID.
-
-                                                            const oldIndex = (field.options || []).indexOf(active.id as string);
-                                                            const newIndex = (field.options || []).indexOf(over?.id as string);
-
-                                                            if (oldIndex !== -1 && newIndex !== -1) {
-                                                                const newOptions = arrayMove(field.options || [], oldIndex, newIndex);
-                                                                manager.update(index, { options: newOptions });
-                                                            }
-                                                        }
-                                                    }}
-                                                >
-                                                    <SortableContext
-                                                        items={field.options || []}
-                                                        strategy={verticalListSortingStrategy}
-                                                    >
-                                                        {(field.options || []).map((option, optIndex) => (
-                                                            <SortableOptionItem
-                                                                key={option}
-                                                                option={option}
-                                                                index={optIndex}
-                                                                onUpdate={(idx, val) => {
-                                                                    const newOptions = [...(field.options || [])];
-                                                                    newOptions[idx] = val;
-                                                                    manager.update(index, { options: newOptions });
-                                                                }}
-                                                                onRemove={(idx) => {
-                                                                    const newOptions = (field.options || []).filter((_, i) => i !== idx);
-                                                                    manager.update(index, { options: newOptions });
-                                                                }}
-                                                                disabled={optIndex === 0 && field.id === 'workflow_status' ? false : false}
-                                                            />
-                                                        ))}
-                                                    </SortableContext>
-                                                </DndContext>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        const newOptions = [...(field.options || []), `ステータス ${(field.options?.length || 0) + 1}`];
-                                                        manager.update(index, { options: newOptions });
-                                                    }}
-                                                >
-                                                    <Plus className="mr-2 h-4 w-4" /> 追加
-                                                </Button>
+                                                <OptionInput
+                                                    value={field.options}
+                                                    onChange={(newOptions) => manager.update(index, { options: newOptions })}
+                                                    placeholder="未着手, 進行中, 確認待ち, 完了"
+                                                />
                                             </div>
                                         ) : field.id === 'client_id' ? (
                                             <div className="p-2 bg-slate-100 rounded text-sm text-muted-foreground">
@@ -284,11 +220,9 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                                             </div>
                                         ) : (
                                             <div className="space-y-2">
-                                                <Input
-                                                    value={field.options?.join(', ') || ''}
-                                                    onChange={(e) => manager.update(index, {
-                                                        options: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                                    })}
+                                                <OptionInput
+                                                    value={field.options}
+                                                    onChange={(newOptions) => manager.update(index, { options: newOptions })}
                                                     placeholder="例: Twitter, Instagram, TikTok"
                                                     disabled={field.system}
                                                 />
