@@ -455,3 +455,37 @@ export async function getClientMilestones(clientId: string, start: Date, end: Da
         return [];
     }
 }
+
+export async function getSubtasks(parentId: string) {
+    const supabase = await createClient();
+
+    try {
+        const teamId = await getTeamId(supabase);
+
+        const { data: tasks, error } = await (supabase as any)
+            .from("tasks")
+            .select(`
+                *,
+                assignments:task_assignments(
+                    user_id,
+                    role,
+                    user:users(
+                        id,
+                        name,
+                        avatar_url
+                    )
+                )
+            `)
+            .eq("team_id", teamId)
+            .eq("parent_id", parentId)
+            .is("deleted_at", null)
+            .order("due_date", { ascending: true });
+
+        if (error) throw error;
+
+        return tasks || [];
+    } catch (error) {
+        console.error("Error fetching subtasks:", error);
+        return [];
+    }
+}
