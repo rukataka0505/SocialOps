@@ -110,13 +110,11 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
   - 案件設定一覧（リボン形式での管理）
   - ソフトデリート対応
 
-- **カレンダー型ダッシュボード**
-  - `react-big-calendar` による月次ビュー
-  - **週次カンバンボード**（曜日別リスト表示、ドラッグ&ドロップ対応）
-  - タスクのドラッグ&ドロップによる日付変更
-  - 担当者アイコン表示
-  - ステータス別の色分け
-  - 個人のタスクのみをフィルタリング表示
+- **カレンダー & ボード統合ダッシュボード**
+  - **月次カレンダー:** 全体のスケジュールを俯瞰。日付クリックでその週のボードへドリルダウン。
+  - **週次カンバンボード:** 曜日ごとのリスト形式でタスクを管理。ドラッグ&ドロップで直感的に日程変更。
+  - **シームレスな切り替え:** 「月」と「週」をタブで瞬時に切り替え。
+  - 担当者アイコン表示、ステータス別色分け、個人タスクフィルタリング。
 
 - **タスク管理**
   - タスク詳細ダイアログによる編集
@@ -182,7 +180,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - [x] Client Cockpit (Tabs: Overview, Schedule, Tasks)
 - [x] Credentials & Resources Management
 - [x] Monthly List Schedule (Vertical Format)
-- [x] Calendar & Member List View
+- [x] Calendar & Weekly Board Integration
 - [x] Personal Dashboard Filtering
 - [x] Task Detail Dialog & Edit
 - [x] Dynamic Task Dialog (Team Settings Integration)

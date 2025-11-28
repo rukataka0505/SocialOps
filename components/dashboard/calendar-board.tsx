@@ -39,7 +39,7 @@ interface CalendarBoardProps {
 }
 
 export function CalendarBoard({ tasks, members, currentUserId, settings }: CalendarBoardProps) {
-    const [view, setView] = useState<View>(Views.MONTH);
+    const [view, setView] = useState<'month' | 'board'>('month');
     const [date, setDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -129,16 +129,14 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     const goToBack = () => {
         const newDate = new Date(date);
         if (view === 'month') newDate.setMonth(newDate.getMonth() - 1);
-        else if (view === 'week') newDate.setDate(newDate.getDate() - 7);
-        else newDate.setDate(newDate.getDate() - 1);
+        else newDate.setDate(newDate.getDate() - 7);
         setDate(newDate);
     };
 
     const goToNext = () => {
         const newDate = new Date(date);
         if (view === 'month') newDate.setMonth(newDate.getMonth() + 1);
-        else if (view === 'week') newDate.setDate(newDate.getDate() + 7);
-        else newDate.setDate(newDate.getDate() + 1);
+        else newDate.setDate(newDate.getDate() + 7);
         setDate(newDate);
     };
 
@@ -150,12 +148,14 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         if (view === 'month') {
             return format(date, "yyyy年 M月", { locale: ja });
         }
-        if (view === 'day') {
-            return format(date, "yyyy年 M月 d日 (E)", { locale: ja });
-        }
         const start = startOfWeek(date, { locale: ja });
         return `${format(start, "M月d日", { locale: ja })}〜`;
     };
+
+    const handleDrillDown = useCallback((drillDate: Date) => {
+        setDate(drillDate);
+        setView('board');
+    }, []);
 
     const eventPropGetter = useCallback(
         (event: any, start: Date, end: Date, isSelected: boolean) => {
@@ -277,22 +277,30 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     </div>
                 </div>
 
-                {/* Right: View Switcher */}
-                <div className="flex items-center gap-2">
-                    <Select value={view} onValueChange={(v: any) => setView(v)}>
-                        <SelectTrigger className="h-8 w-[100px]">
-                            <SelectValue placeholder="表示切替" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="month">月</SelectItem>
-                            <SelectItem value="week">週</SelectItem>
-                            <SelectItem value="day">日</SelectItem>
-                        </SelectContent>
-                    </Select>
+                {/* Right: View Switcher (Tabs) */}
+                <div className="flex items-center bg-slate-100 p-1 rounded-lg">
+                    <button
+                        onClick={() => setView('month')}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'month'
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-900'
+                            }`}
+                    >
+                        月 (Month)
+                    </button>
+                    <button
+                        onClick={() => setView('board')}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'board'
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-900'
+                            }`}
+                    >
+                        週 (Board)
+                    </button>
                 </div>
             </div>
 
-            {view === 'week' ? (
+            {view === 'board' ? (
                 <div className="flex-1 overflow-hidden min-h-0">
                     <WeeklyBoard
                         tasks={tasks}
@@ -310,11 +318,13 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     startAccessor={(event: any) => event.start}
                     endAccessor={(event: any) => event.end}
                     style={{ height: "100%" }}
-                    views={['month', 'week', 'day']}
-                    view={view}
+                    views={['month']}
+                    view={Views.MONTH}
                     date={date}
-                    onView={setView}
                     onNavigate={setDate}
+                    onDrillDown={handleDrillDown}
+                    onSelectSlot={(slotInfo) => handleDrillDown(slotInfo.start)}
+                    selectable={true}
                     culture="ja"
                     onSelectEvent={handleSelectEvent}
                     onEventDrop={onEventDrop}
@@ -334,6 +344,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                         time: "時間",
                         event: "イベント",
                         noEventsInRange: "この期間にイベントはありません。",
+                        showMore: (total) => `他 ${total} 件`,
                     }}
                     className="modern-calendar"
                 />
