@@ -12,6 +12,9 @@ import {
 import { format } from "date-fns";
 import Link from "next/link";
 import { Settings } from "lucide-react";
+import { Database } from "@/types/database.types";
+
+type Client = Database['public']['Tables']['clients']['Row'];
 
 export default async function ManagementPage() {
     const clients = await getClients();
@@ -41,7 +44,7 @@ export default async function ManagementPage() {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            clients.map((client: any) => (
+                            clients.map((client: Client) => (
                                 <TableRow key={client.id}>
                                     <TableCell className="font-medium">
                                         <Link
@@ -50,11 +53,6 @@ export default async function ManagementPage() {
                                         >
                                             {client.name}
                                         </Link>
-                                        {client.company && (
-                                            <div className="text-xs text-muted-foreground mt-0.5">
-                                                {client.company}
-                                            </div>
-                                        )}
                                     </TableCell>
                                     <TableCell>
                                         {format(new Date(client.created_at), "yyyy/MM/dd")}

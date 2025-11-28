@@ -196,23 +196,66 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - [ ] Filter & Highlight
 - [ ] Analytics Dashboard
 
+## セットアップ手順
+
+### 1. リポジトリのクローン
+
+```bash
+git clone <repository-url>
+cd SocialOps
+```
+
+### 2. 依存関係のインストール
+
+```bash
+npm install
+```
+
+### 3. 環境変数の設定
+
+`.env.local.example`を`.env.local`にコピーし、必要な値を設定:
+
+```bash
+cp .env.local.example .env.local
+```
+
+以下の環境変数を設定してください:
+
+- `NEXT_PUBLIC_SUPABASE_URL`: SupabaseプロジェクトのURL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabaseの匿名キー
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabaseのサービスロールキー
+
+### 4. Supabaseのセットアップ
+
+Supabaseプロジェクトを作成し、マイグレーションを実行:
+
+```bash
+# Supabase CLIのインストール（未インストールの場合）
+npm install -g supabase
+
+# Supabaseプロジェクトにリンク
+npx supabase link --project-ref <your-project-ref>
+
+# マイグレーションの実行
+npx supabase db push
+```
+
+### 5. 開発サーバーの起動
+
+```bash
+npm run dev
+```
+
+ブラウザで [http://localhost:3000](http://localhost:3000) を開いてください。
+
 ## Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
 # Build for production
 npm run build
 
 # Start production server
 npm start
-
-# Database migrations
-npx supabase db push
 ```
 
 ## Project Structure
@@ -225,10 +268,9 @@ SocialOps/
 │   ├── (dashboard)/
 │   │   ├── layout.tsx               # 共通レイアウト（Header含む）
 │   │   ├── dashboard/page.tsx       # ダッシュボード（カレンダー + タスクリスト）
-│   │   ├── ops/page.tsx             # 投稿管理（案件一覧）
-│   │   ├── management/page.tsx      # 案件設定（案件一覧 + 追加）
+│   │   ├── ops/page.tsx             # 投稿管理（案件一覧カード表示）
+│   │   ├── management/page.tsx      # 案件設定（案件一覧テーブル + 追加）
 │   │   ├── clients/
-│   │   │   ├── page.tsx             # (Deprecated) クライアント一覧
 │   │   │   └── [id]/page.tsx        # クライアント詳細（案件コックピット）
 │   │   └── settings/
 │   │       └── team/page.tsx        # チーム設定

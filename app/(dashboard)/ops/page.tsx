@@ -1,6 +1,9 @@
 import { getClients } from "@/actions/clients";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { Database } from "@/types/database.types";
+
+type Client = Database['public']['Tables']['clients']['Row'];
 
 export default async function OpsPage() {
     const clients = await getClients();
@@ -15,14 +18,11 @@ export default async function OpsPage() {
                         案件が見つかりません。
                     </div>
                 ) : (
-                    clients.map((client: any) => (
+                    clients.map((client: Client) => (
                         <Link key={client.id} href={`/clients/${client.id}`} className="block transition-transform hover:scale-[1.02]">
                             <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
                                 <CardHeader>
                                     <CardTitle className="text-lg">{client.name}</CardTitle>
-                                    {client.company && (
-                                        <p className="text-sm text-muted-foreground">{client.company}</p>
-                                    )}
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-muted-foreground line-clamp-2">

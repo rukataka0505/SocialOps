@@ -21,7 +21,7 @@ export function TeamPanel({ members, currentUserRole }: TeamPanelProps) {
                 </CardTitle>
                 {(currentUserRole === 'admin' || currentUserRole === 'owner') && (
                     <Button variant="outline" size="sm" asChild>
-                        <Link href="/team/members">メンバー管理</Link>
+                        <Link href="/settings/team">チーム設定</Link>
                     </Button>
                 )}
             </CardHeader>
