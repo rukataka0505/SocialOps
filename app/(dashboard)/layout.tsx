@@ -10,6 +10,8 @@ export const metadata: Metadata = {
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
+import { getCurrentTeamId } from "@/lib/team-utils";
+
 /**
  * Dashboard Layout
  * Shared layout for all dashboard pages (sidebar, header, etc.)
@@ -26,23 +28,26 @@ export default async function DashboardLayout({
         redirect("/login");
     }
 
-    // Get team details and role
-    const { data: membershipData } = await supabase
-        .from("team_members")
-        .select("team_id, role, team:teams(name)")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    // Get current team ID
+    const currentTeamId = await getCurrentTeamId(supabase);
 
-    if (!membershipData) {
+    if (!currentTeamId) {
         redirect("/onboarding/create-team");
     }
 
-    const membership = membershipData as { team_id: string; role: string; team: { name: string } };
-    const teamName = membership.team?.name || 'Team';
+    // Fetch all teams for the user (for switcher)
+    const { data: teamMembers } = await supabase
+        .from("team_members")
+        .select("team:teams(id, name)")
+        .eq("user_id", user.id);
+
+    const teams = teamMembers?.map((tm: any) => tm.team) || [];
+    const currentTeam = teams.find((t: any) => t.id === currentTeamId);
+    const teamName = currentTeam?.name || 'Team';
 
     // Fetch members for TaskDialog in Header
     const { getTeamMembers, getTeamSettings } = await import("@/actions/teams");
-    const members = await getTeamMembers(membership.team_id);
+    const members = await getTeamMembers(currentTeamId);
     const settings = await getTeamSettings();
 
     // Prioritize user_metadata.name (or full_name) over email
@@ -54,6 +59,8 @@ export default async function DashboardLayout({
                 user={user}
                 userName={userName}
                 teamName={teamName}
+                currentTeamId={currentTeamId}
+                teams={teams}
                 members={members}
                 settings={settings}
             />

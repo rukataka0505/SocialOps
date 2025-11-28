@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 import { addDays, isPast } from 'date-fns';
 import { redirect } from 'next/navigation';
+import { getCurrentTeamId } from "@/lib/team-utils";
 
 export async function updateTeamName(teamId: string, name: string) {
     const supabase = await createClient();
@@ -187,10 +188,15 @@ export async function updateMemberRole(userId: string, role: string) {
 
     try {
         // Get team_id of the current user
+        // Get team_id of the current user
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
+
         const { data: currentUserMember } = await supabase
             .from('team_members')
             .select('team_id, role')
             .eq('user_id', user.id)
+            .eq('team_id', teamId)
             .single();
 
         if (!currentUserMember) throw new Error('No team found');
@@ -217,26 +223,14 @@ export async function updateMemberRole(userId: string, role: string) {
     }
 }
 
-// Helper to get team ID (duplicated from tasks.ts, should be shared but keeping local for now)
-async function getTeamId(supabase: any) {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error("Unauthorized");
 
-    const { data: teamMember, error: teamError } = await supabase
-        .from("team_members")
-        .select("team_id")
-        .eq("user_id", user.id)
-        .single();
-
-    if (teamError || !teamMember) throw new Error("No team found for user");
-    return teamMember.team_id;
-}
 
 export async function updateTeamSettings(settings: any) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         const { error } = await (supabase as any)
             .from("teams")
@@ -260,7 +254,8 @@ export async function getTeamSettings() {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         const { data: team, error } = await (supabase as any)
             .from("teams")

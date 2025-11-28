@@ -106,6 +106,11 @@ function getRouteType(pathname: string) {
         pathname.startsWith('/clients') ||
         pathname.startsWith('/settings') ||
         pathname.startsWith('/onboarding');
+
+    // Exclude invite paths from protection to allow joining
+    if (pathname.startsWith('/invite/')) {
+        return { isAuthRoute, isProtectedRoute: false, isLandingPage: false };
+    }
     const isLandingPage = pathname === '/';
 
     return { isAuthRoute, isProtectedRoute, isLandingPage };

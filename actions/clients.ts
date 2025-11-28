@@ -11,25 +11,14 @@ export type ClientState = {
     message?: string;
 };
 
-async function getTeamId(supabase: SupabaseClient<Database>) {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error("Unauthorized");
-
-    const { data: teamMember, error: teamError } = await (supabase as any)
-        .from("team_members")
-        .select("team_id")
-        .eq("user_id", user.id)
-        .single();
-
-    if (teamError || !teamMember) throw new Error("No team found for user");
-    return teamMember.team_id;
-}
+import { getCurrentTeamId } from "@/lib/team-utils";
 
 export async function getClients() {
     const supabase = await createSupabaseClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         const { data: clients, error } = await (supabase as any)
             .from("clients")
@@ -68,7 +57,8 @@ export async function createClient(prevState: ClientState | null, formData: Form
     const supabase = await createSupabaseClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         const name = formData.get("name") as string;
         const email = formData.get("email") as string;

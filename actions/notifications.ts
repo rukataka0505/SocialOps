@@ -5,20 +5,7 @@ import { Database } from "@/types/database.types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 
-// Helper to get team ID
-async function getTeamId(supabase: SupabaseClient<Database>) {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error("Unauthorized");
-
-    const { data: teamMember, error: teamError } = await (supabase as any)
-        .from("team_members")
-        .select("team_id")
-        .eq("user_id", user.id)
-        .single();
-
-    if (teamError || !teamMember) throw new Error("No team found for user");
-    return teamMember.team_id;
-}
+import { getCurrentTeamId } from "@/lib/team-utils";
 
 /**
  * Identify subscribers for a task (assignees + commenters)
@@ -98,7 +85,8 @@ export async function createNotification(
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         const notifications = userIds.map(userId => ({
             user_id: userId,

@@ -6,26 +6,14 @@ import { toZonedTime, format } from "date-fns-tz";
 import { Database } from "@/types/database.types";
 import { SupabaseClient } from "@supabase/supabase-js";
 
-// Helper to get team ID
-async function getTeamId(supabase: SupabaseClient<Database>) {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error("Unauthorized");
-
-    const { data: teamMember, error: teamError } = await (supabase as any)
-        .from("team_members")
-        .select("team_id")
-        .eq("user_id", user.id)
-        .single();
-
-    if (teamError || !teamMember) throw new Error("No team found for user");
-    return teamMember.team_id;
-}
+import { getCurrentTeamId } from "@/lib/team-utils";
 
 export async function getTodayTasks() {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         // Calculate today's date in JST
         const timeZone = 'Asia/Tokyo';
@@ -229,7 +217,8 @@ export async function createTask(prevState: any, formData: FormData) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -356,7 +345,8 @@ export async function getTasks(start: string, end: string) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         const { data: tasks, error } = await (supabase as any)
             .from("tasks")
@@ -414,7 +404,8 @@ export async function updateTask(taskId: string, data: any) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         // Separate assignees from task data
         let { assignees, ...taskData } = data;
@@ -578,7 +569,8 @@ export async function deleteTask(taskId: string) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         // Soft delete
         const { error } = await (supabase as any)
@@ -604,7 +596,8 @@ export async function getMemberTasks(userId: string) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         // Find tasks assigned to user via task_assignments
         // We can use a join or a subquery.
@@ -644,7 +637,8 @@ export async function getClientMilestones(clientId: string, start: Date, end: Da
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
         const startStr = format(start, 'yyyy-MM-dd', { timeZone: 'Asia/Tokyo' });
         const endStr = format(end, 'yyyy-MM-dd', { timeZone: 'Asia/Tokyo' });
 
@@ -685,7 +679,8 @@ export async function getSubtasks(parentId: string) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         const { data: tasks, error } = await (supabase as any)
             .from("tasks")
@@ -719,7 +714,8 @@ export async function getTaskComments(taskId: string) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         const { data: comments, error } = await (supabase as any)
             .from("task_comments")
@@ -747,7 +743,8 @@ export async function addComment(taskId: string, content: string) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) throw new Error("Unauthorized");
 
@@ -806,7 +803,8 @@ export async function submitDeliverable(taskId: string, url: string) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         // First get current attributes
         const { data: task, error: fetchError } = await (supabase as any)
@@ -869,7 +867,8 @@ export async function getTaskWithHierarchy(taskId: string) {
     const supabase = await createClient();
 
     try {
-        const teamId = await getTeamId(supabase);
+        const teamId = await getCurrentTeamId(supabase);
+        if (!teamId) throw new Error("No team found");
 
         // 1. Get the target task to check for parent_id
         const { data: initialTask, error: initialError } = await (supabase as any)

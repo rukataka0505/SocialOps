@@ -10,16 +10,19 @@ import { logout } from "@/actions/auth";
 import { User } from "@supabase/supabase-js";
 
 import { NotificationBell } from "@/components/dashboard/notification-bell";
+import { TeamSwitcher } from "@/components/dashboard/team-switcher";
 
 interface HeaderProps {
     user: User;
     userName: string;
     teamName: string;
+    currentTeamId: string;
+    teams: { id: string; name: string }[];
     members: any[]; // Using any[] for now to match existing usage, ideally should be typed
     settings?: any;
 }
 
-export function Header({ user, userName, teamName, members, settings }: HeaderProps) {
+export function Header({ user, userName, teamName, currentTeamId, teams, members, settings }: HeaderProps) {
     const pathname = usePathname();
 
     const isActive = (path: string) => {
@@ -67,9 +70,7 @@ export function Header({ user, userName, teamName, members, settings }: HeaderPr
 
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100">
-                    <span className="text-xs font-medium text-slate-500 px-2 border-r border-slate-200">
-                        {teamName}
-                    </span>
+                    <TeamSwitcher currentTeamId={currentTeamId} teams={teams} />
                     <UserProfileDialog initialName={userName}>
                         <button className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
                             {userName}

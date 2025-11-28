@@ -36,7 +36,19 @@ export default async function InvitePage({
 
     async function handleJoin() {
         'use server';
-        await joinTeam(token);
+        const result = await joinTeam(token);
+
+        // Set cookie for the joined team
+        if (result && result.teamId) {
+            const { cookies } = await import('next/headers');
+            const cookieStore = await cookies();
+            cookieStore.set('current_team_id', result.teamId, {
+                path: '/',
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+            });
+        }
+
         redirect('/');
     }
 
