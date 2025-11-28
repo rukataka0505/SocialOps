@@ -9,7 +9,7 @@ export default async function OpsPage() {
     const clients = await getClients();
 
     return (
-        <div className="max-w-6xl mx-auto p-6 space-y-6">
+        <div className="space-y-6">
             <h1 className="text-2xl font-bold tracking-tight">投稿管理 (Post Management)</h1>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

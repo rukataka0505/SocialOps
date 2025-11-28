@@ -100,7 +100,7 @@ export function MonthlyListSchedule({ clientId, members, settings }: MonthlyList
                     <div>投稿予定 (親タスク)</div>
                     <div className="text-right">操作</div>
                 </div>
-                <ScrollArea className="h-[600px]">
+                <ScrollArea className="h-[600px] min-h-[600px]">
                     <div className="divide-y">
                         {days.map((date) => {
                             const dayTasks = getTasksForDay(date);

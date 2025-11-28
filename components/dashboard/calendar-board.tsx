@@ -257,7 +257,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     };
 
     return (
-        <div className="h-full w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+        <div className="w-full aspect-[16/11] min-h-[700px] max-h-[900px] bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
             {/* Unified Header Toolbar */}
             <div className="flex items-center justify-between mb-4">
                 {/* Left: View Mode Toggle */}

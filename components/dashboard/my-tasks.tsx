@@ -222,7 +222,7 @@ export function MyTasks({ tasks, members, currentUserId, settings }: MyTasksProp
                 <div className="flex-1 min-h-0">
                     <TabsContent value="today" className="h-full mt-0">
                         <ScrollArea className="h-full pr-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
                                 {todayTasks.length === 0 ? (
                                     <EmptyState message="今日のタスクはありません" />
                                 ) : (
@@ -240,7 +240,7 @@ export function MyTasks({ tasks, members, currentUserId, settings }: MyTasksProp
 
                     <TabsContent value="week" className="h-full mt-0">
                         <ScrollArea className="h-full pr-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
                                 {weekTasks.length === 0 ? (
                                     <EmptyState message="今週の予定はありません" />
                                 ) : (

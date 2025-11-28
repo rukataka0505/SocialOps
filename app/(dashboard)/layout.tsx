@@ -57,9 +57,11 @@ export default async function DashboardLayout({
                 members={members}
                 settings={settings}
             />
-            <main className="flex-1 relative">
-                <TaskUrlHandler />
-                {children}
+            <main className="flex-1 overflow-y-auto bg-slate-50">
+                <div className="w-full max-w-[1440px] mx-auto p-4 md:p-6">
+                    <TaskUrlHandler />
+                    {children}
+                </div>
             </main>
         </div>
     );
