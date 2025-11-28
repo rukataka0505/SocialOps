@@ -40,8 +40,7 @@ export async function getTodayTasks() {
                 *,
                 client:clients(
                     id,
-                    name,
-                    spreadsheet_url
+                    name
                 ),
                 assignments:task_assignments(
                     user_id,
@@ -296,10 +295,8 @@ export async function createTask(prevState: any, formData: FormData) {
                 priority,
                 client_id: client_id || null,
                 attributes,
-                routine_id: null,
                 status,
                 created_by: user.id,
-                source_type: 'manual',
                 workflow_status: workflow_status || null,
                 parent_id: parent_id || null,
                 is_milestone,
@@ -328,22 +325,6 @@ export async function createTask(prevState: any, formData: FormData) {
             }
         }
 
-        // Notify new assignees
-        if (assignees.length > 0) {
-            const { createNotification } = await import("./notifications");
-            const assigneeIds = assignees.map(a => a.userId).filter(id => id !== user.id);
-
-            if (assigneeIds.length > 0) {
-                await createNotification(
-                    assigneeIds,
-                    "assignment",
-                    `タスクが割り当てられました: ${title}`,
-                    `あなたに新しいタスク「${title}」が割り当てられました。`,
-                    `/dashboard?taskId=${task.parent_id || task.id}`,
-                    user.id
-                );
-            }
-        }
 
         // Notify new assignees
         if (assignees.length > 0) {
@@ -361,6 +342,7 @@ export async function createTask(prevState: any, formData: FormData) {
                 );
             }
         }
+
 
         revalidatePath("/");
         return { success: true };
@@ -382,8 +364,7 @@ export async function getTasks(start: string, end: string) {
                 *,
                 client:clients(
                     id,
-                    name,
-                    spreadsheet_url
+                    name
                 ),
                 assignments:task_assignments(
                     user_id,
@@ -453,9 +434,6 @@ export async function updateTask(taskId: string, data: any) {
             Object.entries(taskData).filter(([_, v]) => v !== undefined)
         );
 
-        // Debug: Log before UUID processing
-        console.log('updateData before UUID processing:', JSON.stringify(updateData, null, 2));
-
         // Handle all UUID fields - convert empty strings to null to avoid UUID errors
         const uuidFields = ['client_id', 'project_id', 'routine_id', 'assigned_to', 'parent_id'];
         uuidFields.forEach(field => {
@@ -493,16 +471,10 @@ export async function updateTask(taskId: string, data: any) {
             });
         }
 
-        // Debug: Log after UUID processing
-        console.log('updateData after UUID processing:', JSON.stringify(updateData, null, 2));
-
         const finalUpdatePayload = {
             ...updateData,
             updated_at: new Date().toISOString(),
         };
-
-        // Debug: Log the final payload being sent to Supabase
-        console.log('Final payload to Supabase:', JSON.stringify(finalUpdatePayload, null, 2));
 
         const { error } = await (supabase as any)
             .from("tasks")
@@ -641,7 +613,7 @@ export async function getMemberTasks(userId: string) {
             .from("tasks")
             .select(`
                 *,
-                client:clients(id, name, spreadsheet_url),
+                client:clients(id, name),
                 assignments:task_assignments!inner(user_id, role, user:users(id, name, avatar_url)),
                 subtasks:tasks(
                     *,
@@ -680,7 +652,7 @@ export async function getClientMilestones(clientId: string, start: Date, end: Da
             .from("tasks")
             .select(`
                 *,
-                client:clients(id, name, spreadsheet_url),
+                client:clients(id, name),
                 assignments:task_assignments(user_id, role, user:users(id, name, avatar_url)),
                 subtasks:tasks(
                     *,

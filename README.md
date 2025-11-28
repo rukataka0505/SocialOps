@@ -66,7 +66,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
   - **進行表 (Schedule):** 月次の縦並びリスト形式で投稿予定を管理。日付ごとに親タスクを表示し、空の日には「+」ボタンで即座にタスク追加可能。
 
 - **Case Settings (案件設定):**
-  - **概要 (Overview):** 基本情報、アカウント情報（credentials）、リソースリンク（resources）、ルーチン設定。
+  - **概要 (Overview):** 基本情報、アカウント情報（credentials）、リソースリンク（resources）の管理。
 
 - **Credentials & Resources Management:**
   - アカウント情報（サービス名、ID、パスワード）の管理。パスワードは目のアイコンで表示/非表示切り替え可能。
@@ -272,9 +272,14 @@ SocialOps/
 │   │   ├── ops/page.tsx             # 投稿管理（案件一覧カード表示）
 │   │   ├── management/page.tsx      # 案件設定（案件一覧リボン + 追加）
 │   │   ├── clients/
-│   │   │   └── [id]/page.tsx        # クライアント詳細（案件コックピット）
+│   │   │   └── [id]/
+│   │   │       ├── layout.tsx       # クライアント詳細レイアウト
+│   │   │       └── page.tsx         # 案件コックピット（月次進行表）
 │   │   └── settings/
-│   │       └── team/page.tsx        # チーム設定
+│   │       └── team/
+│   │           ├── page.tsx         # チーム設定
+│   │           ├── team-profile-section.tsx
+│   │           └── guest-section.tsx
 │   ├── access/[token]/              # ゲストアクセス
 │   ├── invite/[token]/              # チーム招待
 │   ├── onboarding/
@@ -286,19 +291,27 @@ SocialOps/
 │   │   ├── header.tsx               # ヘッダー（ナビゲーション）
 │   │   ├── calendar-board.tsx       # カレンダービュー
 │   │   ├── calendar-toolbar.tsx     # カレンダーツールバー
+│   │   ├── weekly-board.tsx         # 週次カンバンボード
+│   │   ├── day-task-list-dialog.tsx # 日別タスクリストダイアログ
 │   │   ├── team-panel.tsx           # メンバーリストサイドバー
 │   │   ├── my-tasks.tsx             # 個人タスクリスト
 │   │   ├── member-detail.tsx        # メンバー詳細ダイアログ
-│   │   └── user-profile-dialog.tsx  # プロフィール編集ダイアログ
+│   │   ├── user-profile-dialog.tsx  # プロフィール編集ダイアログ
+│   │   └── notification-bell.tsx    # 通知ベルアイコン
 │   ├── clients/
 │   │   ├── client-dialog.tsx        # クライアント作成・編集ダイアログ
+│   │   ├── client-info-dialog.tsx   # クライアント情報ダイアログ
+│   │   ├── client-ribbon-list.tsx   # クライアントリボンリスト
 │   │   └── monthly-list-schedule.tsx # 月次進行表
 │   ├── tasks/
 │   │   ├── task-dialog.tsx          # タスク作成・編集ダイアログ
 │   │   ├── task-detail-dialog.tsx   # タスク詳細ダイアログ
-│   │   └── task-field-editor.tsx    # カスタムフィールドエディター
+│   │   ├── task-field-editor.tsx    # カスタムフィールドエディター
+│   │   └── task-url-handler.tsx     # タスクURL処理
 │   ├── settings/
-│   │   └── task-settings.tsx        # ワークフロー設定
+│   │   ├── task-settings.tsx        # ワークフロー設定
+│   │   ├── sortable-field-item.tsx  # ソート可能フィールド項目
+│   │   └── option-input.tsx         # オプション入力
 │   ├── lp/                          # ランディングページコンポーネント
 │   └── ui/                          # Shadcn UIコンポーネント
 ├── actions/
@@ -306,6 +319,7 @@ SocialOps/
 │   ├── clients.ts                   # クライアント管理
 │   ├── guest-auth.ts                # ゲスト認証
 │   ├── guests.ts                    # ゲストユーザー管理
+│   ├── notifications.ts             # 通知管理
 │   ├── onboarding.ts                # オンボーディング
 │   ├── tasks.ts                     # タスク管理
 │   ├── teams.ts                     # チーム管理
@@ -314,6 +328,7 @@ SocialOps/
 │   ├── supabase/
 │   │   ├── server.ts                # サーバーサイドSupabaseクライアント
 │   │   └── client.ts                # クライアントサイドSupabaseクライアント
+│   ├── constants.ts                 # システム定数
 │   └── utils.ts                     # ユーティリティ関数
 ├── supabase/
 │   └── migrations/                  # DBマイグレーションファイル
