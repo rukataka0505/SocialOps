@@ -51,8 +51,9 @@ export function ClientInfoDialog({ client, settings, trigger }: ClientInfoDialog
             <Dialog open={showInfo} onOpenChange={setShowInfo}>
                 <DialogTrigger asChild>
                     {trigger || (
-                        <Button variant="ghost" size="icon" title="案件情報">
+                        <Button variant="outline" size="sm" className="gap-2">
                             <Info className="h-4 w-4" />
+                            案件詳細
                         </Button>
                     )}
                 </DialogTrigger>
@@ -60,10 +61,6 @@ export function ClientInfoDialog({ client, settings, trigger }: ClientInfoDialog
                     <DialogHeader>
                         <div className="flex items-center justify-between pr-8">
                             <DialogTitle>案件情報: {client.name}</DialogTitle>
-                            <Button variant="outline" size="sm" onClick={handleEditClick}>
-                                <Pencil className="h-3 w-3 mr-1" />
-                                編集
-                            </Button>
                         </div>
                         <DialogDescription>
                             案件の詳細情報とリンク集です。
@@ -153,6 +150,13 @@ export function ClientInfoDialog({ client, settings, trigger }: ClientInfoDialog
                                 </div>
                             </div>
                         )}
+
+                        <div className="flex justify-end pt-4 border-t mt-4">
+                            <Button onClick={handleEditClick} className="w-full sm:w-auto">
+                                <Pencil className="h-4 w-4 mr-2" />
+                                編集する
+                            </Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

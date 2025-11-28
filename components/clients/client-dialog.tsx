@@ -311,7 +311,23 @@ export function ClientDialog({
                     </div>
 
                     <DialogFooter className="pt-4 border-t">
-                        <Button type="submit" disabled={isPending}>
+                        <Button
+                            type="button"
+                            disabled={isPending}
+                            onClick={(e) => {
+                                const confirmed = window.confirm(
+                                    client
+                                        ? "案件情報を保存してよろしいですか？"
+                                        : "新しい案件を作成してよろしいですか？"
+                                );
+                                if (confirmed) {
+                                    const form = e.currentTarget.closest('form');
+                                    if (form) {
+                                        form.requestSubmit();
+                                    }
+                                }
+                            }}
+                        >
                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {client ? "変更を保存" : "案件を作成"}
                         </Button>

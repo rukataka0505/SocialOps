@@ -848,7 +848,23 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             <Trash2 className="mr-2 h-4 w-4" /> 削除
                                         </Button>
                                     ) : <div></div>}
-                                    <Button type="submit" disabled={isPending}>
+                                    <Button
+                                        type="button"
+                                        disabled={isPending}
+                                        onClick={(e) => {
+                                            const confirmed = window.confirm(
+                                                isEditMode
+                                                    ? "タスクの変更を保存してよろしいですか？"
+                                                    : "新しいタスクを作成してよろしいですか？"
+                                            );
+                                            if (confirmed) {
+                                                const form = document.getElementById('task-form') as HTMLFormElement;
+                                                if (form) {
+                                                    form.requestSubmit();
+                                                }
+                                            }
+                                        }}
+                                    >
                                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         {isEditMode ? "保存" : "作成"}
                                     </Button>
