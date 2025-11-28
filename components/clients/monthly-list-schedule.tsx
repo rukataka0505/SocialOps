@@ -140,26 +140,43 @@ export function MonthlyListSchedule({ clientId, members, settings }: MonthlyList
                                                                     <Badge variant="outline" className={cn("shrink-0", statusInfo.color, "border-0")}>
                                                                         {statusInfo.label}
                                                                     </Badge>
-                                                                    <span className="font-medium text-sm truncate text-gray-900 group-hover:text-blue-700 transition-colors">
+                                                                    <span className="font-medium text-sm text-gray-900 group-hover:text-blue-700 transition-colors">
                                                                         {task.title}
                                                                     </span>
                                                                 </div>
 
-                                                                <div className="flex items-center gap-4 shrink-0 text-xs text-gray-500">
-                                                                    {/* Due Date (Time if available, or just icon) */}
-                                                                    <div className="flex items-center gap-1">
-                                                                        <CalendarIcon className="h-3.5 w-3.5" />
-                                                                        <span>{format(new Date(task.due_date), "MM/dd", { locale: ja })}</span>
-                                                                    </div>
+                                                                <div className="flex items-center gap-4 shrink-0">
+                                                                    {/* Subtasks */}
+                                                                    {task.subtasks && task.subtasks.length > 0 && (
+                                                                        <div className="flex items-center gap-2 text-xs">
+                                                                            {task.subtasks.slice(0, 3).map((subtask: any) => {
+                                                                                const subtaskAssignee = subtask.assignments?.[0]?.user;
+                                                                                return (
+                                                                                    <div key={subtask.id} className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded border border-gray-200" title={subtask.title}>
+                                                                                        <span className="text-gray-600 max-w-[100px] truncate">{subtask.title}</span>
+                                                                                        {subtaskAssignee && (
+                                                                                            <Avatar className="h-4 w-4 border">
+                                                                                                <AvatarImage src={subtaskAssignee.avatar_url || ""} />
+                                                                                                <AvatarFallback className="text-[8px]">{subtaskAssignee.name?.[0] || "?"}</AvatarFallback>
+                                                                                            </Avatar>
+                                                                                        )}
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                            {task.subtasks.length > 3 && (
+                                                                                <span className="text-gray-400 text-xs">+{task.subtasks.length - 3}</span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
 
-                                                                    {/* Assignee Avatar */}
+                                                                    {/* Parent Assignee Avatar */}
                                                                     {assignee ? (
                                                                         <div className="flex items-center gap-1.5" title={assignee.name}>
                                                                             <Avatar className="h-6 w-6 border">
                                                                                 <AvatarImage src={assignee.avatar_url || ""} />
                                                                                 <AvatarFallback className="text-[10px]">{assignee.name?.[0] || "?"}</AvatarFallback>
                                                                             </Avatar>
-                                                                            <span className="hidden sm:inline-block max-w-[80px] truncate">
+                                                                            <span className="hidden sm:inline-block max-w-[80px] truncate text-xs text-gray-500">
                                                                                 {assignee.name}
                                                                             </span>
                                                                         </div>
@@ -168,7 +185,7 @@ export function MonthlyListSchedule({ clientId, members, settings }: MonthlyList
                                                                             <div className="h-6 w-6 rounded-full border border-dashed flex items-center justify-center">
                                                                                 <User className="h-3 w-3" />
                                                                             </div>
-                                                                            <span className="hidden sm:inline-block">未定</span>
+                                                                            <span className="hidden sm:inline-block text-xs">未定</span>
                                                                         </div>
                                                                     )}
                                                                 </div>

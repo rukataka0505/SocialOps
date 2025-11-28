@@ -337,7 +337,16 @@ export async function updateTask(taskId: string, data: any) {
             if (!updateData.attributes) {
                 updateData.attributes = {};
             }
-            updateData.attributes._fields = updateData._fields;
+            // Parse _fields if it's a JSON string
+            let fieldsValue = updateData._fields;
+            if (typeof fieldsValue === 'string') {
+                try {
+                    fieldsValue = JSON.parse(fieldsValue);
+                } catch (e) {
+                    console.error('Failed to parse _fields:', e);
+                }
+            }
+            updateData.attributes._fields = fieldsValue;
             delete updateData._fields;
         }
 
