@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { ClientTabs } from '@/components/clients/client-tabs';
+
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 
@@ -50,8 +50,7 @@ export default async function ClientLayout({
                 )}
             </div>
 
-            {/* タブナビゲーション */}
-            <ClientTabs clientId={id} />
+
 
             {/* ページコンテンツ */}
             <div className="flex-1 overflow-auto bg-muted/10 p-6">
