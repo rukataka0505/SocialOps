@@ -434,6 +434,19 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
     const workflowStatuses = settings?.workflow_statuses || ['未着手', '進行中', '確認待ち', '完了'];
 
+    // Scope Toggle Handler
+    const handleScopeChange = (scope: 'team' | 'private') => {
+        if (scope === 'private') {
+            if (confirm("このタスクを個人タスクに変更しますか？\nチームメンバーからは見えなくなります。")) {
+                setIsPrivate(true);
+            }
+        } else {
+            if (confirm("このタスクをチームタスクに変更しますか？\nチームメンバー全員に公開されます。")) {
+                setIsPrivate(false);
+            }
+        }
+    };
+
     // --- RENDER HELPERS ---
 
     // 1. Personal Task Mode
@@ -451,7 +464,22 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             <div className="p-6 border-b bg-white flex-none">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-2">
-                                        <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-medium">🔒 個人タスク</span>
+                                        <div className="flex bg-slate-100 p-1 rounded-lg">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleScopeChange('team')}
+                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${!isPrivate ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+                                            >
+                                                👥 チーム
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleScopeChange('private')}
+                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${isPrivate ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+                                            >
+                                                🔒 個人
+                                            </button>
+                                        </div>
                                         {isEditMode && (
                                             <Button
                                                 type="button"
@@ -512,6 +540,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                     />
                                 </div>
                             </div>
+                            <input type="hidden" name="is_private" value="true" />
                         </form>
                     )}
                 </DialogContent>
@@ -767,6 +796,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             </div>
                                         )}
 
+                                        {/* Progress Bar */}
                                         {/* Progress Bar */}
                                         {isEditMode && subtasks.length > 0 && (
                                             <div className="flex items-center gap-3 max-w-md">
