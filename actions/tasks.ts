@@ -67,10 +67,23 @@ export async function getTodayTasks() {
 
         if (error) throw error;
 
+        // Filter for private tasks
+        const { data: { user } } = await supabase.auth.getUser();
+        const currentUserId = user?.id;
+
+        const filteredTasks = tasks?.filter((task: any) => {
+            if (!task.is_private) return true;
+            if (task.created_by === currentUserId) return true;
+            if (task.assignments?.some((a: any) => a.user_id === currentUserId)) return true;
+            return false;
+        });
+
+        const finalTasks = filteredTasks || [];
+
         // Custom sort for priority
         const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
 
-        const sortedTasks = tasks?.sort((a: any, b: any) => {
+        const sortedTasks = finalTasks.sort((a: any, b: any) => {
             // Primary sort: due_date
             if (a.due_date !== b.due_date) {
                 if (a.due_date && b.due_date) {
@@ -85,7 +98,7 @@ export async function getTodayTasks() {
             return pA - pB;
         });
 
-        return sortedTasks || [];
+        return sortedTasks;
     } catch (error) {
         console.error("Error fetching today's tasks:", error);
         return [];
@@ -212,7 +225,7 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
             }
         }
 
-        revalidatePath("/");
+        revalidatePath("/", "layout");
         return { success: true };
     } catch (error) {
         console.error("Error toggling task status:", error);
@@ -242,6 +255,7 @@ export async function createTask(prevState: any, formData: FormData) {
         const workflow_status = formData.get("workflow_status") as string;
         const parent_id = formData.get("parent_id") as string;
         const is_milestone = formData.get("is_milestone") === "true";
+        const is_private = formData.get("is_private") === "true";
         const source_type = (formData.get("source_type") as string) || "manual";
 
         // Handle assignees
@@ -301,6 +315,7 @@ export async function createTask(prevState: any, formData: FormData) {
                 created_by: user.id,
                 parent_id: parent_id || null,
                 is_milestone,
+                is_private,
                 source_type,
             })
             .select()
@@ -345,7 +360,7 @@ export async function createTask(prevState: any, formData: FormData) {
         }
 
 
-        revalidatePath("/");
+        revalidatePath("/", "layout");
         return { success: true };
     } catch (error) {
         console.error("Error creating task:", error);
@@ -405,7 +420,18 @@ export async function getTasks(start: string, end: string) {
 
         if (error) throw error;
 
-        return tasks || [];
+        // Filter for private tasks
+        const { data: { user } } = await supabase.auth.getUser();
+        const currentUserId = user?.id;
+
+        const filteredTasks = tasks?.filter((task: any) => {
+            if (!task.is_private) return true;
+            if (task.created_by === currentUserId) return true;
+            if (task.assignments?.some((a: any) => a.user_id === currentUserId)) return true;
+            return false;
+        });
+
+        return filteredTasks || [];
     } catch (error) {
         console.error("Error fetching tasks:", error);
         return [];
@@ -444,6 +470,12 @@ export async function updateTask(taskId: string, data: any) {
                 updateData[field] = null;
             }
         });
+
+        // Handle is_private boolean
+        if (updateData.is_private !== undefined) {
+            // Ensure it's boolean
+            updateData.is_private = Boolean(updateData.is_private);
+        }
 
         // Handle _fields - it should be inside attributes, not a top-level field
         if (updateData._fields) {
@@ -595,7 +627,7 @@ export async function updateTask(taskId: string, data: any) {
             }
         }
 
-        revalidatePath("/");
+        revalidatePath("/", "layout");
         return { success: true };
     } catch (error) {
         console.error("Error updating task:", error);
@@ -622,7 +654,7 @@ export async function deleteTask(taskId: string) {
 
         if (error) throw error;
 
-        revalidatePath("/");
+        revalidatePath("/", "layout");
         return { success: true };
     } catch (error) {
         console.error("Error deleting task:", error);

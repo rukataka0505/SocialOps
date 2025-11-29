@@ -381,6 +381,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     open={isDialogOpen}
                     onOpenChange={setIsDialogOpen}
                     settings={settings}
+                    defaultScope={viewMode === 'my' ? 'private' : 'team'}
                 />
             )}
 

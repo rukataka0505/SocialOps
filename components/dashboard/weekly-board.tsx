@@ -140,8 +140,8 @@ function DayColumn({ date, tasks, onTaskClick }: { date: Date; tasks: Task[]; on
         <div
             ref={setNodeRef}
             className={cn(
-                "flex flex-col min-w-[200px] w-full h-full rounded-xl border transition-colors",
-                isOver ? "bg-blue-50/50 border-blue-200" : "bg-slate-50/50 border-slate-100",
+                "flex flex-col w-full h-full border-r last:border-r-0 transition-colors",
+                isOver ? "bg-blue-50/50" : "bg-slate-50/50",
                 isTodayDate ? "bg-blue-50/30" : ""
             )}
         >
@@ -264,7 +264,7 @@ export function WeeklyBoard({ tasks: initialTasks, currentDate, onTaskClick }: W
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="flex h-full gap-4 overflow-x-auto pb-4">
+            <div className="grid grid-cols-7 h-full border rounded-xl overflow-hidden bg-white">
                 {days.map((day) => {
                     const dateStr = format(day, "yyyy-MM-dd");
                     return (
