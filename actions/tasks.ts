@@ -383,6 +383,10 @@ export async function getTasks(start: string, end: string) {
         const teamId = await getCurrentTeamId(supabase);
         if (!teamId) throw new Error("No team found");
 
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Unauthorized");
+
+
         const { data: tasks, error } = await (supabase as any)
             .from("tasks")
             .select(`
@@ -422,7 +426,7 @@ export async function getTasks(start: string, end: string) {
                 )
             `)
             .eq("team_id", teamId)
-            .eq("is_private", false) // Exclude private tasks from team view
+            .or(`is_private.eq.false,and(is_private.eq.true,created_by.eq.${user.id})`)
             .gte("due_date", start)
             .lte("due_date", end)
             .is("deleted_at", null);
