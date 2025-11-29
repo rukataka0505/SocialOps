@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 
 function LoginForm() {
     const searchParams = useSearchParams();
@@ -44,6 +45,19 @@ function LoginForm() {
                             <AlertDescription>{currentState.error}</AlertDescription>
                         </Alert>
                     )}
+
+                    <SocialAuthButtons />
+
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-slate-700" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-slate-900 px-2 text-slate-400">
+                                またはメールアドレスで
+                            </span>
+                        </div>
+                    </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="email" className="text-slate-300">メールアドレス</Label>

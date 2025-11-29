@@ -35,10 +35,10 @@ export async function login(
     if (error) {
         console.error('Login error:', error);
         if (error.message.includes("Email not confirmed")) {
-            return { error: "メールアドレスが確認されていません。メールを確認してください。" };
+            return { error: "メールアドレスの確認が完了していません。受信トレイを確認してください。" };
         }
         if (error.message.includes("Invalid login credentials")) {
-            return { error: "メールアドレスまたはパスワードが正しくありません。" };
+            return { error: "メールアドレスまたはパスワードが間違っています。" };
         }
         return { error: `ログインに失敗しました: ${error.message}` };
     }

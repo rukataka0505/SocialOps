@@ -27,7 +27,7 @@ export async function createTeam(formData: FormData) {
         .insert({
             name,
             owner_id: user.id,
-            invite_code: nanoid(12),
+            invite_code: nanoid(8),
         })
         .select()
         .single();

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createInvitation } from '@/actions/teams';
+import { getInviteCode } from '@/actions/teams';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -24,27 +24,26 @@ interface InviteMemberDialogProps {
 export function InviteMemberDialog({ teamId, children }: InviteMemberDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+    const [inviteCode, setInviteCode] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
 
-    const handleCreateInvite = async () => {
+    const handleGetCode = async () => {
         setIsLoading(true);
         try {
-            const { token } = await createInvitation(teamId);
-            const url = `${window.location.origin}/invite/${token}`;
-            setInviteUrl(url);
+            const code = await getInviteCode(teamId);
+            setInviteCode(code);
         } catch (error) {
-            console.error('Failed to create invitation:', error);
-            alert('招待リンクの作成に失敗しました');
+            console.error('Failed to get invite code:', error);
+            alert('招待コードの取得に失敗しました');
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleCopy = async () => {
-        if (!inviteUrl) return;
+        if (!inviteCode) return;
         try {
-            await navigator.clipboard.writeText(inviteUrl);
+            await navigator.clipboard.writeText(inviteCode);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (error) {
@@ -54,12 +53,8 @@ export function InviteMemberDialog({ teamId, children }: InviteMemberDialogProps
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
-        if (!open) {
-            // Reset state when closed
-            setTimeout(() => {
-                setInviteUrl(null);
-                setCopied(false);
-            }, 300);
+        if (open && !inviteCode) {
+            handleGetCode();
         }
     };
 
@@ -94,22 +89,20 @@ export function InviteMemberDialog({ teamId, children }: InviteMemberDialogProps
                         </AlertDescription>
                     </Alert>
 
-                    {!inviteUrl ? (
-                        <div className="flex flex-col items-center justify-center py-6 gap-4">
-                            <Button onClick={handleCreateInvite} disabled={isLoading} className="w-full">
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                招待リンクを発行する
-                            </Button>
-                            <p className="text-xs text-muted-foreground text-center">
-                                リンクの有効期限は7日間です。
-                            </p>
+                    {isLoading ? (
+                        <div className="flex justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                         </div>
                     ) : (
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label>招待リンク</Label>
+                                <Label>チーム招待コード</Label>
                                 <div className="flex items-center gap-2">
-                                    <Input value={inviteUrl} readOnly className="font-mono text-sm" />
+                                    <Input
+                                        value={inviteCode || ''}
+                                        readOnly
+                                        className="font-mono text-xl text-center tracking-widest font-bold"
+                                    />
                                     <Button
                                         size="icon"
                                         variant="outline"
@@ -121,7 +114,8 @@ export function InviteMemberDialog({ teamId, children }: InviteMemberDialogProps
                                 </div>
                             </div>
                             <div className="text-sm text-muted-foreground bg-slate-50 p-3 rounded-md border">
-                                <p>このリンクを知っている人は誰でもチームに参加できます。</p>
+                                <p className="mb-2">このコードをメンバーに共有してください。</p>
+                                <p>メンバーはチーム切り替えメニューの<strong>「招待コードで参加」</strong>から入力します。</p>
                             </div>
                         </div>
                     )}

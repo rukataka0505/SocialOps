@@ -337,6 +337,35 @@ export async function removeMember(userId: string) {
     }
 }
 
+export async function getInviteCode(teamId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        throw new Error('Unauthorized');
+    }
+
+    // Check permission (owner or admin)
+    const { data: member } = await supabase
+        .from('team_members')
+        .select('role')
+        .eq('team_id', teamId)
+        .eq('user_id', user.id)
+        .single();
+
+    if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
+        throw new Error('Permission denied');
+    }
+
+    const { data: team } = await supabase
+        .from('teams')
+        .select('invite_code')
+        .eq('id', teamId)
+        .single();
+
+    return team?.invite_code;
+}
+
 export async function joinTeamByCode(code: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
