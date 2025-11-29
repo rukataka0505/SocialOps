@@ -47,8 +47,8 @@ export function ClientDialog({
     settings
 }: ClientDialogProps & { settings?: any }) {
     const [internalOpen, setInternalOpen] = useState(false);
-    const [credentials, setCredentials] = useState<any[]>(client?.credentials as any[] || []);
-    const [resources, setResources] = useState<any[]>(client?.resources as any[] || []);
+    const [credentials, setCredentials] = useState<any[]>((client?.attributes as any)?.credentials || []);
+    const [resources, setResources] = useState<any[]>((client?.attributes as any)?.resources || []);
     const [visiblePasswords, setVisiblePasswords] = useState<Record<number, boolean>>({});
 
     const isControlled = controlledOpen !== undefined;
@@ -59,8 +59,8 @@ export function ClientDialog({
         setOpen?.(newOpen);
         if (newOpen) {
             // Reset state when opening
-            setCredentials(client?.credentials as any[] || []);
-            setResources(client?.resources as any[] || []);
+            setCredentials((client?.attributes as any)?.credentials || []);
+            setResources((client?.attributes as any)?.resources || []);
         }
     };
 

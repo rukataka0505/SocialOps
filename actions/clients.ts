@@ -90,6 +90,10 @@ export async function createClient(prevState: ClientState | null, formData: Form
                 // Save field definitions snapshot
                 attributes['_fields'] = fields;
             }
+
+            // Store credentials and resources in attributes
+            if (credentials.length > 0) attributes.credentials = credentials;
+            if (resources.length > 0) attributes.resources = resources;
         } catch (e) {
             console.error("Failed to parse client JSON fields", e);
         }
@@ -104,8 +108,6 @@ export async function createClient(prevState: ClientState | null, formData: Form
             email: email || null,
             phone: phone || null,
             notes: notes || null,
-            credentials,
-            resources,
             attributes
         });
 
@@ -152,6 +154,10 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
                 // Save field definitions snapshot
                 attributes['_fields'] = fields;
             }
+
+            // Store credentials and resources in attributes
+            if (credentials !== undefined) attributes.credentials = credentials;
+            if (resources !== undefined) attributes.resources = resources;
         } catch (e) {
             console.error("Failed to parse client JSON fields", e);
         }
@@ -173,15 +179,7 @@ export async function updateClient(clientId: string, prevState: ClientState | nu
             updated_at: new Date().toISOString(),
         };
 
-        if (credentials !== undefined) updateData.credentials = credentials;
-        if (resources !== undefined) updateData.resources = resources;
-
-        // We need to be careful not to wipe existing attributes if we only send partial updates?
-        // But formData usually contains all fields in the form.
-        // For simplicity, we'll fetch existing client to merge attributes if we want to be safe,
-        // or just overwrite if we trust the form.
-        // Let's fetch to be safe and merge.
-
+        // Fetch existing attributes to merge
         const { data: existing } = await (supabase as any).from("clients").select("attributes").eq("id", clientId).single();
         if (existing) {
             updateData.attributes = { ...existing.attributes, ...attributes };

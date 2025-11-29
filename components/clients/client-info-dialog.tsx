@@ -25,8 +25,8 @@ export function ClientInfoDialog({ client, settings, trigger }: ClientInfoDialog
     const [showEdit, setShowEdit] = useState(false);
 
     const attributes = client.attributes || {};
-    const credentials = client.credentials || [];
-    const resources = client.resources || [];
+    const credentials = (client.attributes as any)?.credentials || [];
+    const resources = (client.attributes as any)?.resources || [];
 
     // Get client fields from settings or use defaults
     const clientFields = settings?.client_fields || [

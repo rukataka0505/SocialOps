@@ -119,8 +119,8 @@ export function ClientRibbonList({ clients, settings }: ClientRibbonListProps) {
                 client={selectedClient ? {
                     ...selectedClient,
                     attributes: (selectedClient.attributes || {}) as Record<string, any>,
-                    credentials: (selectedClient.credentials || []) as any[],
-                    resources: (selectedClient.resources || []) as any[]
+                    credentials: ((selectedClient.attributes as any)?.credentials || []) as any[],
+                    resources: ((selectedClient.attributes as any)?.resources || []) as any[]
                 } : undefined}
                 open={isDialogOpen}
                 onOpenChange={(open) => {
