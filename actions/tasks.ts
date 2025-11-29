@@ -674,6 +674,7 @@ export async function getMemberTasks(userId: string) {
         // Find tasks assigned to user via task_assignments
         // We can use a join or a subquery.
         // Supabase join syntax:
+        // Filter for personal tasks created by the user
         const { data: tasks, error } = await (supabase as any)
             .from("tasks")
             .select(`
@@ -691,7 +692,8 @@ export async function getMemberTasks(userId: string) {
                 )
             `)
             .eq("team_id", teamId)
-            .eq("assignments.user_id", userId)
+            .eq("created_by", userId) // Must be created by me
+            .eq("is_private", true)   // Must be private
             .neq("status", "completed")
             .is("deleted_at", null)
             .order("due_date", { ascending: true });
@@ -942,24 +944,13 @@ export async function getTaskWithHierarchy(taskId: string) {
         const teamId = await getCurrentTeamId(supabase);
         if (!teamId) throw new Error("No team found");
 
-        // 1. Get the target task to check for parent_id
-        const { data: initialTask, error: initialError } = await (supabase as any)
-            .from("tasks")
-            .select("id, parent_id")
-            .eq("id", taskId)
-            .single();
-
-        if (initialError) throw initialError;
-
-        // 2. Determine the actual ID to fetch (Parent or Self)
-        const targetId = initialTask.parent_id || initialTask.id;
-
-        // 3. Fetch full details for the target task
+        // Fetch full details for the target task (Self)
         const { data: task, error } = await (supabase as any)
             .from("tasks")
             .select(`
                 *,
                 client:clients(id, name, spreadsheet_url),
+                parent:tasks(id, title),
                 assignments:task_assignments(user_id, role, user:users(id, name, avatar_url)),
                 subtasks:tasks(
                     *,
@@ -971,7 +962,7 @@ export async function getTaskWithHierarchy(taskId: string) {
                     user:users(id, name, avatar_url)
                 )
             `)
-            .eq("id", targetId)
+            .eq("id", taskId)
             .eq("team_id", teamId)
             .single();
 
