@@ -235,6 +235,7 @@ export async function createTask(prevState: any, formData: FormData) {
         const parent_id = formData.get("parent_id") as string;
         const is_milestone = formData.get("is_milestone") === "true";
         const is_private = formData.get("is_private") === "true";
+        const source_type = (formData.get("source_type") as string) || "manual";
 
         // Handle assignees
         const assigneesJson = formData.get("assignees") as string;
@@ -290,6 +291,7 @@ export async function createTask(prevState: any, formData: FormData) {
                 parent_id: parent_id || null,
                 is_milestone,
                 is_private,
+                source_type,
             })
             .select()
             .single();
