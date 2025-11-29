@@ -41,7 +41,7 @@ export default function CreateTeamPage() {
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden max-w-2xl mx-auto">
             <div className="p-8">
                 {step === 'name' ? (
                     <div className="space-y-6">
