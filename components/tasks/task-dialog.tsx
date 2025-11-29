@@ -412,6 +412,9 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                 )
             )}
             <DialogContent className={`sm:max-w-[1000px] ${isEditMode ? 'h-[90vh]' : 'max-h-[90vh]'} flex flex-col p-0 gap-0`}>
+                <DialogTitle className="sr-only">
+                    {isEditMode ? `タスク編集: ${currentTask?.title || ''}` : '新規タスク作成'}
+                </DialogTitle>
                 {isLoading ? (
                     <div className="flex justify-center py-8 flex-1 items-center">
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -435,7 +438,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                         <select
                                             id="workflow_status"
                                             name="workflow_status"
-                                            defaultValue={currentTask?.workflow_status || workflowStatuses[0]}
+                                            defaultValue={(currentTask?.attributes as any)?.workflow_status || workflowStatuses[0]}
                                             className="h-8 rounded-full border border-input bg-background px-3 text-xs font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                         >
                                             {workflowStatuses.map((status) => (

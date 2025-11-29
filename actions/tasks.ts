@@ -132,7 +132,7 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
             // Get parent task info
             const { data: parentTask, error: parentError } = await (supabase as any)
                 .from("tasks")
-                .select("id, title, workflow_status, assignments:task_assignments(user_id)")
+                .select("id, title, attributes, assignments:task_assignments(user_id)")
                 .eq("id", parentId)
                 .single();
 
@@ -146,10 +146,14 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
                 const allCompleted = siblings.every((s: any) => s.status === 'completed');
 
                 if (allCompleted) {
-                    // Update parent to "確認待ち"
+                    // Update parent workflow_status in attributes
+                    const updatedAttributes = {
+                        ...(parentTask.attributes || {}),
+                        workflow_status: '確認待ち'
+                    };
                     const { error: parentUpdateError } = await (supabase as any)
                         .from("tasks")
-                        .update({ workflow_status: '確認待ち' })
+                        .update({ attributes: updatedAttributes })
                         .eq("id", parentId);
 
                     if (parentUpdateError) throw parentUpdateError;
@@ -174,12 +178,16 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
             }
             // Auto-Revert Logic: Task uncompleted → Parent back to "進行中"
             else {
-                const parentStatus = parentTask.workflow_status;
+                const parentStatus = (parentTask.attributes as any)?.workflow_status;
                 if (parentStatus === '確認待ち' || parentStatus === '完了') {
-                    // Revert parent to "進行中"
+                    // Revert parent workflow_status in attributes
+                    const updatedAttributes = {
+                        ...(parentTask.attributes || {}),
+                        workflow_status: '進行中'
+                    };
                     const { error: parentRevertError } = await (supabase as any)
                         .from("tasks")
-                        .update({ workflow_status: '進行中' })
+                        .update({ attributes: updatedAttributes })
                         .eq("id", parentId);
 
                     if (parentRevertError) throw parentRevertError;
@@ -254,6 +262,11 @@ export async function createTask(prevState: any, formData: FormData) {
             attributes.management_url = management_url;
         }
 
+        // Store workflow_status in attributes
+        if (workflow_status) {
+            attributes.workflow_status = workflow_status;
+        }
+
         // Extract custom field definitions if present
         const customFieldsJson = formData.get("_fields") as string;
         if (customFieldsJson) {
@@ -286,7 +299,6 @@ export async function createTask(prevState: any, formData: FormData) {
                 attributes,
                 status,
                 created_by: user.id,
-                workflow_status: workflow_status || null,
                 parent_id: parent_id || null,
                 is_milestone,
                 source_type,
@@ -460,6 +472,32 @@ export async function updateTask(taskId: string, data: any) {
                     delete updateData.attributes[key];
                 }
             });
+        }
+
+        // Move workflow_status to attributes
+        if (updateData.workflow_status) {
+            if (!updateData.attributes) {
+                updateData.attributes = {};
+            }
+            updateData.attributes.workflow_status = updateData.workflow_status;
+            delete updateData.workflow_status;
+        }
+
+        // If we are updating attributes, we need to merge with existing attributes
+        // to avoid overwriting other fields (like management_url or others not in the form)
+        if (updateData.attributes) {
+            const { data: currentTask, error: fetchError } = await (supabase as any)
+                .from("tasks")
+                .select("attributes")
+                .eq("id", taskId)
+                .single();
+
+            if (!fetchError && currentTask) {
+                updateData.attributes = {
+                    ...(currentTask.attributes || {}),
+                    ...updateData.attributes
+                };
+            }
         }
 
         const finalUpdatePayload = {

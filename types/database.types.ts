@@ -417,7 +417,6 @@ export type Database = {
           team_id: string
           title: string
           updated_at: string | null
-          workflow_status: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -441,7 +440,6 @@ export type Database = {
           team_id: string
           title: string
           updated_at?: string | null
-          workflow_status?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -465,7 +463,6 @@ export type Database = {
           team_id?: string
           title?: string
           updated_at?: string | null
-          workflow_status?: string | null
         }
         Relationships: [
           {

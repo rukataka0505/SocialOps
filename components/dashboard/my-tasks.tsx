@@ -176,7 +176,7 @@ export function MyTasks({ tasks, members, currentUserId, settings }: MyTasksProp
                                     <Avatar className="h-6 w-6 border border-slate-200">
                                         <AvatarImage src={assignee.avatar_url || undefined} />
                                         <AvatarFallback className="text-[10px] bg-slate-100 text-slate-500">
-                                            {assignee.name.slice(0, 2)}
+                                            {(assignee.name || assignee.email || "?").slice(0, 2)}
                                         </AvatarFallback>
                                     </Avatar>
                                 )}

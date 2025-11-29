@@ -117,7 +117,7 @@ export function MonthlyListSchedule({ clientId, members, settings }: MonthlyList
                                     <div className="space-y-2 pr-4">
                                         {dayTasks.length > 0 ? (
                                             dayTasks.map(task => {
-                                                const status = task.workflow_status || task.status;
+                                                const status = (task.attributes as any)?.workflow_status || task.status;
                                                 const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-50 text-gray-700', borderColor: 'border-gray-200' };
 
                                                 // Find assignee (first one for display)
