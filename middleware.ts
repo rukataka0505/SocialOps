@@ -117,15 +117,14 @@ function getRouteType(pathname: string) {
 }
 
 /**
- * Check if user is authenticated (including dev bypass and guest mode)
+ * Check if user is authenticated (including dev bypass)
  */
 function checkAuthentication(request: NextRequest, user: any) {
     const isDevBypass = process.env.NEXT_PUBLIC_DEV_BYPASS === 'true' &&
         !!process.env.NEXT_PUBLIC_MOCK_USER_ID;
-    const hasGuestCookie = request.cookies.has('socialops-guest-token');
-    const isAuthenticated = !!(user || isDevBypass || hasGuestCookie);
+    const isAuthenticated = !!(user || isDevBypass);
 
-    return { isAuthenticated, isDevBypass, hasGuestCookie };
+    return { isAuthenticated, isDevBypass };
 }
 
 export async function middleware(request: NextRequest) {
@@ -163,7 +162,7 @@ export async function middleware(request: NextRequest) {
 
     // Determine route type and authentication status
     const { isAuthRoute, isProtectedRoute, isLandingPage } = getRouteType(request.nextUrl.pathname);
-    const { isAuthenticated, isDevBypass, hasGuestCookie } = checkAuthentication(request, user);
+    const { isAuthenticated, isDevBypass } = checkAuthentication(request, user);
 
     // Redirect authenticated users away from login page
     if (isAuthRoute && (user || isDevBypass)) {
@@ -180,7 +179,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Redirect unauthenticated users to login page
-    if (isProtectedRoute && !user && !isDevBypass && !hasGuestCookie) {
+    if (isProtectedRoute && !user && !isDevBypass) {
         const url = request.nextUrl.clone();
         url.pathname = '/login';
         return NextResponse.redirect(url);

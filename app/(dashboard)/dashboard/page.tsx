@@ -47,7 +47,7 @@ export default async function DashboardPage() {
 
     // Prioritize user_metadata.name (or full_name) over email
     // This fixes the issue where guests see their dummy email
-    const userName = user?.user_metadata.name || user?.user_metadata.full_name || user?.email || 'ゲスト';
+    const userName = user?.user_metadata.name || user?.user_metadata.full_name || user?.email || 'ユーザー';
 
     return (
         <div className="flex flex-col min-h-full bg-slate-50 pb-10">

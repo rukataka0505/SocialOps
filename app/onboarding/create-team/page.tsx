@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { InviteMemberDialog } from '@/components/team/invite-member-dialog';
-import { InviteGuestDialog } from '@/components/team/invite-guest-dialog';
+
 
 export default function CreateTeamPage() {
     const router = useRouter();
@@ -97,7 +97,7 @@ export default function CreateTeamPage() {
                         </div>
 
                         <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 space-y-6">
-                            <div className="grid md:grid-cols-2 gap-6">
+                            <div className="max-w-md mx-auto">
                                 <div className="space-y-4 p-4 bg-white rounded-lg border shadow-sm">
                                     <h3 className="font-medium flex items-center gap-2">
                                         正規メンバーを招待
@@ -106,16 +106,6 @@ export default function CreateTeamPage() {
                                         チームのコアメンバーとして招待します。アカウント作成が必要です。
                                     </p>
                                     <InviteMemberDialog teamId={teamId!} />
-                                </div>
-
-                                <div className="space-y-4 p-4 bg-white rounded-lg border shadow-sm">
-                                    <h3 className="font-medium flex items-center gap-2">
-                                        ゲストを招待
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        外部パートナーや一時的なメンバーに。URLのみで参加できます。
-                                    </p>
-                                    <InviteGuestDialog />
                                 </div>
                             </div>
                         </div>

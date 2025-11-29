@@ -25,7 +25,7 @@
 
 - **DB Flexibility:** `tasks.attributes` 実装済み。
 - **Team Identity:** 招待URLによるメンバー追加機能。
-- **Guest User System:** アカウント不要のゲストユーザー管理機能。
+- **Team Identity:** 招待URLによるメンバー追加機能。
 
 ### ✅ Phase 4: Calendar + Member Console Dashboard (Completed)
 
@@ -100,7 +100,6 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - **認証 & チーム管理**
   - Supabase Auth による認証
   - 招待URL によるチームメンバー追加
-  - ゲストユーザー管理（アカウント不要のアクセス）
   - ロールベースのアクセス制御（Owner / Admin / Member）
 
 - **クライアント管理**
@@ -154,7 +153,7 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 
 - **ユーザープロフィール**
   - プロフィール編集ダイアログ
-  - 名前の変更（ゲストユーザーも対応）
+  - 名前の変更
 
 ## Database Schema
 
@@ -166,7 +165,6 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 - `clients` - クライアント情報（`credentials`, `resources` JSONB で拡張情報を保存）
 - `tasks` - タスク（`attributes` JSONB でカスタムフィールド対応、`workflow_status`, `parent_id`, `is_milestone`, `is_private` で階層構造とワークフロー管理）
 - `task_assignments` - タスク担当者（複数割り当て対応）
-- `guest_users` - ゲストユーザー情報
 - `projects` - プロジェクト（将来の拡張用）
 - `notifications` - 通知（ユーザー別、リアルタイム更新対応）
 - `system_logs` - システムログ
@@ -176,7 +174,6 @@ Webサイト的なページ遷移を廃止し、**「Webアプリ（SPA）的な
 ## Current Status (v10.0)
 
 - [x] Authentication & Team Invite
-- [x] Guest User Management
 - [x] Client Management (Hub)
 - [x] Client Cockpit (Tabs: Overview, Schedule, Tasks)
 - [x] Credentials & Resources Management
@@ -279,8 +276,7 @@ SocialOps/
 │   │       └── team/
 │   │           ├── page.tsx         # チーム設定
 │   │           ├── team-profile-section.tsx
-│   │           └── guest-section.tsx
-│   ├── access/[token]/              # ゲストアクセス
+│   │           └── team-profile-section.tsx
 │   ├── invite/[token]/              # チーム招待
 │   ├── onboarding/
 │   │   └── create-team/page.tsx     # チーム作成ウィザード
@@ -317,8 +313,8 @@ SocialOps/
 ├── actions/
 │   ├── auth.ts                      # 認証関連
 │   ├── clients.ts                   # クライアント管理
-│   ├── guest-auth.ts                # ゲスト認証
-│   ├── guests.ts                    # ゲストユーザー管理
+│   ├── auth.ts                      # 認証関連
+│   ├── clients.ts                   # クライアント管理
 │   ├── notifications.ts             # 通知管理
 │   ├── onboarding.ts                # オンボーディング
 │   ├── tasks.ts                     # タスク管理

@@ -87,10 +87,6 @@ export async function logout() {
     const supabase = await createClient();
     await supabase.auth.signOut();
 
-    // Clear guest cookie
-    const cookieStore = await cookies();
-    cookieStore.delete('socialops-guest-token');
-
     revalidatePath("/", "layout");
     redirect("/login");
 }
