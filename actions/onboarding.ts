@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { nanoid } from 'nanoid';
 
 export async function createTeam(formData: FormData) {
     const supabase = await createClient();
@@ -26,6 +27,7 @@ export async function createTeam(formData: FormData) {
         .insert({
             name,
             owner_id: user.id,
+            invite_code: nanoid(12),
         })
         .select()
         .single();

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { nanoid } from 'nanoid';
 import { addDays, isPast } from 'date-fns';
 import { redirect } from 'next/navigation';
@@ -332,6 +333,61 @@ export async function removeMember(userId: string) {
         return { success: true };
     } catch (error) {
         console.error('Error removing member:', error);
+        throw error;
+    }
+}
+
+export async function joinTeamByCode(code: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        throw new Error('Unauthorized');
+    }
+
+    try {
+        // Find team by invite code
+        const { data: team } = await supabase
+            .from('teams')
+            .select('id, name')
+            .eq('invite_code', code)
+            .single();
+
+        if (!team) {
+            throw new Error('Invalid invite code');
+        }
+
+        // Check if already a member
+        const { data: existingMember } = await supabase
+            .from('team_members')
+            .select('id')
+            .eq('team_id', team.id)
+            .eq('user_id', user.id)
+            .single();
+
+        if (existingMember) {
+            // Already a member, just set cookie and return
+            (await cookies()).set('current_team_id', team.id, { path: '/', maxAge: 31536000, sameSite: 'lax' });
+            return { success: true, teamId: team.id, teamName: team.name, alreadyMember: true };
+        }
+
+        // Add to team members
+        const { error: joinError } = await (supabase.from('team_members') as any).insert({
+            team_id: team.id,
+            user_id: user.id,
+            role: 'member',
+        });
+
+        if (joinError) {
+            console.error('Error joining team by code:', joinError);
+            throw new Error('Failed to join team');
+        }
+
+        (await cookies()).set('current_team_id', team.id, { path: '/', maxAge: 31536000, sameSite: 'lax' });
+        revalidatePath('/');
+        return { success: true, teamId: team.id, teamName: team.name };
+    } catch (error) {
+        console.error('Error joining team by code:', error);
         throw error;
     }
 }

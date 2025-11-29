@@ -33,7 +33,14 @@ export async function login(
     });
 
     if (error) {
-        return { error: "ログインに失敗しました。メールアドレスまたはパスワードが正しくありません。" };
+        console.error('Login error:', error);
+        if (error.message.includes("Email not confirmed")) {
+            return { error: "メールアドレスが確認されていません。メールを確認してください。" };
+        }
+        if (error.message.includes("Invalid login credentials")) {
+            return { error: "メールアドレスまたはパスワードが正しくありません。" };
+        }
+        return { error: `ログインに失敗しました: ${error.message}` };
     }
 
     revalidatePath("/", "layout");
@@ -70,6 +77,7 @@ export async function signup(
     });
 
     if (error) {
+        console.error('Signup error:', error);
         if (error.message.includes("already registered")) {
             return { error: "このメールアドレスは既に登録されています" };
         }
