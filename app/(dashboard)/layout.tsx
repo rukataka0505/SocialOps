@@ -33,7 +33,7 @@ export default async function DashboardLayout({
     const currentTeamId = await getCurrentTeamId(supabase);
 
     if (!currentTeamId) {
-        redirect("/onboarding/create-team");
+        redirect("/onboarding");
     }
 
     // Fetch all teams for the user (for switcher)
