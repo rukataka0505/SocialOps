@@ -24,6 +24,9 @@ function LoginForm() {
     const currentAction = isSignup ? signupAction : loginAction;
     const isPending = isSignup ? isSignupPending : isLoginPending;
 
+    const message = searchParams.get("message");
+    const errorParam = searchParams.get("error");
+
     return (
         <Card className="w-full max-w-md shadow-2xl bg-slate-900/50 backdrop-blur-md border-slate-800 text-slate-200">
             <CardHeader className="space-y-1">
@@ -39,10 +42,16 @@ function LoginForm() {
             <form action={currentAction}>
                 {next && <input type="hidden" name="next" value={next} />}
                 <CardContent className="space-y-4">
-                    {currentState?.error && (
+                    {(currentState?.error || errorParam) && (
                         <Alert variant="destructive" className="bg-red-900/50 border-red-900 text-red-200">
                             <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{currentState.error}</AlertDescription>
+                            <AlertDescription>{currentState?.error || errorParam}</AlertDescription>
+                        </Alert>
+                    )}
+                    {message && (
+                        <Alert className="bg-blue-900/50 border-blue-900 text-blue-200">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{message}</AlertDescription>
                         </Alert>
                     )}
 

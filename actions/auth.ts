@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -56,7 +56,11 @@ export async function signup(
 ): Promise<AuthState> {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-    const next = formData.get("next") as string;
+
+    // headers() is async in Next.js 15, but we can import it dynamically or await it if the project version supports it.
+    // Assuming Next.js 15 based on README "Next.js 15 (App Router)".
+    // However, headers() is a function that returns a ReadonlyHeaders interface in older versions or a Promise in newer.
+    // Let's check imports. We need to import headers.
 
     if (!email || !password) {
         return { error: "メールアドレスとパスワードを入力してください" };
@@ -68,11 +72,16 @@ export async function signup(
 
     const supabase = await createClient();
 
+    // Get origin for redirect
+    // In server actions, we can use headers()
+    const headersList = await headers();
+    const origin = headersList.get('origin');
+
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+            emailRedirectTo: `${origin}/auth/confirm`,
         },
     });
 
@@ -84,8 +93,8 @@ export async function signup(
         return { error: `登録に失敗しました: ${error.message}` };
     }
 
-    revalidatePath("/", "layout");
-    redirect(next || "/");
+    // Instead of logging in, redirect to verification page
+    redirect("/auth/verify-email");
 }
 
 /**
