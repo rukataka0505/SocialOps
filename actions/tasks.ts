@@ -277,6 +277,16 @@ export async function createTask(prevState: any, formData: FormData) {
             }
         }
 
+        // Enforce is_private based on hierarchy
+        // Child Task -> Private
+        // Parent Task -> Public (Team)
+        let finalIsPrivate = is_private;
+        if (parent_id) {
+            finalIsPrivate = true;
+        } else {
+            finalIsPrivate = false;
+        }
+
         // Handle attributes
         const attributes: Record<string, any> = {};
         const management_url = formData.get("management_url") as string;
@@ -323,7 +333,10 @@ export async function createTask(prevState: any, formData: FormData) {
                 created_by: user.id,
                 parent_id: parent_id || null,
                 is_milestone,
-                is_private,
+                parent_id: parent_id || null,
+                is_milestone,
+                is_private: finalIsPrivate,
+                source_type,
                 source_type,
             })
             .select()
@@ -477,6 +490,38 @@ export async function updateTask(taskId: string, data: any) {
         if (updateData.is_private !== undefined) {
             // Ensure it's boolean
             updateData.is_private = Boolean(updateData.is_private);
+        }
+
+        // Enforce is_private based on hierarchy logic
+        // We need to check if this task has a parent_id to enforce privacy
+        // Since we might not have parent_id in updateData, we might need to fetch it if we want to be 100% sure,
+        // OR we rely on the fact that parent_id usually doesn't change.
+        // However, the requirement says "Enforce... in updateTask".
+        // Let's fetch the task to check its parent_id if it's not in updateData.
+
+        // But wait, fetching inside update might be slow. 
+        // Let's check if we can determine it.
+        // If parent_id is being updated, we use that.
+        // If not, we should probably fetch the existing task to be safe, OR just trust the input if we assume the UI is correct?
+        // The prompt says "Force overwrite... ignoring form value".
+
+        // Let's fetch the current task to get parent_id and is_milestone status to be sure.
+        const { data: currentTaskForUpdate, error: fetchCurrentError } = await (supabase as any)
+            .from("tasks")
+            .select("parent_id, is_milestone")
+            .eq("id", taskId)
+            .single();
+
+        if (!fetchCurrentError && currentTaskForUpdate) {
+            const parentId = updateData.parent_id !== undefined ? updateData.parent_id : currentTaskForUpdate.parent_id;
+
+            if (parentId) {
+                // It's a child task -> Force Private
+                updateData.is_private = true;
+            } else {
+                // It's a parent task -> Force Public
+                updateData.is_private = false;
+            }
         }
 
         // Handle _fields - it should be inside attributes, not a top-level field

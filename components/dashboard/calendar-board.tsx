@@ -73,10 +73,14 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
         // Filter by view mode
         if (viewMode === 'my') {
+            // My View: Assigned to me OR (Private AND Created by me)
             filteredTasks = tasks.filter(task =>
                 task.assignments?.some((a: any) => a.user_id === currentUserId) ||
-                task.assigned_to === currentUserId
+                (task.is_private && task.created_by === currentUserId)
             );
+        } else {
+            // Team View: Exclude private tasks
+            filteredTasks = tasks.filter(task => !task.is_private);
         }
 
         // Group by date
@@ -124,8 +128,10 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         if (viewMode === 'my') {
             filtered = tasksForDay.filter(task =>
                 task.assignments?.some((a: any) => a.user_id === currentUserId) ||
-                task.assigned_to === currentUserId
+                (task.is_private && task.created_by === currentUserId)
             );
+        } else {
+            filtered = tasksForDay.filter(task => !task.is_private);
         }
 
         setSelectedDateForList(slotInfo.start);
