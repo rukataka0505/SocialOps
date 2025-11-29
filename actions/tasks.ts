@@ -269,6 +269,14 @@ export async function createTask(prevState: any, formData: FormData) {
             }
         }
 
+        // Force assign creator for private tasks
+        if (is_private) {
+            const isCreatorAssigned = assignees.some(a => a.userId === user.id);
+            if (!isCreatorAssigned) {
+                assignees.push({ userId: user.id, role: 'owner' });
+            }
+        }
+
         // Handle attributes
         const attributes: Record<string, any> = {};
         const management_url = formData.get("management_url") as string;
@@ -414,24 +422,14 @@ export async function getTasks(start: string, end: string) {
                 )
             `)
             .eq("team_id", teamId)
+            .eq("is_private", false) // Exclude private tasks from team view
             .gte("due_date", start)
             .lte("due_date", end)
             .is("deleted_at", null);
 
         if (error) throw error;
 
-        // Filter for private tasks
-        const { data: { user } } = await supabase.auth.getUser();
-        const currentUserId = user?.id;
-
-        const filteredTasks = tasks?.filter((task: any) => {
-            if (!task.is_private) return true;
-            if (task.created_by === currentUserId) return true;
-            if (task.assignments?.some((a: any) => a.user_id === currentUserId)) return true;
-            return false;
-        });
-
-        return filteredTasks || [];
+        return tasks || [];
     } catch (error) {
         console.error("Error fetching tasks:", error);
         return [];

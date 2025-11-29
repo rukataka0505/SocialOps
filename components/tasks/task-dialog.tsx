@@ -466,14 +466,24 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             <div className="flex bg-slate-100 p-1 rounded-lg">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setIsPrivate(true)}
+                                                    onClick={() => {
+                                                        if (isPrivate) return;
+                                                        if (confirm("モードを切り替えますか？\n※入力内容の一部がリセットされる可能性があります。")) {
+                                                            setIsPrivate(true);
+                                                        }
+                                                    }}
                                                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${isPrivate ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
                                                 >
                                                     🔒 個人
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setIsPrivate(false)}
+                                                    onClick={() => {
+                                                        if (!isPrivate) return;
+                                                        if (confirm("モードを切り替えますか？\n※入力内容の一部がリセットされる可能性があります。")) {
+                                                            setIsPrivate(false);
+                                                        }
+                                                    }}
                                                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${!isPrivate ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
                                                 >
                                                     👥 チーム
@@ -864,45 +874,47 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             </div>
 
                                             {/* Assignees */}
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs text-muted-foreground">{currentTask?.is_milestone ? "投稿管理担当者" : "担当者"}</Label>
-                                                <div className="space-y-2">
-                                                    {assignees.map((assignee, index) => (
-                                                        <div key={index} className="flex gap-2 items-center">
-                                                            <select
-                                                                value={assignee.userId}
-                                                                onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
-                                                                className="flex-1 h-8 rounded-md border border-input bg-background px-2 py-1 text-xs"
-                                                            >
-                                                                <option value="">(選択なし)</option>
-                                                                {members.map((member) => (
-                                                                    <option key={member.user.id} value={member.user.id}>
-                                                                        {member.user.name || member.user.email}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => removeAssignee(index)}
-                                                                className="h-8 w-8"
-                                                            >
-                                                                <Trash2 className="h-3 w-3" />
-                                                            </Button>
-                                                        </div>
-                                                    ))}
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={addAssignee}
-                                                        className="w-full h-8 text-xs"
-                                                    >
-                                                        <Plus className="mr-2 h-3 w-3" /> 担当者を追加
-                                                    </Button>
+                                            {!isPrivate && (
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs text-muted-foreground">{currentTask?.is_milestone ? "投稿管理担当者" : "担当者"}</Label>
+                                                    <div className="space-y-2">
+                                                        {assignees.map((assignee, index) => (
+                                                            <div key={index} className="flex gap-2 items-center">
+                                                                <select
+                                                                    value={assignee.userId}
+                                                                    onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
+                                                                    className="flex-1 h-8 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                                                                >
+                                                                    <option value="">(選択なし)</option>
+                                                                    {members.map((member) => (
+                                                                        <option key={member.user.id} value={member.user.id}>
+                                                                            {member.user.name || member.user.email}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => removeAssignee(index)}
+                                                                    className="h-8 w-8"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
+                                                        ))}
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={addAssignee}
+                                                            className="w-full h-8 text-xs"
+                                                        >
+                                                            <Plus className="mr-2 h-3 w-3" /> 担当者を追加
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* Hidden Fields */}
                                             <input type="hidden" name="status" value="in_progress" />
