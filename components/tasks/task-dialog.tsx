@@ -466,17 +466,17 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             <div className="flex bg-slate-100 p-1 rounded-lg">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setIsPrivate(false)}
-                                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${!isPrivate ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
-                                                >
-                                                    👥 チーム
-                                                </button>
-                                                <button
-                                                    type="button"
                                                     onClick={() => setIsPrivate(true)}
                                                     className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${isPrivate ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
                                                 >
                                                     🔒 個人
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsPrivate(false)}
+                                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${!isPrivate ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+                                                >
+                                                    👥 チーム
                                                 </button>
                                             </div>
                                             <span className="text-[10px] text-muted-foreground">
