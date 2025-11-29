@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
         })
 
         if (!error) {
-            return NextResponse.redirect(new URL(next, request.url))
+            const verifiedUrl = new URL('/verified', request.url)
+            verifiedUrl.searchParams.set('next', next)
+            return NextResponse.redirect(verifiedUrl)
         }
     }
 
