@@ -48,8 +48,8 @@ export function JoinTeamDialog({ children, open, onOpenChange }: JoinTeamDialogP
                 });
                 setIsOpen(false);
                 setInviteCode('');
-                // Force reload to update team context
-                window.location.reload();
+                // Redirect to dashboard
+                window.location.href = '/dashboard';
             }
         } catch (error) {
             console.error('Failed to join team:', error);
