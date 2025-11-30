@@ -8,6 +8,28 @@ import { SupabaseClient } from "@supabase/supabase-js";
 
 import { getCurrentTeamId } from "@/lib/team-utils";
 
+// Helper Types
+export type TaskWithRelations = Database['public']['Tables']['tasks']['Row'] & {
+    client?: { id: string; name: string } | null;
+    assignments?: {
+        user_id: string;
+        role: string | null;
+        user?: { id: string; name: string | null; avatar_url: string | null } | null;
+    }[];
+    subtasks?: (Database['public']['Tables']['tasks']['Row'] & {
+        assignments?: {
+            user_id: string;
+            role: string | null;
+            user?: { id: string; name: string | null; avatar_url: string | null } | null;
+        }[];
+        attributes?: any;
+    })[];
+    comments?: (Database['public']['Tables']['task_comments']['Row'] & {
+        user?: { id: string; name: string | null; avatar_url: string | null } | null;
+    })[];
+    parent?: { id: string; title: string } | null;
+};
+
 export async function getTodayTasks() {
     const supabase = await createClient();
 
@@ -107,26 +129,6 @@ export async function getTodayTasks() {
         return [];
     }
 }
-
-// Helper Types
-type TaskWithRelations = Database['public']['Tables']['tasks']['Row'] & {
-    client?: { id: string; name: string } | null;
-    assignments?: {
-        user_id: string;
-        role: string | null;
-        user?: { id: string; name: string | null; avatar_url: string | null } | null;
-    }[];
-    subtasks?: (Database['public']['Tables']['tasks']['Row'] & {
-        assignments?: {
-            user_id: string;
-            role: string | null;
-            user?: { id: string; name: string | null; avatar_url: string | null } | null;
-        }[];
-    })[];
-    comments?: (Database['public']['Tables']['task_comments']['Row'] & {
-        user?: { id: string; name: string | null; avatar_url: string | null } | null;
-    })[];
-};
 
 export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
     const supabase = await createClient();
@@ -446,7 +448,8 @@ export async function getTasks(start: string, end: string) {
 
         if (error) throw error;
 
-        return tasks || [];
+        // Explicitly cast the return value to TaskWithRelations[]
+        return (tasks || []) as unknown as TaskWithRelations[];
     } catch (error) {
         console.error("Error fetching tasks:", error);
         return [];
@@ -493,19 +496,6 @@ export async function updateTask(taskId: string, data: any) {
         }
 
         // Enforce is_private based on hierarchy logic
-        // We need to check if this task has a parent_id to enforce privacy
-        // Since we might not have parent_id in updateData, we might need to fetch it if we want to be 100% sure,
-        // OR we rely on the fact that parent_id usually doesn't change.
-        // However, the requirement says "Enforce... in updateTask".
-        // Let's fetch the task to check its parent_id if it's not in updateData.
-
-        // But wait, fetching inside update might be slow. 
-        // Let's check if we can determine it.
-        // If parent_id is being updated, we use that.
-        // If not, we should probably fetch the existing task to be safe, OR just trust the input if we assume the UI is correct?
-        // The prompt says "Force overwrite... ignoring form value".
-
-        // Let's fetch the current task to get parent_id and is_milestone status to be sure.
         const { data: currentTaskForUpdate, error: fetchCurrentError } = await supabase
             .from("tasks")
             .select("parent_id, is_milestone")
@@ -563,7 +553,6 @@ export async function updateTask(taskId: string, data: any) {
         }
 
         // If we are updating attributes, we need to merge with existing attributes
-        // to avoid overwriting other fields (like management_url or others not in the form)
         if (updateData.attributes) {
             const { data: currentTask, error: fetchError } = await supabase
                 .from("tasks")
@@ -630,11 +619,6 @@ export async function updateTask(taskId: string, data: any) {
             const { data: { user } } = await supabase.auth.getUser();
 
             if (user) {
-                // We only notify users who are newly assigned. 
-                // Since we deleted and re-inserted, we might notify existing users again if we are not careful.
-                // For simplicity in this phase, we notify all current assignees except the actor.
-                // A better approach would be to diff, but "re-assignment" notification is also acceptable.
-
                 const assigneeIds = assignees
                     .map((a: any) => a.userId)
                     .filter((id: string) => id !== user.id);
@@ -717,9 +701,6 @@ export async function getMemberTasks(userId: string) {
         if (!teamId) throw new Error("No team found");
 
         // Find tasks assigned to user via task_assignments
-        // We can use a join or a subquery.
-        // Supabase join syntax:
-        // Filter for personal tasks created by the user
         const { data: tasks, error } = await supabase
             .from("tasks")
             .select(`
@@ -827,7 +808,7 @@ export async function getTaskComments(taskId: string) {
         const teamId = await getCurrentTeamId(supabase);
         if (!teamId) throw new Error("No team found");
 
-        const { data: comments, error } = await (supabase as any)
+        const { data: comments, error } = await supabase
             .from("task_comments")
             .select(`
                 *,
@@ -858,7 +839,7 @@ export async function addComment(taskId: string, content: string) {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) throw new Error("Unauthorized");
 
-        const { error } = await (supabase as any)
+        const { error } = await supabase
             .from("task_comments")
             .insert({
                 task_id: taskId,
@@ -869,25 +850,17 @@ export async function addComment(taskId: string, content: string) {
         if (error) throw error;
 
         // Notify subscribers
-        // We do this asynchronously to not block the UI response if possible, 
-        // but since this is a server action, we just await it.
-        // 1. Get subscribers
         const { getTaskSubscribers, createNotification } = await import("./notifications");
         const subscribers = await getTaskSubscribers(taskId, user.id);
 
-        // 2. Create notification
         if (subscribers.length > 0) {
-            // Get task title for the notification
-            const { data: task } = await (supabase as any)
+            const { data: task } = await supabase
                 .from("tasks")
                 .select("title, parent_id, id")
                 .eq("id", taskId)
                 .single();
 
             if (task) {
-                // Determine the ID to link to (parent if it exists, or self)
-                // Actually, the spec says: URL: `/dashboard?taskId={親タスクID}`
-                // So we need to find the top-level parent ID.
                 const linkId = task.parent_id || task.id;
 
                 await createNotification(
@@ -917,7 +890,7 @@ export async function submitDeliverable(taskId: string, url: string) {
         if (!teamId) throw new Error("No team found");
 
         // First get current attributes
-        const { data: task, error: fetchError } = await (supabase as any)
+        const { data: task, error: fetchError } = await supabase
             .from("tasks")
             .select("attributes")
             .eq("id", taskId)
@@ -925,13 +898,13 @@ export async function submitDeliverable(taskId: string, url: string) {
 
         if (fetchError) throw fetchError;
 
-        const currentAttributes = task.attributes || {};
+        const currentAttributes = (task.attributes as Record<string, any>) || {};
         const newAttributes = {
             ...currentAttributes,
             submission_url: url
         };
 
-        const { error } = await (supabase as any)
+        const { error } = await supabase
             .from("tasks")
             .update({
                 attributes: newAttributes,
@@ -942,8 +915,6 @@ export async function submitDeliverable(taskId: string, url: string) {
 
         if (error) throw error;
 
-        if (error) throw error;
-
         // Notify subscribers about submission
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -951,7 +922,7 @@ export async function submitDeliverable(taskId: string, url: string) {
             const subscribers = await getTaskSubscribers(taskId, user.id);
 
             if (subscribers.length > 0) {
-                const { data: t } = await (supabase as any).from("tasks").select("title, parent_id, id").eq("id", taskId).single();
+                const { data: t } = await supabase.from("tasks").select("title, parent_id, id").eq("id", taskId).single();
                 if (t) {
                     await createNotification(
                         subscribers,
@@ -981,7 +952,7 @@ export async function getTaskWithHierarchy(taskId: string) {
         if (!teamId) throw new Error("No team found");
 
         // Fetch full details for the target task (Self)
-        const { data: task, error } = await (supabase as any)
+        const { data: task, error } = await supabase
             .from("tasks")
             .select(`
                 *,
@@ -1004,15 +975,18 @@ export async function getTaskWithHierarchy(taskId: string) {
 
         if (error) throw error;
 
+        // Cast to TaskWithRelations to handle complex structure
+        const typedTask = task as unknown as TaskWithRelations;
+
         // Sort subtasks and comments
-        if (task.subtasks) {
-            task.subtasks.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+        if (typedTask.subtasks) {
+            typedTask.subtasks.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
         }
-        if (task.comments) {
-            task.comments.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        if (typedTask.comments) {
+            typedTask.comments.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         }
 
-        return task;
+        return typedTask;
     } catch (error) {
         console.error("Error fetching task hierarchy:", error);
         return null;

@@ -155,10 +155,11 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         filteredTasks.forEach(task => {
             if (!task.due_date) return;
 
-            const date = new Date(task.due_date);
-            if (isNaN(date.getTime())) return;
+            // Robust Date Parsing: Use split to get YYYY-MM-DD
+            const dateStr = task.due_date.split('T')[0];
+            const date = new Date(dateStr);
 
-            const dateStr = format(date, 'yyyy-MM-dd');
+            if (isNaN(date.getTime())) return;
 
             if (!eventsMap[dateStr]) {
                 eventsMap[dateStr] = {
@@ -182,14 +183,18 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
     const handleSelectEvent = useCallback((event: any) => {
         // Open Day List Dialog
-        setSelectedDateForList(event.resource.tasks[0] ? new Date(event.resource.tasks[0].due_date) : event.start);
+        // Use robust parsing here as well
+        const dateStr = event.resource.tasks[0]?.due_date?.split('T')[0];
+        const date = dateStr ? new Date(dateStr) : event.start;
+
+        setSelectedDateForList(date);
         setSelectedDateTasks(event.resource.tasks);
         setIsDayListOpen(true);
     }, []);
 
     const handleSelectSlot = useCallback((slotInfo: { start: Date }) => {
         const dateStr = format(slotInfo.start, 'yyyy-MM-dd');
-        const tasksForDay = allTasks.filter(t => t.due_date === dateStr);
+        const tasksForDay = allTasks.filter(t => t.due_date && t.due_date.split('T')[0] === dateStr);
 
         // Apply view filter
         let filtered = tasksForDay;
