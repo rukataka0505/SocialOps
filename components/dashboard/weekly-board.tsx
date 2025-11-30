@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
     DndContext,
     DragOverlay,
@@ -57,7 +57,7 @@ interface WeeklyBoardProps {
 
 // --- Components ---
 
-function TaskCard({ task, isOverlay = false, onClick }: { task: Task; isOverlay?: boolean; onClick?: () => void }) {
+const TaskCard = React.memo(function TaskCard({ task, isOverlay = false, onClick }: { task: Task; isOverlay?: boolean; onClick?: () => void }) {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: task.id,
         data: { task },
@@ -125,9 +125,9 @@ function TaskCard({ task, isOverlay = false, onClick }: { task: Task; isOverlay?
             </div>
         </div>
     );
-}
+});
 
-function DayColumn({ date, tasks, onTaskClick }: { date: Date; tasks: Task[]; onTaskClick: (task: Task) => void }) {
+const DayColumn = React.memo(function DayColumn({ date, tasks, onTaskClick }: { date: Date; tasks: Task[]; onTaskClick: (task: Task) => void }) {
     const dateStr = format(date, "yyyy-MM-dd");
     const { setNodeRef, isOver } = useDroppable({
         id: dateStr,
@@ -169,7 +169,7 @@ function DayColumn({ date, tasks, onTaskClick }: { date: Date; tasks: Task[]; on
             </div>
         </div>
     );
-}
+});
 
 export function WeeklyBoard({ tasks: initialTasks, currentDate, onTaskClick }: WeeklyBoardProps) {
     const [tasks, setTasks] = useState(initialTasks);

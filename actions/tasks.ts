@@ -22,7 +22,7 @@ export async function getTodayTasks() {
         const todayStr = format(zonedDate, 'yyyy-MM-dd', { timeZone });
 
         // Fetch tasks
-        const { data: tasks, error } = await (supabase as any)
+        const { data: tasks, error } = await supabase
             .from("tasks")
             .select(`
                 *,
@@ -71,10 +71,13 @@ export async function getTodayTasks() {
         const { data: { user } } = await supabase.auth.getUser();
         const currentUserId = user?.id;
 
-        const filteredTasks = tasks?.filter((task: any) => {
+        // Cast to unknown first then to custom type because Supabase types are complex with joins
+        const typedTasks = tasks as unknown as TaskWithRelations[];
+
+        const filteredTasks = typedTasks?.filter((task) => {
             if (!task.is_private) return true;
             if (task.created_by === currentUserId) return true;
-            if (task.assignments?.some((a: any) => a.user_id === currentUserId)) return true;
+            if (task.assignments?.some((a) => a.user_id === currentUserId)) return true;
             return false;
         });
 
@@ -83,7 +86,7 @@ export async function getTodayTasks() {
         // Custom sort for priority
         const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
 
-        const sortedTasks = finalTasks.sort((a: any, b: any) => {
+        const sortedTasks = finalTasks.sort((a, b) => {
             // Primary sort: due_date
             if (a.due_date !== b.due_date) {
                 if (a.due_date && b.due_date) {
@@ -104,6 +107,26 @@ export async function getTodayTasks() {
         return [];
     }
 }
+
+// Helper Types
+type TaskWithRelations = Database['public']['Tables']['tasks']['Row'] & {
+    client?: { id: string; name: string } | null;
+    assignments?: {
+        user_id: string;
+        role: string | null;
+        user?: { id: string; name: string | null; avatar_url: string | null } | null;
+    }[];
+    subtasks?: (Database['public']['Tables']['tasks']['Row'] & {
+        assignments?: {
+            user_id: string;
+            role: string | null;
+            user?: { id: string; name: string | null; avatar_url: string | null } | null;
+        }[];
+    })[];
+    comments?: (Database['public']['Tables']['task_comments']['Row'] & {
+        user?: { id: string; name: string | null; avatar_url: string | null } | null;
+    })[];
+};
 
 export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
     const supabase = await createClient();
@@ -413,26 +436,6 @@ export async function getTasks(start: string, end: string) {
                         name,
                         avatar_url
                     )
-                ),
-                subtasks:tasks(
-                    *,
-                    assignments:task_assignments(
-                        user_id,
-                        role,
-                        user:users(
-                            id,
-                            name,
-                            avatar_url
-                        )
-                    )
-                ),
-                comments:task_comments(
-                    *,
-                    user:users(
-                        id,
-                        name,
-                        avatar_url
-                    )
                 )
             `)
             .eq("team_id", teamId)
@@ -722,16 +725,7 @@ export async function getMemberTasks(userId: string) {
             .select(`
                 *,
                 client:clients(id, name),
-                assignments:task_assignments!inner(user_id, role, user:users(id, name, avatar_url)),
-                subtasks:tasks(
-                    *,
-                    assignments:task_assignments(user_id, role, user:users(id, name, avatar_url)),
-                    attributes
-                ),
-                comments:task_comments(
-                    *,
-                    user:users(id, name, avatar_url)
-                )
+                assignments:task_assignments!inner(user_id, role, user:users(id, name, avatar_url))
             `)
             .eq("team_id", teamId)
             .eq("created_by", userId) // Must be created by me

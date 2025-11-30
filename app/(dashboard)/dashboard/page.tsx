@@ -33,17 +33,19 @@ export default async function DashboardPage() {
 
     const currentUserRole = teamMember?.role || undefined;
     const teamName = teamMember?.team?.name || 'Team';
-    const members = await getTeamMembers(teamId);
-    const settings = await getTeamSettings();
 
     // Fetch tasks for the current month (for Calendar)
     const now = new Date();
     const start = startOfMonth(now);
     const end = endOfMonth(now);
-    const tasks = await getTasks(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd'));
 
-    // Fetch tasks for the current user (for My Tasks)
-    const myTasks = await getMemberTasks(user.id);
+    // Parallelize data fetching
+    const [members, settings, tasks, myTasks] = await Promise.all([
+        getTeamMembers(teamId),
+        getTeamSettings(),
+        getTasks(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd')),
+        getMemberTasks(user.id)
+    ]);
 
     // Prioritize user_metadata.name (or full_name) over email
     // This fixes the issue where guests see their dummy email

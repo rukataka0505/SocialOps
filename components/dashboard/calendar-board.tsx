@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -50,25 +50,35 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     const [selectedDateForList, setSelectedDateForList] = useState<Date>(new Date());
     const [selectedDateTasks, setSelectedDateTasks] = useState<any[]>([]);
 
-    const [localEvents, setLocalEvents] = useState<any[]>([]);
     const [isMobile, setIsMobile] = useState(false);
     const [viewMode, setViewMode] = useState<'my' | 'all'>('my');
     const router = useRouter();
 
-    // Detect mobile device
+    // Detect mobile device with debounce
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
         };
 
+        // Initial check
         checkMobile();
-        window.addEventListener('resize', checkMobile);
 
-        return () => window.removeEventListener('resize', checkMobile);
+        let timeoutId: NodeJS.Timeout;
+        const debouncedCheckMobile = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(checkMobile, 200);
+        };
+
+        window.addEventListener('resize', debouncedCheckMobile);
+
+        return () => {
+            window.removeEventListener('resize', debouncedCheckMobile);
+            clearTimeout(timeoutId);
+        };
     }, []);
 
-    // Initialize local events (Smart Stack) from props
-    useEffect(() => {
+    // Initialize local events (Smart Stack) from props - Memoized
+    const localEvents = useMemo(() => {
         let filteredTasks = tasks;
 
         // Filter by view mode
@@ -99,7 +109,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
             eventsMap[dateStr].tasks.push(task);
         });
 
-        const events = Object.values(eventsMap).map(item => ({
+        return Object.values(eventsMap).map(item => ({
             start: item.date,
             end: endOfDay(item.date),
             allDay: true,
@@ -108,8 +118,6 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                 count: item.tasks.length
             },
         }));
-
-        setLocalEvents(events);
     }, [tasks, viewMode, currentUserId]);
 
     const handleSelectEvent = useCallback((event: any) => {
@@ -148,36 +156,37 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     );
 
     // Navigation handlers
-    const goToBack = () => {
-        const newDate = new Date(date);
-        if (view === 'month') newDate.setMonth(newDate.getMonth() - 1);
-        else newDate.setDate(newDate.getDate() - 7);
-        setDate(newDate);
-    };
+    const goToBack = useCallback(() => {
+        setDate(prev => {
+            const newDate = new Date(prev);
+            if (view === 'month') newDate.setMonth(newDate.getMonth() - 1);
+            else newDate.setDate(newDate.getDate() - 7);
+            return newDate;
+        });
+    }, [view]);
 
-    const goToNext = () => {
-        const newDate = new Date(date);
-        if (view === 'month') newDate.setMonth(newDate.getMonth() + 1);
-        else newDate.setDate(newDate.getDate() + 7);
-        setDate(newDate);
-    };
+    const goToNext = useCallback(() => {
+        setDate(prev => {
+            const newDate = new Date(prev);
+            if (view === 'month') newDate.setMonth(newDate.getMonth() + 1);
+            else newDate.setDate(newDate.getDate() + 7);
+            return newDate;
+        });
+    }, [view]);
 
-    const goToToday = () => {
+    const goToToday = useCallback(() => {
         setDate(new Date());
-    };
+    }, []);
 
-    const getLabel = () => {
+    const getLabel = useCallback(() => {
         if (view === 'month') {
             return format(date, "yyyy年 M月", { locale: ja });
         }
         const start = startOfWeek(date, { locale: ja });
         return `${format(start, "M月d日", { locale: ja })}〜`;
-    };
+    }, [view, date]);
 
     const handleDrillDown = useCallback((drillDate: Date) => {
-        // Disable default drilldown, we want to open the dialog or just stay on month view unless tab is clicked
-        // But the requirement says "Clicking date cell... opens DayTaskListDialog" which is handled by onSelectSlot
-        // So we can just do nothing here or ensure it doesn't switch view automatically
         return;
     }, []);
 
@@ -194,7 +203,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         []
     );
 
-    const components = {
+    const components = useMemo(() => ({
         event: ({ event }: any) => {
             const { tasks, count } = event.resource;
             const MAX_VISIBLE = 3;
@@ -247,9 +256,9 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
             ),
         },
         toolbar: () => null,
-    };
+    }), []);
 
-    const handleAddTask = () => {
+    const handleAddTask = useCallback(() => {
         const newTask = {
             title: "",
             due_date: format(selectedDateForList, "yyyy-MM-dd"),
@@ -260,7 +269,12 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         setSelectedTask(newTask);
         setIsDayListOpen(false);
         setIsDialogOpen(true);
-    };
+    }, [selectedDateForList]);
+
+    const handleTaskClick = useCallback((task: any) => {
+        setSelectedTask(task);
+        setIsDialogOpen(true);
+    }, []);
 
     return (
         <div className="w-full aspect-[16/11] min-h-[700px] max-h-[900px] bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
@@ -334,10 +348,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     <WeeklyBoard
                         tasks={tasks}
                         currentDate={date}
-                        onTaskClick={(task) => {
-                            setSelectedTask(task);
-                            setIsDialogOpen(true);
-                        }}
+                        onTaskClick={handleTaskClick}
                     />
                 </div>
             ) : (
