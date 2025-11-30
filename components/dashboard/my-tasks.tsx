@@ -32,7 +32,7 @@ type Task = Database['public']['Tables']['tasks']['Row'] & {
             id: string;
             name: string | null;
             avatar_url: string | null;
-        } | null;
+        };
     }[];
 };
 

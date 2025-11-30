@@ -84,8 +84,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     // Custom Fields State
     const [customFields, setCustomFields] = useState<TaskField[]>([]);
 
-    // Scope State
-    const [isPrivate, setIsPrivate] = useState(false);
+    // Scope State - REMOVED
+    // const [isPrivate, setIsPrivate] = useState(false);
 
     // Subtask state
     const [subtaskTitle, setSubtaskTitle] = useState("");
@@ -136,8 +136,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             ...prev,
                             ...hierarchyTask,
                             attributes: {
-                                ...(prev?.attributes || {}),
-                                ...(hierarchyTask.attributes || {})
+                                ...(prev?.attributes as any || {}),
+                                ...(hierarchyTask.attributes as any || {})
                             }
                         }));
 
@@ -159,8 +159,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
 
                         // Initialize Custom Fields
                         let fields: TaskField[] = [];
-                        if (hierarchyTask.attributes?._fields && Array.isArray(hierarchyTask.attributes._fields)) {
-                            fields = hierarchyTask.attributes._fields;
+                        if ((hierarchyTask.attributes as any)?._fields && Array.isArray((hierarchyTask.attributes as any)._fields)) {
+                            fields = (hierarchyTask.attributes as any)._fields;
                         } else {
                             // Fallback to team settings if not defined in task
                             const isPost = hierarchyTask.is_milestone;
@@ -173,16 +173,16 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         }
                         setCustomFields(fields);
 
-                        // Set isPrivate from task
-                        setIsPrivate(hierarchyTask.is_private || false);
+                        // Set isPrivate from task - REMOVED
+                        // setIsPrivate(hierarchyTask.is_private || false);
 
                     } else if (task && task.id) {
                         // Fallback if fetch fails or returns null (shouldn't happen usually if task exists)
                         // Just use what we have
                         setCurrentTask(task);
                         setCustomFields(settings?.regular_task_fields || []);
-                        // Set isPrivate from task
-                        setIsPrivate(task.is_private || false);
+                        // Set isPrivate from task - REMOVED
+                        // setIsPrivate(task.is_private || false);
                     } else {
                         // New task creation
                         setCurrentTask(task);
@@ -190,8 +190,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         setSubtasks([]);
                         setComments([]);
 
-                        // Set isPrivate from defaultScope
-                        setIsPrivate(defaultScope === 'private');
+                        // Set isPrivate from defaultScope - REMOVED
+                        // setIsPrivate(defaultScope === 'private');
 
                         // Initialize Custom Fields for New Task
                         const isPost = task?.is_milestone === true;
@@ -284,7 +284,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         }
                     });
 
-                    data.is_private = isPrivate;
+                    // data.is_private = isPrivate; // Removed
 
                     // Ensure attributes exists and add _fields
                     if (!data.attributes) data.attributes = {};
@@ -298,7 +298,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     // _fields is already appended to formDataWithAssignees because we appended to event.currentTarget which is the form? 
                     // No, new FormData(event.currentTarget) creates a snapshot. We need to append to the one we are sending.
                     formDataWithAssignees.set('_fields', JSON.stringify(customFields));
-                    formDataWithAssignees.set('is_private', String(isPrivate));
+                    // formDataWithAssignees.set('is_private', String(isPrivate)); // Removed
 
                     result = await createTask(null, formDataWithAssignees);
                 }
@@ -463,6 +463,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     const workflowStatuses = settings?.workflow_statuses || ['未着手', '進行中', '確認待ち', '完了'];
 
     // Scope Toggle Handler
+    // Scope Toggle Handler - REMOVED
+    /*
     const handleScopeChange = (scope: 'team' | 'private') => {
         if (scope === 'private') {
             if (confirm("このタスクを個人タスクに変更しますか？\nチームメンバーからは見えなくなります。")) {
@@ -474,113 +476,17 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
             }
         }
     };
+    */
+    const handleScopeChange = (scope: 'team' | 'private') => {
+        // No-op or show alert that this feature is removed
+        console.log("Scope change is no longer supported");
+    };
 
     const handleNewSubtaskChange = (field: 'title' | 'dueDate' | 'assignee', value: string) => {
         if (field === 'title') setSubtaskTitle(value);
         if (field === 'dueDate') setSubtaskDueDate(value);
         if (field === 'assignee') setSubtaskAssignee(value);
     };
-
-    // --- RENDER HELPERS ---
-
-    // 1. Personal Task Mode
-    if (isPrivate && !currentTask?.parent_id) {
-        return (
-            <Dialog open={open} onOpenChange={setOpen}>
-                {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-                <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col p-0 gap-0">
-                    <DialogTitle className="sr-only">個人タスク: {currentTask?.title}</DialogTitle>
-                    {isLoading ? (
-                        <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>
-                    ) : (
-                        <form id="task-form" onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
-                            {/* Header */}
-                            <div className="p-6 border-b bg-white flex-none">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex bg-slate-100 p-1 rounded-lg">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleScopeChange('team')}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${!isPrivate ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
-                                            >
-                                                👥 チーム
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleScopeChange('private')}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${isPrivate ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
-                                            >
-                                                🔒 個人
-                                            </button>
-                                        </div>
-                                        {isEditMode && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={handleDelete}
-                                                className="text-muted-foreground hover:text-destructive h-6 px-2"
-                                            >
-                                                <Trash2 className="h-3 w-3 mr-1" /> 削除
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <Button type="submit" disabled={isPending}>
-                                        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        保存
-                                    </Button>
-                                </div>
-                                <Input
-                                    name="title"
-                                    defaultValue={currentTask?.title}
-                                    placeholder="タスク名"
-                                    className="text-xl font-bold border-none shadow-none px-0 focus-visible:ring-0 mb-2"
-                                    required
-                                />
-                                <div className="flex items-center gap-4 text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            type="date"
-                                            name="due_date"
-                                            defaultValue={currentTask?.due_date}
-                                            required
-                                            className="w-auto border-none shadow-none focus-visible:ring-0 p-0 h-auto"
-                                        />
-                                    </div>
-                                    <select
-                                        name="priority"
-                                        defaultValue={currentTask?.priority || 'medium'}
-                                        className="text-sm border-none bg-transparent focus:ring-0 cursor-pointer"
-                                    >
-                                        <option value="urgent">🔥 緊急</option>
-                                        <option value="high">🔴 高</option>
-                                        <option value="medium">🟡 中</option>
-                                        <option value="low">🔵 低</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Main Content */}
-                            <div className="flex-1 p-6 overflow-y-auto bg-slate-50/50">
-                                <div className="space-y-4">
-                                    <Label>メモ・詳細</Label>
-                                    <Textarea
-                                        name="custom_description"
-                                        defaultValue={currentTask?.attributes?.description}
-                                        placeholder="タスクの詳細を入力..."
-                                        className="min-h-[200px] bg-white"
-                                    />
-                                </div>
-                            </div>
-                            <input type="hidden" name="is_private" value="true" />
-                        </form>
-                    )}
-                </DialogContent>
-            </Dialog>
-        );
-    }
 
     // 2. Child Task Mode
     if (isChildTask) {
@@ -683,9 +589,10 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                 </div>
                             </div>
                         </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+                    )
+                    }
+                </DialogContent >
+            </Dialog >
         );
     }
 
@@ -729,7 +636,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             <TaskHeader
                                 title={currentTask?.title}
                                 status={(currentTask?.attributes as any)?.workflow_status}
-                                isPrivate={isPrivate}
+                                isPrivate={false} // Removed isPrivate
                                 isMilestone={isMilestone}
                                 isEditMode={isEditMode}
                                 subtasks={subtasks}
@@ -895,47 +802,46 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                         </div>
 
                                         {/* Assignees */}
-                                        {!isPrivate && (
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs text-muted-foreground">{currentTask?.is_milestone ? "投稿管理担当者" : "担当者"}</Label>
-                                                <div className="space-y-2">
-                                                    {assignees.map((assignee, index) => (
-                                                        <div key={index} className="flex gap-2 items-center">
-                                                            <select
-                                                                value={assignee.userId}
-                                                                onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
-                                                                className="flex-1 h-8 rounded-md border border-input bg-background px-2 py-1 text-xs"
-                                                            >
-                                                                <option value="">(選択なし)</option>
-                                                                {members.map((member) => (
-                                                                    <option key={member.user.id} value={member.user.id}>
-                                                                        {member.user.name || member.user.email}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => removeAssignee(index)}
-                                                                className="h-8 w-8"
-                                                            >
-                                                                <Trash2 className="h-3 w-3" />
-                                                            </Button>
-                                                        </div>
-                                                    ))}
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={addAssignee}
-                                                        className="w-full h-8 text-xs"
-                                                    >
-                                                        <Plus className="mr-2 h-3 w-3" /> 担当者を追加
-                                                    </Button>
-                                                </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs text-muted-foreground">{currentTask?.is_milestone ? "投稿管理担当者" : "担当者"}</Label>
+                                            <div className="space-y-2">
+                                                {assignees.map((assignee, index) => (
+                                                    <div key={index} className="flex gap-2 items-center">
+                                                        <select
+                                                            value={assignee.userId}
+                                                            onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
+                                                            className="flex-1 h-8 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                                                        >
+                                                            <option value="">(選択なし)</option>
+                                                            {members.map((member) => (
+                                                                <option key={member.user.id} value={member.user.id}>
+                                                                    {member.user.name || member.user.email}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => removeAssignee(index)}
+                                                            className="h-8 w-8"
+                                                        >
+                                                            <Trash2 className="h-3 w-3" />
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={addAssignee}
+                                                    className="w-full h-8 text-xs"
+                                                >
+                                                    <Plus className="mr-2 h-3 w-3" /> 担当者を追加
+                                                </Button>
                                             </div>
-                                        )}
+                                        </div>
+
 
                                         {/* Hidden Fields */}
                                         <input type="hidden" name="status" value="in_progress" />
