@@ -98,6 +98,9 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     const [newComment, setNewComment] = useState("");
     const commentsEndRef = useRef<HTMLDivElement>(null);
 
+    // Loading state for progressive hydration
+    const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+
     const isEditMode = !!(currentTask && currentTask.id);
     const isMilestone = currentTask?.is_milestone === true;
     const isChildTask = !!currentTask?.parent_id;
@@ -109,57 +112,75 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     useEffect(() => {
         if (open) {
             setError(null);
-            setIsLoading(true);
+            // Don't block UI with isLoading
+            // isLoading(true); 
+            setIsDetailsLoading(true);
+
             startTransition(async () => {
                 try {
-                    const fetchedClients = await getClients();
+                    // Parallel fetch for clients and task details
+                    const clientsPromise = getClients();
+                    const taskPromise = (task && task.id) ? getTaskWithHierarchy(task.id) : Promise.resolve(null);
+
+                    const [fetchedClients, hierarchyTask] = await Promise.all([clientsPromise, taskPromise]);
+
                     setClients(fetchedClients);
 
-                    if (task && task.id) {
-                        // Always fetch the hierarchy (Parent Task)
-                        const hierarchyTask = await getTaskWithHierarchy(task.id);
+                    if (hierarchyTask) {
+                        // Merge strategy: Keep user input if any, but update details
+                        // For now, we update the whole object but we should be careful if we had controlled inputs.
+                        // Since inputs use defaultValue, updating state won't reset them unless we force it.
+                        // However, we need to update subtasks and comments which are separate states.
 
-                        if (hierarchyTask) {
-                            setCurrentTask(hierarchyTask);
-
-                            // Initialize assignees from the fetched parent task
-                            if (hierarchyTask.assignments) {
-                                setAssignees(hierarchyTask.assignments.map((a: any) => ({
-                                    userId: a.user_id,
-                                    role: a.role || ""
-                                })));
-                            } else if (hierarchyTask.assigned_to) {
-                                setAssignees([{ userId: hierarchyTask.assigned_to, role: "" }]);
-                            } else {
-                                setAssignees([]);
+                        setCurrentTask((prev: any) => ({
+                            ...prev,
+                            ...hierarchyTask,
+                            attributes: {
+                                ...(prev?.attributes || {}),
+                                ...(hierarchyTask.attributes || {})
                             }
+                        }));
 
-                            // Set subtasks and comments from the fetched parent task
-                            setSubtasks(hierarchyTask.subtasks || []);
-                            setComments(hierarchyTask.comments || []);
-
-                            // Initialize Custom Fields
-                            let fields: TaskField[] = [];
-                            if (hierarchyTask.attributes?._fields && Array.isArray(hierarchyTask.attributes._fields)) {
-                                fields = hierarchyTask.attributes._fields;
-                            } else {
-                                // Fallback to team settings if not defined in task
-                                const isPost = hierarchyTask.is_milestone;
-                                const customFields = isPost
-                                    ? (settings?.post_task_fields || [])
-                                    : (settings?.regular_task_fields || []);
-
-                                // Always include system fields, then add custom fields
-                                fields = [...SYSTEM_FIELDS, ...customFields.filter((f: any) => !f.system)] as TaskField[];
-                            }
-                            setCustomFields(fields);
-
+                        // Initialize assignees from the fetched parent task
+                        if (hierarchyTask.assignments) {
+                            setAssignees(hierarchyTask.assignments.map((a: any) => ({
+                                userId: a.user_id,
+                                role: a.role || ""
+                            })));
+                        } else if (hierarchyTask.assigned_to) {
+                            setAssignees([{ userId: hierarchyTask.assigned_to, role: "" }]);
                         } else {
-                            // Fallback if fetch fails (shouldn't happen usually)
-                            setCurrentTask(task);
-                            setCustomFields(settings?.regular_task_fields || []);
+                            setAssignees([]);
                         }
 
+                        // Set subtasks and comments from the fetched parent task
+                        setSubtasks(hierarchyTask.subtasks || []);
+                        setComments(hierarchyTask.comments || []);
+
+                        // Initialize Custom Fields
+                        let fields: TaskField[] = [];
+                        if (hierarchyTask.attributes?._fields && Array.isArray(hierarchyTask.attributes._fields)) {
+                            fields = hierarchyTask.attributes._fields;
+                        } else {
+                            // Fallback to team settings if not defined in task
+                            const isPost = hierarchyTask.is_milestone;
+                            const customFields = isPost
+                                ? (settings?.post_task_fields || [])
+                                : (settings?.regular_task_fields || []);
+
+                            // Always include system fields, then add custom fields
+                            fields = [...SYSTEM_FIELDS, ...customFields.filter((f: any) => !f.system)] as TaskField[];
+                        }
+                        setCustomFields(fields);
+
+                        // Set isPrivate from task
+                        setIsPrivate(hierarchyTask.is_private || false);
+
+                    } else if (task && task.id) {
+                        // Fallback if fetch fails or returns null (shouldn't happen usually if task exists)
+                        // Just use what we have
+                        setCurrentTask(task);
+                        setCustomFields(settings?.regular_task_fields || []);
                         // Set isPrivate from task
                         setIsPrivate(task.is_private || false);
                     } else {
@@ -182,15 +203,19 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         const fields = [...SYSTEM_FIELDS, ...customFields.filter((f: any) => !f.system)] as TaskField[];
                         setCustomFields(fields);
                     }
+                } catch (e) {
+                    console.error("Failed to fetch task details", e);
+                    setError("詳細データの取得に失敗しました");
                 } finally {
-                    setIsLoading(false);
+                    setIsDetailsLoading(false);
+                    setIsLoading(false); // Ensure this is false
                 }
             });
         } else {
             // Reset state when closed
             setCurrentTask(task);
         }
-    }, [open, task, settings]);
+    }, [open, task, settings, defaultScope]);
 
     // Scroll to bottom of comments when they change
     useEffect(() => {
@@ -652,6 +677,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             onNewCommentChange={setNewComment}
                                             onAddComment={handleAddComment}
                                             isPending={isPending}
+                                            isLoading={isDetailsLoading}
                                         />
                                     </div>
                                 </div>
@@ -730,6 +756,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             members={members}
                                             isEditMode={isEditMode}
                                             isPending={isPending}
+                                            isLoading={isDetailsLoading}
                                             newSubtask={{
                                                 title: subtaskTitle,
                                                 dueDate: subtaskDueDate,

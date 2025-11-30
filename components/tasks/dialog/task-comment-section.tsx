@@ -16,6 +16,7 @@ interface TaskCommentSectionProps {
     onNewCommentChange: (value: string) => void;
     onAddComment: () => void;
     isPending: boolean;
+    isLoading?: boolean;
     children?: React.ReactNode;
 }
 
@@ -25,6 +26,7 @@ export function TaskCommentSection({
     onNewCommentChange,
     onAddComment,
     isPending,
+    isLoading = false,
     children
 }: TaskCommentSectionProps) {
     const commentsEndRef = useRef<HTMLDivElement>(null);
@@ -48,30 +50,45 @@ export function TaskCommentSection({
                         </h4>
 
                         <div className="space-y-4">
-                            {comments.map((comment) => (
-                                <div key={comment.id} className="flex gap-3">
-                                    <Avatar className="h-6 w-6 mt-1">
-                                        <AvatarImage src={comment.user?.avatar_url || ""} />
-                                        <AvatarFallback>{comment.user?.name?.[0] || "?"}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-medium">{comment.user?.name || "Unknown"}</span>
-                                            <span className="text-[10px] text-muted-foreground">
-                                                {format(new Date(comment.created_at), "MM/dd HH:mm", { locale: ja })}
-                                            </span>
-                                        </div>
-                                        <div className="text-xs mt-1 bg-slate-50 p-2 rounded-lg text-slate-700 whitespace-pre-wrap">
-                                            {comment.content}
+                            {isLoading ? (
+                                // Skeleton Loading
+                                Array.from({ length: 3 }).map((_, i) => (
+                                    <div key={i} className="flex gap-3 animate-pulse">
+                                        <div className="h-6 w-6 rounded-full bg-slate-200 mt-1" />
+                                        <div className="flex-1 space-y-2">
+                                            <div className="h-4 bg-slate-200 rounded w-1/3" />
+                                            <div className="h-10 bg-slate-200 rounded w-full" />
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                            <div ref={commentsEndRef} />
-                            {comments.length === 0 && (
-                                <div className="text-center text-xs text-muted-foreground py-4">
-                                    コメントはまだありません
-                                </div>
+                                ))
+                            ) : (
+                                <>
+                                    {comments.map((comment) => (
+                                        <div key={comment.id} className="flex gap-3">
+                                            <Avatar className="h-6 w-6 mt-1">
+                                                <AvatarImage src={comment.user?.avatar_url || ""} />
+                                                <AvatarFallback>{comment.user?.name?.[0] || "?"}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-medium">{comment.user?.name || "Unknown"}</span>
+                                                    <span className="text-[10px] text-muted-foreground">
+                                                        {format(new Date(comment.created_at), "MM/dd HH:mm", { locale: ja })}
+                                                    </span>
+                                                </div>
+                                                <div className="text-xs mt-1 bg-slate-50 p-2 rounded-lg text-slate-700 whitespace-pre-wrap">
+                                                    {comment.content}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div ref={commentsEndRef} />
+                                    {comments.length === 0 && (
+                                        <div className="text-center text-xs text-muted-foreground py-4">
+                                            コメントはまだありません
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
