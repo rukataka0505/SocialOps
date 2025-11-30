@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, parse, startOfWeek, getDay, endOfDay } from "date-fns";
+import { format, parse, startOfWeek, getDay, endOfDay, startOfMonth, endOfMonth, endOfWeek } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Calendar, dateFnsLocalizer, Views, View } from "react-big-calendar";
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
@@ -12,7 +12,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TaskDialog } from "@/components/tasks/task-dialog";
-import { updateTask } from "@/actions/tasks";
+import { updateTask, getTasks } from "@/actions/tasks";
 import { useRouter } from "next/navigation";
 import { WeeklyBoard } from "./weekly-board";
 import { DayTaskListDialog } from "./day-task-list-dialog";
@@ -44,6 +44,62 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     const [date, setDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // Dynamic Data Fetching State
+    const [allTasks, setAllTasks] = useState<any[]>(tasks);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Sync props.tasks with allTasks when props change (optional but good for initial load consistency)
+    useEffect(() => {
+        setAllTasks(prev => {
+            const taskMap = new Map(prev.map(t => [t.id, t]));
+            tasks.forEach(t => taskMap.set(t.id, t));
+            return Array.from(taskMap.values());
+        });
+    }, [tasks]);
+
+    // Fetch tasks when date or view changes
+    useEffect(() => {
+        const fetchTasks = async () => {
+            setIsLoading(true);
+            try {
+                let start: Date, end: Date;
+                if (view === 'month') {
+                    // Fetch for the entire month view (including padding days)
+                    start = startOfWeek(startOfMonth(date), { locale: ja });
+                    end = endOfWeek(endOfMonth(date), { locale: ja });
+                } else {
+                    // Fetch for the week view
+                    start = startOfWeek(date, { locale: ja });
+                    end = endOfWeek(date, { locale: ja });
+                }
+
+                const startStr = format(start, 'yyyy-MM-dd');
+                const endStr = format(end, 'yyyy-MM-dd');
+
+                const newTasks = await getTasks(startStr, endStr);
+
+                setAllTasks(prev => {
+                    const taskMap = new Map(prev.map(t => [t.id, t]));
+                    // Merge new tasks (overwrite existing ones to ensure latest status)
+                    newTasks.forEach((t: any) => taskMap.set(t.id, t));
+                    return Array.from(taskMap.values());
+                });
+            } catch (error) {
+                console.error("Failed to fetch tasks", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        // Debounce could be added here if needed, but for now direct call
+        // We use a transition or just async call. 
+        // Since getTasks is a server action, it's async.
+
+        // Check if we already have tasks for this range? 
+        // For simplicity and data freshness, we fetch every time for now.
+        fetchTasks();
+    }, [date, view]);
 
     // Day List Dialog State
     const [isDayListOpen, setIsDayListOpen] = useState(false);
@@ -79,7 +135,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
     // Initialize local events (Smart Stack) from props - Memoized
     const localEvents = useMemo(() => {
-        let filteredTasks = tasks;
+        let filteredTasks = allTasks;
 
         // Filter by view mode
         if (viewMode === 'my') {
@@ -118,7 +174,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                 count: item.tasks.length
             },
         }));
-    }, [tasks, viewMode, currentUserId]);
+    }, [allTasks, viewMode, currentUserId]);
 
     const handleSelectEvent = useCallback((event: any) => {
         // Open Day List Dialog
@@ -129,7 +185,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
     const handleSelectSlot = useCallback((slotInfo: { start: Date }) => {
         const dateStr = format(slotInfo.start, 'yyyy-MM-dd');
-        const tasksForDay = tasks.filter(t => t.due_date === dateStr);
+        const tasksForDay = allTasks.filter(t => t.due_date === dateStr);
 
         // Apply view filter
         let filtered = tasksForDay;
@@ -145,7 +201,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         setSelectedDateForList(slotInfo.start);
         setSelectedDateTasks(filtered);
         setIsDayListOpen(true);
-    }, [tasks, viewMode, currentUserId]);
+    }, [allTasks, viewMode, currentUserId]);
 
     const onEventDrop = useCallback(
         async ({ event, start, end, isAllDay }: any) => {
@@ -317,6 +373,11 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToNext}>
                             <ChevronRight className="h-4 w-4" />
                         </Button>
+                        {isLoading && (
+                            <div className="absolute right-[-24px] top-1/2 -translate-y-1/2">
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-blue-500"></div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -346,7 +407,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
             {view === 'board' ? (
                 <div className="flex-1 overflow-hidden min-h-0">
                     <WeeklyBoard
-                        tasks={tasks}
+                        tasks={allTasks}
                         currentDate={date}
                         onTaskClick={handleTaskClick}
                     />
