@@ -10,33 +10,31 @@ import { CheckCircle2, Circle, Clock, AlertCircle, CalendarDays } from "lucide-r
 import { cn } from "@/lib/utils";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { useState } from "react";
-import { toggleTaskStatus } from "@/actions/tasks";
+import useSWR from 'swr';
+import { getMemberTasks, toggleTaskStatus } from "@/actions/tasks";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Database } from "@/types/database.types";
 
-interface Task {
-    id: string;
-    title: string;
-    due_date: string | null;
-    priority: string;
-    status: string;
-    client_id: string | null;
+// SWR Fetcher
+const fetcher = ([_, userId]: [string, string]) => getMemberTasks(userId);
+
+type Task = Database['public']['Tables']['tasks']['Row'] & {
     client?: {
         id: string;
         name: string;
     } | null;
-    attributes: any;
     assignments: {
         user_id: string;
-        role: string;
+        role: string | null;
         user: {
             id: string;
-            name: string;
+            name: string | null;
             avatar_url: string | null;
         } | null;
     }[];
-}
+};
 
 interface MyTasksProps {
     tasks: Task[];
@@ -45,12 +43,22 @@ interface MyTasksProps {
     settings?: any;
 }
 
-export function MyTasks({ tasks, members, currentUserId, settings }: MyTasksProps) {
+export function MyTasks({ tasks: initialTasks, members, currentUserId, settings }: MyTasksProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState<string | null>(null);
 
-    // Filter tasks for the current user
-    const myTasks = tasks.filter(task =>
+    // useSWR Hook
+    const { data: tasks, mutate } = useSWR(
+        ['member-tasks', currentUserId],
+        fetcher,
+        {
+            fallbackData: initialTasks,
+            revalidateOnFocus: true,
+        }
+    );
+
+    // Filter tasks for the current user (using SWR data)
+    const myTasks = (tasks || []).filter(task =>
         task.assignments.some(a => a.user_id === currentUserId) &&
         task.status !== 'completed'
     );
@@ -67,32 +75,41 @@ export function MyTasks({ tasks, members, currentUserId, settings }: MyTasksProp
         return isThisWeek(date, { weekStartsOn: 1 }) && !isToday(date) && !isPast(date);
     });
 
-    const handleToggleStatus = async (taskId: string, currentStatus: string) => {
-        if (currentStatus !== 'completed') {
+    const handleToggleStatus = async (taskId: string, currentStatus: string | null) => {
+        const statusToCheck = currentStatus || 'pending';
+
+        if (statusToCheck !== 'completed') {
             if (!window.confirm("このタスクを完了にしますか？")) {
                 return;
             }
         }
 
-        setIsLoading(taskId);
+        // Optimistic Update
+        const newStatus = statusToCheck === 'completed' ? false : true;
+
+        // Remove the task from the list immediately
+        const optimisticTasks = tasks?.filter(t => t.id !== taskId);
+
+        // Update local cache immediately without revalidation
+        await mutate(optimisticTasks, { revalidate: false });
+
         try {
-            const newStatus = currentStatus === 'completed' ? false : true;
             const result = await toggleTaskStatus(taskId, newStatus);
 
             if (result.success) {
                 toast.success("タスクの状態を更新しました");
-                router.refresh();
+                // No need to refresh router, SWR handles data
             } else {
-                toast.error("更新に失敗しました");
+                throw new Error("Failed");
             }
         } catch (error) {
-            toast.error("エラーが発生しました");
-        } finally {
-            setIsLoading(null);
+            toast.error("更新に失敗しました");
+            // Rollback on error
+            await mutate();
         }
     };
 
-    const getPriorityColor = (priority: string) => {
+    const getPriorityColor = (priority: string | null) => {
         switch (priority) {
             case 'urgent': return 'border-l-red-500';
             case 'high': return 'border-l-orange-500';
