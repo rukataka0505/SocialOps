@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 
-export default function VerifiedPage() {
+function VerifiedContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const next = searchParams.get('next') || '/onboarding';
@@ -67,5 +67,17 @@ export default function VerifiedPage() {
                 </CardFooter>
             </Card>
         </div>
+    );
+}
+
+export default function VerifiedPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-950">
+                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+            </div>
+        }>
+            <VerifiedContent />
+        </Suspense>
     );
 }
