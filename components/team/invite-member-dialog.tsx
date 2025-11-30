@@ -31,7 +31,7 @@ export function InviteMemberDialog({ teamId, children }: InviteMemberDialogProps
         setIsLoading(true);
         try {
             const code = await getInviteCode(teamId);
-            setInviteCode(code);
+            setInviteCode(code ?? null);
         } catch (error) {
             console.error('Failed to get invite code:', error);
             alert('招待コードの取得に失敗しました');
