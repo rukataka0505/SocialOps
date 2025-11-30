@@ -33,7 +33,6 @@ import { SortableFieldItem } from "./sortable-field-item";
 interface TaskSettingsProps {
     initialSettings: {
         workflow_statuses?: string[];
-        custom_field_definitions?: CustomFieldDefinition[]; // Legacy support
         regular_task_fields?: CustomFieldDefinition[];
         post_task_fields?: CustomFieldDefinition[];
         client_fields?: CustomFieldDefinition[];
@@ -96,13 +95,13 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
 
     const [regularFields, setRegularFields] = useState<CustomFieldDefinition[]>(
         initializeFields(
-            initialSettings.regular_task_fields || initialSettings.custom_field_definitions
+            initialSettings.regular_task_fields
         )
     );
 
     const [postFields, setPostFields] = useState<CustomFieldDefinition[]>(
         initializeFields(
-            initialSettings.post_task_fields || initialSettings.custom_field_definitions,
+            initialSettings.post_task_fields,
             (f) => f.id !== 'assigned_to' // Exclude assigned_to for post tasks by default
         )
     );
@@ -205,7 +204,6 @@ export function TaskSettings({ initialSettings }: TaskSettingsProps) {
                 regular_task_fields: regularFields,
                 post_task_fields: postFields,
                 client_fields: clientFieldsState,
-                custom_field_definitions: regularFields, // Legacy sync
             };
             await updateTeamSettings(settings);
             router.refresh();

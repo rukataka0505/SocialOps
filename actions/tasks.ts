@@ -136,7 +136,7 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
         const completed_at = isCompleted ? new Date().toISOString() : null;
 
         // First, get the task to check if it has a parent
-        const { data: currentTask, error: fetchError } = await (supabase as any)
+        const { data: currentTask, error: fetchError } = await supabase
             .from("tasks")
             .select("id, parent_id, title")
             .eq("id", taskId)
@@ -145,7 +145,7 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
         if (fetchError) throw fetchError;
 
         // Update the task status
-        const { error } = await (supabase as any)
+        const { error } = await supabase
             .from("tasks")
             .update({ status, completed_at })
             .eq("id", taskId);
@@ -157,7 +157,7 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
             const parentId = currentTask.parent_id;
 
             // Get all sibling tasks (including this one)
-            const { data: siblings, error: siblingsError } = await (supabase as any)
+            const { data: siblings, error: siblingsError } = await supabase
                 .from("tasks")
                 .select("id, status, title")
                 .eq("parent_id", parentId)
@@ -166,7 +166,7 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
             if (siblingsError) throw siblingsError;
 
             // Get parent task info
-            const { data: parentTask, error: parentError } = await (supabase as any)
+            const { data: parentTask, error: parentError } = await supabase
                 .from("tasks")
                 .select("id, title, attributes, assignments:task_assignments(user_id)")
                 .eq("id", parentId)
@@ -184,10 +184,10 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
                 if (allCompleted) {
                     // Update parent workflow_status in attributes
                     const updatedAttributes = {
-                        ...(parentTask.attributes || {}),
+                        ...(parentTask.attributes as Record<string, any> || {}),
                         workflow_status: '確認待ち'
                     };
-                    const { error: parentUpdateError } = await (supabase as any)
+                    const { error: parentUpdateError } = await supabase
                         .from("tasks")
                         .update({ attributes: updatedAttributes })
                         .eq("id", parentId);
@@ -218,10 +218,10 @@ export async function toggleTaskStatus(taskId: string, isCompleted: boolean) {
                 if (parentStatus === '確認待ち' || parentStatus === '完了') {
                     // Revert parent workflow_status in attributes
                     const updatedAttributes = {
-                        ...(parentTask.attributes || {}),
+                        ...(parentTask.attributes as Record<string, any> || {}),
                         workflow_status: '進行中'
                     };
-                    const { error: parentRevertError } = await (supabase as any)
+                    const { error: parentRevertError } = await supabase
                         .from("tasks")
                         .update({ attributes: updatedAttributes })
                         .eq("id", parentId);
@@ -343,7 +343,7 @@ export async function createTask(prevState: any, formData: FormData) {
         }
 
         // Insert task
-        const { data: task, error } = await (supabase as any)
+        const { data: task, error } = await supabase
             .from("tasks")
             .insert({
                 team_id: teamId,
@@ -372,7 +372,7 @@ export async function createTask(prevState: any, formData: FormData) {
                 role: a.role
             }));
 
-            const { error: assignError } = await (supabase as any)
+            const { error: assignError } = await supabase
                 .from("task_assignments")
                 .insert(assignments);
 
@@ -420,7 +420,7 @@ export async function getTasks(start: string, end: string) {
         if (!user) throw new Error("Unauthorized");
 
 
-        const { data: tasks, error } = await (supabase as any)
+        const { data: tasks, error } = await supabase
             .from("tasks")
             .select(`
                 *,
@@ -506,7 +506,7 @@ export async function updateTask(taskId: string, data: any) {
         // The prompt says "Force overwrite... ignoring form value".
 
         // Let's fetch the current task to get parent_id and is_milestone status to be sure.
-        const { data: currentTaskForUpdate, error: fetchCurrentError } = await (supabase as any)
+        const { data: currentTaskForUpdate, error: fetchCurrentError } = await supabase
             .from("tasks")
             .select("parent_id, is_milestone")
             .eq("id", taskId)
@@ -565,7 +565,7 @@ export async function updateTask(taskId: string, data: any) {
         // If we are updating attributes, we need to merge with existing attributes
         // to avoid overwriting other fields (like management_url or others not in the form)
         if (updateData.attributes) {
-            const { data: currentTask, error: fetchError } = await (supabase as any)
+            const { data: currentTask, error: fetchError } = await supabase
                 .from("tasks")
                 .select("attributes")
                 .eq("id", taskId)
@@ -573,7 +573,7 @@ export async function updateTask(taskId: string, data: any) {
 
             if (!fetchError && currentTask) {
                 updateData.attributes = {
-                    ...(currentTask.attributes || {}),
+                    ...(currentTask.attributes as Record<string, any> || {}),
                     ...updateData.attributes
                 };
             }
@@ -584,7 +584,7 @@ export async function updateTask(taskId: string, data: any) {
             updated_at: new Date().toISOString(),
         };
 
-        const { error } = await (supabase as any)
+        const { error } = await supabase
             .from("tasks")
             .update(finalUpdatePayload)
             .eq("id", taskId)
@@ -598,7 +598,7 @@ export async function updateTask(taskId: string, data: any) {
         // Update assignments if provided
         if (assignees) {
             // Delete existing assignments
-            await (supabase as any)
+            await supabase
                 .from("task_assignments")
                 .delete()
                 .eq("task_id", taskId);
@@ -615,7 +615,7 @@ export async function updateTask(taskId: string, data: any) {
                         role: a.role
                     }));
 
-                    const { error: assignError } = await (supabase as any)
+                    const { error: assignError } = await supabase
                         .from("task_assignments")
                         .insert(assignments);
 
@@ -643,7 +643,7 @@ export async function updateTask(taskId: string, data: any) {
                     // Fetch task title if not in update data
                     let taskTitle = updateData.title;
                     if (!taskTitle) {
-                        const { data: t } = await (supabase as any).from("tasks").select("title, parent_id, id").eq("id", taskId).single();
+                        const { data: t } = await supabase.from("tasks").select("title, parent_id, id").eq("id", taskId).single();
                         taskTitle = t?.title;
                         // Also ensure we have the correct link ID
                         if (t) {
@@ -658,7 +658,7 @@ export async function updateTask(taskId: string, data: any) {
                         }
                     } else {
                         // If we have title in updateData, we still need parent_id for the link
-                        const { data: t } = await (supabase as any).from("tasks").select("parent_id, id").eq("id", taskId).single();
+                        const { data: t } = await supabase.from("tasks").select("parent_id, id").eq("id", taskId).single();
                         if (t) {
                             await createNotification(
                                 assigneeIds,
@@ -690,7 +690,7 @@ export async function deleteTask(taskId: string) {
         if (!teamId) throw new Error("No team found");
 
         // Soft delete
-        const { error } = await (supabase as any)
+        const { error } = await supabase
             .from("tasks")
             .update({
                 deleted_at: new Date().toISOString(),
@@ -720,7 +720,7 @@ export async function getMemberTasks(userId: string) {
         // We can use a join or a subquery.
         // Supabase join syntax:
         // Filter for personal tasks created by the user
-        const { data: tasks, error } = await (supabase as any)
+        const { data: tasks, error } = await supabase
             .from("tasks")
             .select(`
                 *,
@@ -752,7 +752,7 @@ export async function getClientMilestones(clientId: string, start: Date, end: Da
         const startStr = format(start, 'yyyy-MM-dd', { timeZone: 'Asia/Tokyo' });
         const endStr = format(end, 'yyyy-MM-dd', { timeZone: 'Asia/Tokyo' });
 
-        const { data: tasks, error } = await (supabase as any)
+        const { data: tasks, error } = await supabase
             .from("tasks")
             .select(`
                 *,
@@ -792,7 +792,7 @@ export async function getSubtasks(parentId: string) {
         const teamId = await getCurrentTeamId(supabase);
         if (!teamId) throw new Error("No team found");
 
-        const { data: tasks, error } = await (supabase as any)
+        const { data: tasks, error } = await supabase
             .from("tasks")
             .select(`
                 *,
