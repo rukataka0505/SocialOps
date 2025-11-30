@@ -613,6 +613,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          invite_code: string
           name: string
           owner_id: string | null
           plan_type: Database["public"]["Enums"]["plan_type"] | null
@@ -623,6 +624,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          invite_code: string
           name: string
           owner_id?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type"] | null
@@ -633,6 +635,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          invite_code?: string
           name?: string
           owner_id?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type"] | null
