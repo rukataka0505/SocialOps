@@ -84,8 +84,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     // Custom Fields State
     const [customFields, setCustomFields] = useState<TaskField[]>([]);
 
-    // Scope State - REMOVED
-    // const [isPrivate, setIsPrivate] = useState(false);
+    // Scope State
+    const [isPrivate, setIsPrivate] = useState(false);
 
     // Subtask state
     const [subtaskTitle, setSubtaskTitle] = useState("");
@@ -173,16 +173,16 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         }
                         setCustomFields(fields);
 
-                        // Set isPrivate from task - REMOVED
-                        // setIsPrivate(hierarchyTask.is_private || false);
+                        // Set isPrivate from task
+                        setIsPrivate(hierarchyTask.is_private || false);
 
                     } else if (task && task.id) {
                         // Fallback if fetch fails or returns null (shouldn't happen usually if task exists)
                         // Just use what we have
                         setCurrentTask(task);
                         setCustomFields(settings?.regular_task_fields || []);
-                        // Set isPrivate from task - REMOVED
-                        // setIsPrivate(task.is_private || false);
+                        // Set isPrivate from task
+                        setIsPrivate(task.is_private || false);
                     } else {
                         // New task creation
                         setCurrentTask(task);
@@ -190,8 +190,8 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         setSubtasks([]);
                         setComments([]);
 
-                        // Set isPrivate from defaultScope - REMOVED
-                        // setIsPrivate(defaultScope === 'private');
+                        // Set isPrivate from defaultScope
+                        setIsPrivate(defaultScope === 'private');
 
                         // Initialize Custom Fields for New Task
                         const isPost = task?.is_milestone === true;
@@ -284,7 +284,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         }
                     });
 
-                    // data.is_private = isPrivate; // Removed
+                    data.is_private = isPrivate;
 
                     // Ensure attributes exists and add _fields
                     if (!data.attributes) data.attributes = {};
@@ -298,7 +298,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                     // _fields is already appended to formDataWithAssignees because we appended to event.currentTarget which is the form? 
                     // No, new FormData(event.currentTarget) creates a snapshot. We need to append to the one we are sending.
                     formDataWithAssignees.set('_fields', JSON.stringify(customFields));
-                    // formDataWithAssignees.set('is_private', String(isPrivate)); // Removed
+                    formDataWithAssignees.set('is_private', String(isPrivate));
 
                     result = await createTask(null, formDataWithAssignees);
                 }
@@ -478,8 +478,15 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
     };
     */
     const handleScopeChange = (scope: 'team' | 'private') => {
-        // No-op or show alert that this feature is removed
-        console.log("Scope change is no longer supported");
+        if (scope === 'private') {
+            if (confirm("このタスクを個人タスクに変更しますか？\nチームメンバーからは見えなくなります。")) {
+                setIsPrivate(true);
+            }
+        } else {
+            if (confirm("このタスクをチームタスクに変更しますか？\nチームメンバー全員に公開されます。")) {
+                setIsPrivate(false);
+            }
+        }
     };
 
     const handleNewSubtaskChange = (field: 'title' | 'dueDate' | 'assignee', value: string) => {
@@ -636,7 +643,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             <TaskHeader
                                 title={currentTask?.title}
                                 status={(currentTask?.attributes as any)?.workflow_status}
-                                isPrivate={false} // Removed isPrivate
+                                isPrivate={isPrivate}
                                 isMilestone={isMilestone}
                                 isEditMode={isEditMode}
                                 subtasks={subtasks}

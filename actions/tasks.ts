@@ -275,7 +275,7 @@ export async function createTask(prevState: any, formData: FormData) {
         const workflow_status = formData.get("workflow_status") as string;
         const parent_id = formData.get("parent_id") as string;
         const is_milestone = formData.get("is_milestone") === "true";
-        // const is_private = formData.get("is_private") === "true"; // Removed
+        const is_private = formData.get("is_private") === "true";
         const source_type = (formData.get("source_type") as string) || "manual";
 
         // Handle assignees
@@ -289,27 +289,23 @@ export async function createTask(prevState: any, formData: FormData) {
             }
         }
 
-        // Force assign creator for private tasks - REMOVED logic as is_private is gone
-        /*
+        // Force assign creator for private tasks
         if (is_private) {
             const isCreatorAssigned = assignees.some(a => a.userId === user.id);
             if (!isCreatorAssigned) {
                 assignees.push({ userId: user.id, role: 'owner' });
             }
         }
-        */
 
-        // Enforce is_private based on hierarchy - REMOVED
+        // Enforce is_private based on hierarchy
         // Child Task -> Private
         // Parent Task -> Public (Team)
-        /*
         let finalIsPrivate = is_private;
         if (parent_id) {
             finalIsPrivate = true;
         } else {
             finalIsPrivate = false;
         }
-        */
 
         // Handle attributes
         const attributes: Record<string, any> = {};
@@ -357,7 +353,7 @@ export async function createTask(prevState: any, formData: FormData) {
                 created_by: user.id,
                 parent_id: parent_id || null,
                 is_milestone,
-                // is_private: finalIsPrivate, // Removed
+                is_private: finalIsPrivate,
                 source_type,
             })
             .select()
@@ -440,7 +436,8 @@ export async function getTasks(start: string, end: string) {
                 )
             `)
             .eq("team_id", teamId)
-            // .or(`is_private.eq.false,and(is_private.eq.true,created_by.eq.${user.id})`) // Removed
+            .eq("team_id", teamId)
+            .or(`is_private.eq.false,and(is_private.eq.true,created_by.eq.${user.id})`)
             .gte("due_date", start)
             .lte("due_date", end)
             .is("deleted_at", null);
@@ -488,8 +485,7 @@ export async function updateTask(taskId: string, data: any) {
             }
         });
 
-        // Handle is_private boolean - REMOVED
-        /*
+        // Handle is_private boolean
         if (updateData.is_private !== undefined) {
             // Ensure it's boolean
             updateData.is_private = Boolean(updateData.is_private);
@@ -513,7 +509,6 @@ export async function updateTask(taskId: string, data: any) {
                 updateData.is_private = false;
             }
         }
-        */
 
         // Handle _fields - it should be inside attributes, not a top-level field
         if (updateData._fields) {
@@ -711,7 +706,7 @@ export async function getMemberTasks(userId: string) {
             `)
             .eq("team_id", teamId)
             .eq("created_by", userId) // Must be created by me
-            // .eq("is_private", true)   // Must be private - REMOVED
+            .eq("is_private", true)   // Must be private
             .neq("status", "completed")
             .is("deleted_at", null)
             .order("due_date", { ascending: true });
