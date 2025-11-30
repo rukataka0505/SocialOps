@@ -154,11 +154,15 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
         filteredTasks.forEach(task => {
             if (!task.due_date) return;
-            const dateStr = format(parse(task.due_date, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd');
+
+            const date = new Date(task.due_date);
+            if (isNaN(date.getTime())) return;
+
+            const dateStr = format(date, 'yyyy-MM-dd');
 
             if (!eventsMap[dateStr]) {
                 eventsMap[dateStr] = {
-                    date: parse(task.due_date, 'yyyy-MM-dd', new Date()),
+                    date: date,
                     tasks: []
                 };
             }
@@ -178,7 +182,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
     const handleSelectEvent = useCallback((event: any) => {
         // Open Day List Dialog
-        setSelectedDateForList(event.resource.tasks[0] ? parse(event.resource.tasks[0].due_date, 'yyyy-MM-dd', new Date()) : event.start);
+        setSelectedDateForList(event.resource.tasks[0] ? new Date(event.resource.tasks[0].due_date) : event.start);
         setSelectedDateTasks(event.resource.tasks);
         setIsDayListOpen(true);
     }, []);

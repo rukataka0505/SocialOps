@@ -724,7 +724,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                     ) : (
-                        <form id="task-form" key={currentTask?.id} onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+                        <form id="task-form" key={currentTask?.id || `new-${currentTask?.due_date}`} onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
                             {/* 1. Sticky Header Block */}
                             <TaskHeader
                                 title={currentTask?.title}
@@ -850,100 +850,98 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                 </div>
 
                                 {/* 3. Right Column: Metadata & Comments */}
-                                {isEditMode && (
-                                    <TaskCommentSection
-                                        comments={comments}
-                                        newComment={newComment}
-                                        onNewCommentChange={setNewComment}
-                                        onAddComment={handleAddComment}
-                                        isPending={isPending}
-                                    >
-                                        {/* Metadata Section */}
-                                        <div className="space-y-4">
-                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">基本情報</h4>
+                                <TaskCommentSection
+                                    comments={comments}
+                                    newComment={newComment}
+                                    onNewCommentChange={setNewComment}
+                                    onAddComment={handleAddComment}
+                                    isPending={isPending}
+                                >
+                                    {/* Metadata Section */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">基本情報</h4>
 
-                                            {/* Client */}
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs text-muted-foreground">クライアント</Label>
-                                                {currentTask?.client_id ? (
-                                                    <div className="text-sm font-medium">
-                                                        <input type="hidden" name="client_id" value={currentTask.client_id} />
-                                                        {clients.find(c => c.id === currentTask.client_id)?.name || "Unknown Client"}
-                                                    </div>
-                                                ) : (
-                                                    <select
-                                                        name="client_id"
-                                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                                                    >
-                                                        <option value="">(選択なし)</option>
-                                                        {clients.map((client) => (
-                                                            <option key={client.id} value={client.id}>{client.name}</option>
-                                                        ))}
-                                                    </select>
-                                                )}
-                                            </div>
-
-                                            {/* Due Date */}
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs text-muted-foreground">期限</Label>
-                                                <Input
-                                                    name="due_date"
-                                                    type="date"
-                                                    defaultValue={currentTask?.due_date?.split("T")[0]}
-                                                    className="h-9"
-                                                    required
-                                                />
-                                            </div>
-
-                                            {/* Assignees */}
-                                            {!isPrivate && (
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-xs text-muted-foreground">{currentTask?.is_milestone ? "投稿管理担当者" : "担当者"}</Label>
-                                                    <div className="space-y-2">
-                                                        {assignees.map((assignee, index) => (
-                                                            <div key={index} className="flex gap-2 items-center">
-                                                                <select
-                                                                    value={assignee.userId}
-                                                                    onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
-                                                                    className="flex-1 h-8 rounded-md border border-input bg-background px-2 py-1 text-xs"
-                                                                >
-                                                                    <option value="">(選択なし)</option>
-                                                                    {members.map((member) => (
-                                                                        <option key={member.user.id} value={member.user.id}>
-                                                                            {member.user.name || member.user.email}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => removeAssignee(index)}
-                                                                    className="h-8 w-8"
-                                                                >
-                                                                    <Trash2 className="h-3 w-3" />
-                                                                </Button>
-                                                            </div>
-                                                        ))}
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={addAssignee}
-                                                            className="w-full h-8 text-xs"
-                                                        >
-                                                            <Plus className="mr-2 h-3 w-3" /> 担当者を追加
-                                                        </Button>
-                                                    </div>
+                                        {/* Client */}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs text-muted-foreground">クライアント</Label>
+                                            {currentTask?.client_id ? (
+                                                <div className="text-sm font-medium">
+                                                    <input type="hidden" name="client_id" value={currentTask.client_id} />
+                                                    {clients.find(c => c.id === currentTask.client_id)?.name || "Unknown Client"}
                                                 </div>
+                                            ) : (
+                                                <select
+                                                    name="client_id"
+                                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                                                >
+                                                    <option value="">(選択なし)</option>
+                                                    {clients.map((client) => (
+                                                        <option key={client.id} value={client.id}>{client.name}</option>
+                                                    ))}
+                                                </select>
                                             )}
-
-                                            {/* Hidden Fields */}
-                                            <input type="hidden" name="status" value="in_progress" />
-                                            {currentTask?.is_milestone && <input type="hidden" name="is_milestone" value="true" />}
                                         </div>
-                                    </TaskCommentSection>
-                                )}
+
+                                        {/* Due Date */}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs text-muted-foreground">期限</Label>
+                                            <Input
+                                                name="due_date"
+                                                type="date"
+                                                defaultValue={currentTask?.due_date?.split("T")[0]}
+                                                className="h-9"
+                                                required
+                                            />
+                                        </div>
+
+                                        {/* Assignees */}
+                                        {!isPrivate && (
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-muted-foreground">{currentTask?.is_milestone ? "投稿管理担当者" : "担当者"}</Label>
+                                                <div className="space-y-2">
+                                                    {assignees.map((assignee, index) => (
+                                                        <div key={index} className="flex gap-2 items-center">
+                                                            <select
+                                                                value={assignee.userId}
+                                                                onChange={(e) => updateAssignee(index, 'userId', e.target.value)}
+                                                                className="flex-1 h-8 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                                                            >
+                                                                <option value="">(選択なし)</option>
+                                                                {members.map((member) => (
+                                                                    <option key={member.user.id} value={member.user.id}>
+                                                                        {member.user.name || member.user.email}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => removeAssignee(index)}
+                                                                className="h-8 w-8"
+                                                            >
+                                                                <Trash2 className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={addAssignee}
+                                                        className="w-full h-8 text-xs"
+                                                    >
+                                                        <Plus className="mr-2 h-3 w-3" /> 担当者を追加
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Hidden Fields */}
+                                        <input type="hidden" name="status" value="in_progress" />
+                                        {currentTask?.is_milestone && <input type="hidden" name="is_milestone" value="true" />}
+                                    </div>
+                                </TaskCommentSection>
                             </div>
                         </form>
                     )}
