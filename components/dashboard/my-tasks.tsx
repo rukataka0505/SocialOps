@@ -21,7 +21,7 @@ import { Database } from "@/types/database.types";
 const fetcher = ([_, userId]: [string, string]) => getMemberTasks(userId);
 
 type Task = Database['public']['Tables']['tasks']['Row'] & {
-    client?: {
+    client: {
         id: string;
         name: string;
     } | null;
