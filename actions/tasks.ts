@@ -333,10 +333,7 @@ export async function createTask(prevState: any, formData: FormData) {
                 created_by: user.id,
                 parent_id: parent_id || null,
                 is_milestone,
-                parent_id: parent_id || null,
-                is_milestone,
                 is_private: finalIsPrivate,
-                source_type,
                 source_type,
             })
             .select()
