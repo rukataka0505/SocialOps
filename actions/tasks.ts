@@ -446,8 +446,14 @@ export async function getTasks(start: string, end: string) {
 
         // Explicitly cast the return value to TaskWithRelations[]
         return (tasks || []) as unknown as TaskWithRelations[];
-    } catch (error) {
-        console.error("Error fetching tasks:", error);
+    } catch (error: any) {
+        console.error("Error fetching tasks:", {
+            message: error?.message,
+            code: error?.code,
+            details: error?.details,
+            hint: error?.hint,
+            fullError: error
+        });
         return [];
     }
 }
@@ -714,8 +720,14 @@ export async function getMemberTasks(userId: string) {
         if (error) throw error;
 
         return tasks || [];
-    } catch (error) {
-        console.error("Error fetching member tasks:", error);
+    } catch (error: any) {
+        console.error("Error fetching member tasks:", {
+            message: error?.message,
+            code: error?.code,
+            details: error?.details,
+            hint: error?.hint,
+            fullError: error
+        });
         return [];
     }
 }
