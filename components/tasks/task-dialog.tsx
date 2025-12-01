@@ -64,9 +64,17 @@ interface TaskDialogProps {
         post_task_fields?: TaskField[];
     };
     defaultScope?: 'private' | 'team';
+    focusSubtaskId?: string | null;
 }
 
-export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: setControlledOpen, trigger, settings, defaultScope = 'team' }: TaskDialogProps) {
+export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: setControlledOpen, trigger, settings, defaultScope = 'team', focusSubtaskId }: TaskDialogProps) {
+    // We need to access focusSubtaskId in the render, so we just use the destructured variable.
+    // However, I used `props.focusSubtaskId` in the previous step. I should have checked the signature first.
+    // I will fix the previous step's usage by using the destructured variable `focusSubtaskId`.
+    // Wait, I can't fix the previous step here. I will just update the signature here and then fix the usage in the next step if I made a mistake.
+    // Actually, I can just use `focusSubtaskId` in the replacement content of the previous step if I knew I was going to destructure it here.
+    // Let's assume I will use `focusSubtaskId` variable.
+
     const [internalOpen, setInternalOpen] = useState(false);
     const isControlled = controlledOpen !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
@@ -682,6 +690,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                                             onUpdateAssignee={handleUpdateSubtaskAssignee}
                                             onDeleteSubtask={handleDeleteSubtask}
                                             onEditSubtask={setEditingSubtaskId}
+                                            focusSubtaskId={focusSubtaskId}
                                         />
 
                                         {/* B. Details & Custom Fields (Collapsible) */}

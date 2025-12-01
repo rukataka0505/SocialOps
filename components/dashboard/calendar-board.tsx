@@ -44,6 +44,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     const [date, setDate] = useState(new Date());
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [focusSubtaskId, setFocusSubtaskId] = useState<string | null>(null);
 
     // Dynamic Data Fetching State
     const [allTasks, setAllTasks] = useState<any[]>(tasks);
@@ -344,7 +345,16 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
     }, [selectedDateForList]);
 
     const handleTaskClick = useCallback((task: any) => {
-        setSelectedTask(task);
+        if (task.parent_id) {
+            // It's a child task, open parent and focus this one
+            // We set selectedTask to an object with just the parent ID, 
+            // TaskDialog will fetch the full parent task details.
+            setSelectedTask({ id: task.parent_id });
+            setFocusSubtaskId(task.id);
+        } else {
+            setSelectedTask(task);
+            setFocusSubtaskId(null);
+        }
         setIsDialogOpen(true);
     }, []);
 
@@ -476,6 +486,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     open={isDialogOpen}
                     onOpenChange={setIsDialogOpen}
                     settings={settings}
+                    focusSubtaskId={focusSubtaskId}
                 // defaultScope={viewMode === 'my' ? 'private' : 'team'} // Removed
                 />
             )}

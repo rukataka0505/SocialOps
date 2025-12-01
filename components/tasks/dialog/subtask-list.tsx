@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,6 +42,7 @@ interface SubtaskListProps {
     onUpdateAssignee: (id: string, userId: string) => void;
     onDeleteSubtask: (id: string) => void;
     onEditSubtask: (id: string) => void;
+    focusSubtaskId?: string | null;
 }
 
 export function SubtaskList({
@@ -55,8 +57,24 @@ export function SubtaskList({
     onToggleSubtask,
     onUpdateAssignee,
     onDeleteSubtask,
-    onEditSubtask
+    onEditSubtask,
+    focusSubtaskId
 }: SubtaskListProps) {
+    // Scroll to focused subtask
+    useEffect(() => {
+        if (focusSubtaskId && !isLoading && subtasks.length > 0) {
+            const element = document.getElementById(`subtask-${focusSubtaskId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Add a temporary highlight class or animation if needed
+                element.classList.add('bg-blue-50');
+                setTimeout(() => {
+                    element.classList.remove('bg-blue-50');
+                }, 2000);
+            }
+        }
+    }, [focusSubtaskId, isLoading, subtasks]);
+
     if (!isEditMode) {
         return (
             <div className="p-8 text-center border-2 border-dashed rounded-xl text-muted-foreground bg-slate-50/50">
@@ -98,7 +116,8 @@ export function SubtaskList({
                         subtasks.map((subtask) => (
                             <div
                                 key={subtask.id}
-                                className={`grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center p-4 hover:bg-slate-50/50 transition-colors group ${subtask.status === 'completed' ? 'bg-slate-50/80' : ''}`}
+                                id={`subtask-${subtask.id}`}
+                                className={`grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center p-4 hover:bg-slate-50/50 transition-colors group ${subtask.status === 'completed' ? 'bg-slate-50/80' : ''} ${focusSubtaskId === subtask.id ? 'bg-blue-50 ring-2 ring-blue-200 ring-inset' : ''}`}
                             >
                                 <Checkbox
                                     checked={subtask.status === 'completed'}

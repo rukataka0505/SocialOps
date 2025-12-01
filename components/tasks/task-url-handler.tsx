@@ -11,6 +11,8 @@ export function TaskUrlHandler() {
     const pathname = usePathname();
     const taskId = searchParams.get("taskId");
 
+    const focusSubtaskId = searchParams.get("focusSubtaskId");
+
     const [task, setTask] = useState<any>(null);
     const [isOpen, setIsOpen] = useState(false);
 
@@ -19,6 +21,16 @@ export function TaskUrlHandler() {
             const fetchTask = async () => {
                 const taskData = await getTaskWithHierarchy(taskId);
                 if (taskData) {
+                    // Check if it's a child task
+                    if (taskData.parent_id) {
+                        // Redirect to parent task with focusSubtaskId
+                        const params = new URLSearchParams(searchParams.toString());
+                        params.set("taskId", taskData.parent_id);
+                        params.set("focusSubtaskId", taskData.id);
+                        router.replace(`${pathname}?${params.toString()}`);
+                        return;
+                    }
+
                     setTask(taskData);
                     setIsOpen(true);
                 }
@@ -28,7 +40,7 @@ export function TaskUrlHandler() {
             setIsOpen(false);
             setTask(null);
         }
-    }, [taskId]);
+    }, [taskId, pathname, router, searchParams]);
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
@@ -49,6 +61,7 @@ export function TaskUrlHandler() {
             onOpenChange={handleOpenChange}
             members={[]} // Will be fetched by TaskDialog itself
             settings={{}} // Will be fetched by TaskDialog itself
+            focusSubtaskId={focusSubtaskId}
         />
     );
 }
