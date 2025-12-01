@@ -348,12 +348,14 @@ export async function createTask(prevState: any, formData: FormData) {
                 due_date,
                 priority,
                 client_id: client_id || null,
-                attributes,
+                attributes: {
+                    ...attributes,
+                    is_private: finalIsPrivate
+                },
                 status,
                 created_by: user.id,
                 parent_id: parent_id || null,
                 is_milestone,
-                is_private: finalIsPrivate,
                 source_type,
             })
             .select()
@@ -437,7 +439,7 @@ export async function getTasks(start: string, end: string) {
             `)
             .eq("team_id", teamId)
             .eq("team_id", teamId)
-            .or(`is_private.eq.false,and(is_private.eq.true,created_by.eq.${user.id})`)
+            .or(`attributes->>is_private.eq.false,attributes->>is_private.is.null,and(attributes->>is_private.eq.true,created_by.eq.${user.id})`)
             .gte("due_date", start)
             .lte("due_date", end)
             .is("deleted_at", null);
@@ -493,8 +495,9 @@ export async function updateTask(taskId: string, data: any) {
 
         // Handle is_private boolean
         if (updateData.is_private !== undefined) {
-            // Ensure it's boolean
-            updateData.is_private = Boolean(updateData.is_private);
+            if (!updateData.attributes) updateData.attributes = {};
+            updateData.attributes.is_private = Boolean(updateData.is_private);
+            delete updateData.is_private;
         }
 
         // Enforce is_private based on hierarchy logic
@@ -509,11 +512,14 @@ export async function updateTask(taskId: string, data: any) {
 
             if (parentId) {
                 // It's a child task -> Force Private
-                updateData.is_private = true;
+                if (!updateData.attributes) updateData.attributes = {};
+                updateData.attributes.is_private = true;
             } else {
                 // It's a parent task -> Force Public
-                updateData.is_private = false;
+                if (!updateData.attributes) updateData.attributes = {};
+                updateData.attributes.is_private = false;
             }
+            delete updateData.is_private;
         }
 
         // Handle _fields - it should be inside attributes, not a top-level field
@@ -712,7 +718,7 @@ export async function getMemberTasks(userId: string) {
             `)
             .eq("team_id", teamId)
             .eq("created_by", userId) // Must be created by me
-            .eq("is_private", true)   // Must be private
+            .eq("attributes->>is_private", "true")   // Must be private
             .neq("status", "completed")
             .is("deleted_at", null)
             .order("due_date", { ascending: true });

@@ -407,7 +407,7 @@ export type Database = {
           due_date: string
           id: string
           is_milestone: boolean | null
-          is_private: boolean | null
+
           parent_id: string | null
           priority: string | null
           project_id: string | null
@@ -430,7 +430,7 @@ export type Database = {
           due_date: string
           id?: string
           is_milestone?: boolean | null
-          is_private?: boolean | null
+
           parent_id?: string | null
           priority?: string | null
           project_id?: string | null
@@ -453,7 +453,7 @@ export type Database = {
           due_date?: string
           id?: string
           is_milestone?: boolean | null
-          is_private?: boolean | null
+
           parent_id?: string | null
           priority?: string | null
           project_id?: string | null

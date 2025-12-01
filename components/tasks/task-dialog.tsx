@@ -174,7 +174,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         setCustomFields(fields);
 
                         // Set isPrivate from task
-                        setIsPrivate(hierarchyTask.is_private || false);
+                        setIsPrivate(hierarchyTask.attributes?.is_private || false);
 
                     } else if (task && task.id) {
                         // Fallback if fetch fails or returns null (shouldn't happen usually if task exists)
@@ -182,7 +182,7 @@ export function TaskDialog({ members, task, open: controlledOpen, onOpenChange: 
                         setCurrentTask(task);
                         setCustomFields(settings?.regular_task_fields || []);
                         // Set isPrivate from task
-                        setIsPrivate(task.is_private || false);
+                        setIsPrivate(task.attributes?.is_private || false);
                     } else {
                         // New task creation
                         setCurrentTask(task);
