@@ -58,48 +58,55 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
         });
     }, [tasks]);
 
-    // Fetch tasks when date or view changes
+    // Fetch tasks based on range
+    const fetchTasksInRange = useCallback(async (start: Date, end: Date) => {
+        setIsLoading(true);
+        try {
+            const startStr = format(start, 'yyyy-MM-dd');
+            const endStr = format(end, 'yyyy-MM-dd');
+
+            const newTasks = await getTasks(startStr, endStr);
+
+            setAllTasks(prev => {
+                const taskMap = new Map(prev.map(t => [t.id, t]));
+                // Merge new tasks (overwrite existing ones to ensure latest status)
+                newTasks.forEach((t: any) => taskMap.set(t.id, t));
+                return Array.from(taskMap.values());
+            });
+        } catch (error) {
+            console.error("Failed to fetch tasks", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    const handleRangeChange = useCallback((range: Date[] | { start: Date; end: Date }) => {
+        let start: Date, end: Date;
+
+        if (Array.isArray(range)) {
+            // For day/week views where range is an array of dates
+            if (range.length === 0) return;
+            start = range[0];
+            end = range[range.length - 1];
+        } else {
+            // For month view where range is { start, end }
+            start = range.start;
+            end = range.end;
+        }
+
+        // Ensure we cover the full day for the end date
+        end = endOfDay(end);
+
+        fetchTasksInRange(start, end);
+    }, [fetchTasksInRange]);
+
+    // Initial fetch on mount
     useEffect(() => {
-        const fetchTasks = async () => {
-            setIsLoading(true);
-            try {
-                let start: Date, end: Date;
-                if (view === 'month') {
-                    // Fetch for the entire month view (including padding days)
-                    start = startOfWeek(startOfMonth(date), { locale: ja });
-                    end = endOfWeek(endOfMonth(date), { locale: ja });
-                } else {
-                    // Fetch for the week view
-                    start = startOfWeek(date, { locale: ja });
-                    end = endOfWeek(date, { locale: ja });
-                }
-
-                const startStr = format(start, 'yyyy-MM-dd');
-                const endStr = format(end, 'yyyy-MM-dd');
-
-                const newTasks = await getTasks(startStr, endStr);
-
-                setAllTasks(prev => {
-                    const taskMap = new Map(prev.map(t => [t.id, t]));
-                    // Merge new tasks (overwrite existing ones to ensure latest status)
-                    newTasks.forEach((t: any) => taskMap.set(t.id, t));
-                    return Array.from(taskMap.values());
-                });
-            } catch (error) {
-                console.error("Failed to fetch tasks", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        // Debounce could be added here if needed, but for now direct call
-        // We use a transition or just async call. 
-        // Since getTasks is a server action, it's async.
-
-        // Check if we already have tasks for this range? 
-        // For simplicity and data freshness, we fetch every time for now.
-        fetchTasks();
-    }, [date, view]);
+        // Calculate initial range based on default view (Month)
+        const start = startOfWeek(startOfMonth(new Date()), { locale: ja });
+        const end = endOfWeek(endOfMonth(new Date()), { locale: ja });
+        fetchTasksInRange(start, end);
+    }, [fetchTasksInRange]);
 
     // Day List Dialog State
     const [isDayListOpen, setIsDayListOpen] = useState(false);
@@ -432,6 +439,7 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                     view={Views.MONTH}
                     date={date}
                     onNavigate={setDate}
+                    onRangeChange={handleRangeChange}
                     onDrillDown={handleDrillDown}
                     onSelectSlot={handleSelectSlot}
                     selectable={true}
