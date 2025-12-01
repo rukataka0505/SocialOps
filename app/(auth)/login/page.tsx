@@ -12,11 +12,13 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
+import { Suspense } from "react";
+
 const initialState = {
-    message: "",
+    error: "",
 };
 
-export default function LoginPage() {
+function LoginForm() {
     const [loginState, loginDispatch, isLoginPending] = useActionState(
         loginAction,
         initialState
@@ -100,9 +102,9 @@ export default function LoginPage() {
                             />
                         </div>
 
-                        {currentState?.message && (
+                        {currentState?.error && (
                             <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                                {currentState.message}
+                                {currentState.error}
                             </div>
                         )}
 
@@ -151,5 +153,17 @@ export default function LoginPage() {
                 </div>
             </motion.div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen w-full bg-[#09090B] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }
