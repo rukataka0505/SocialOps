@@ -282,9 +282,9 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
 
             if (count <= MAX_VISIBLE) {
                 return (
-                    <div className="flex flex-col gap-1 w-full">
+                    <div className="flex flex-col gap-1 w-full px-1">
                         {tasks.map((task: any) => (
-                            <div key={task.id} className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1 py-0.5 shadow-sm overflow-hidden">
+                            <div key={task.id} className="task-card-sticky flex items-center gap-1">
                                 <div className={`w-1 h-3 rounded-full shrink-0 ${statusColors[task.status] || "bg-blue-500"}`} />
                                 <span className="text-[10px] text-slate-700 truncate font-medium leading-tight">
                                     {task.title}
@@ -297,16 +297,16 @@ export function CalendarBoard({ tasks, members, currentUserId, settings }: Calen
                 const visibleTasks = tasks.slice(0, 2);
                 const remaining = count - 2;
                 return (
-                    <div className="flex flex-col gap-1 w-full">
+                    <div className="flex flex-col gap-1 w-full px-1">
                         {visibleTasks.map((task: any) => (
-                            <div key={task.id} className="flex items-center gap-1 bg-white border border-slate-200 rounded px-1 py-0.5 shadow-sm overflow-hidden">
+                            <div key={task.id} className="task-card-sticky flex items-center gap-1">
                                 <div className={`w-1 h-3 rounded-full shrink-0 ${statusColors[task.status] || "bg-blue-500"}`} />
                                 <span className="text-[10px] text-slate-700 truncate font-medium leading-tight">
                                     {task.title}
                                 </span>
                             </div>
                         ))}
-                        <div className="bg-slate-100 text-slate-600 text-[10px] font-bold text-center rounded py-0.5 border border-slate-200 hover:bg-slate-200 transition-colors">
+                        <div className="bg-slate-100/50 text-slate-600 text-[10px] font-bold text-center rounded py-0.5 hover:bg-slate-200 transition-colors cursor-pointer">
                             + 他 {remaining} 件
                         </div>
                     </div>
