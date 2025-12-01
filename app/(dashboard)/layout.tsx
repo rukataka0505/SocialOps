@@ -65,7 +65,7 @@ export default async function DashboardLayout({
                 members={members}
                 settings={settings}
             />
-            <main className="flex-1 overflow-y-auto bg-slate-50">
+            <main className="flex-1 overflow-y-auto bg-slate-50 pt-24">
                 <div className="w-full max-w-[1440px] mx-auto p-4 md:p-6">
                     <TaskUrlHandler />
                     <TeamCookieSyncer teamId={currentTeamId} />
